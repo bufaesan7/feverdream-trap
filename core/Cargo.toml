@@ -15,6 +15,7 @@ dev = [
     # Improve error messages coming from Bevy
     "bevy/track_location",
     "dep:bevy-inspector-egui",
+    "avian3d/diagnostic_ui",
 ]
 dev_native = [
     "dev",
