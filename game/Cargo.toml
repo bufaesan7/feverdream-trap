@@ -5,12 +5,13 @@ edition.workspace = true
 authors.workspace = true
 
 [features]
-default = ["dev"]
+default = ["dev_native"]
 dev = [
   "feverdream_trap_core/dev",
-  "bevy/dynamic_linking",
-  "dep:bevy-inspector-egui",
   "dep:bevy_skein",
+]
+dev_native = [
+  "feverdream_trap_core/dev_native"
 ]
 
 [dependencies]

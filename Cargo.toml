@@ -42,46 +42,26 @@ tracing = { version = "0.1", features = [
     "release_max_level_warn",
 ] }
 
-[target.wasm32-unknown-unknown.dependencies]
+[workspace.target.wasm32-unknown-unknown.dependencies]
 getrandom = { version = "0.3", features = ["wasm_js"] }
 
-[features]
-# Default to a native dev build.
-default = ["dev_native"]
-dev = [
-    # Improve compile times for dev builds by linking Bevy as a dynamic library.
-    "bevy/dynamic_linking",
-    "bevy/bevy_dev_tools",
-    "bevy/bevy_ui_debug",
-    # Improve error messages coming from Bevy
-    "bevy/track_location",
-]
-dev_native = [
-    "dev",
-    # Enable asset hot reloading for native dev builds.
-    "bevy/file_watcher",
-    # Enable embedded asset hot reloading for native dev builds.
-    "bevy/embedded_watcher",
-]
-
-
-[package.metadata.bevy_cli.release]
+[workspace.package.metadata.bevy_cli.release]
 # Disable dev features for release builds.
 default-features = false
 
-[package.metadata.bevy_cli.web]
+[workspace.package.metadata.bevy_cli.web]
 # Disable native features for web builds.
 default-features = false
 
-[package.metadata.bevy_cli.web.dev]
+[workspace.package.metadata.bevy_cli.web.dev]
 features = ["dev"]
 
 
-[lints.rust]
+[workspace.lints.rust]
 # Mark `bevy_lint` as a valid `cfg`, as it is set when the Bevy linter runs.
 unexpected_cfgs = { level = "warn", check-cfg = ["cfg(bevy_lint)"] }
 
-[lints.clippy]
+[workspace.lints.clippy]
 # Bevy supplies arguments to systems via dependency injection, so it's natural for systems to
 # request more than 7 arguments, which would undesirably trigger this lint.
 too_many_arguments = "allow"
@@ -92,7 +72,7 @@ nonstandard_macro_braces = "warn"
 
 # You can configure the warning levels of Bevy lints here. For a list of all lints, see:
 # <https://thebevyflock.github.io/bevy_cli/bevy_lint/lints/>
-[package.metadata.bevy_lint]
+[workspace.package.metadata.bevy_lint]
 # panicking_methods = "deny"
 # pedantic = "warn"
 
