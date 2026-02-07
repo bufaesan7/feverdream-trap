@@ -5,17 +5,20 @@
 
 mod asset_tracking;
 mod audio;
+mod camera_controller;
+mod character_controller;
 mod demo;
 #[cfg(feature = "dev")]
 mod dev_tools;
 mod menus;
+mod prelude;
 mod screens;
 mod theme;
-mod camera_controller;
-mod character_controller;
-mod prelude;
 
+use avian3d::PhysicsPlugins;
 use bevy::{asset::AssetMetaCheck, prelude::*};
+
+use crate::{camera_controller::CameraControllerPlugin, character_controller::CharacterControllerPlugin};
 
 #[derive(States, PartialEq, Eq, Clone, Copy, Debug, Default, Hash)]
 enum AppState {
