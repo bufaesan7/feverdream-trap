@@ -18,8 +18,11 @@ mod theme;
 use avian3d::PhysicsPlugins;
 use bevy::{asset::AssetMetaCheck, prelude::*};
 
-use crate::{camera_controller::CameraControllerPlugin, character_controller::CharacterControllerPlugin};
+use crate::{
+    camera_controller::CameraControllerPlugin, character_controller::CharacterControllerPlugin,
+};
 
+#[allow(dead_code)]
 #[derive(States, PartialEq, Eq, Clone, Copy, Debug, Default, Hash)]
 enum AppState {
     #[cfg_attr(not(feature = "dev"), default)]
