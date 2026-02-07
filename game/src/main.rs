@@ -16,7 +16,8 @@ mod screens;
 mod theme;
 
 use avian3d::PhysicsPlugins;
-use bevy::{asset::AssetMetaCheck, prelude::*};
+use bevy::prelude::*;
+use feverdream_trap_core::prelude::*;
 
 use crate::{
     camera_controller::CameraControllerPlugin, character_controller::CharacterControllerPlugin,
@@ -42,23 +43,15 @@ impl Plugin for AppPlugin {
     fn build(&self, app: &mut App) {
         // Add Bevy plugins.
         app.add_plugins(
-            DefaultPlugins
-                .set(AssetPlugin {
-                    // Wasm builds will check for meta files (that don't exist) if this isn't set.
-                    // This causes errors and even panics on web build on itch.
-                    // See https://github.com/bevyengine/bevy_github_ci_template/issues/48.
-                    meta_check: AssetMetaCheck::Never,
+            DefaultPlugins.set(asset_plugin()).set(WindowPlugin {
+                primary_window: Window {
+                    title: "Feverdream Trap".to_string(),
+                    fit_canvas_to_parent: true,
                     ..default()
-                })
-                .set(WindowPlugin {
-                    primary_window: Window {
-                        title: "Feverdream Trap".to_string(),
-                        fit_canvas_to_parent: true,
-                        ..default()
-                    }
-                    .into(),
-                    ..default()
-                }),
+                }
+                .into(),
+                ..default()
+            }),
         );
 
         // Add other plugins.
