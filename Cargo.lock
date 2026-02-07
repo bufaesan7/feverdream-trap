@@ -2712,6 +2712,7 @@ dependencies = [
  "bevy-inspector-egui",
  "bevy_skein",
  "feverdream_trap_core",
+ "rand",
 ]
 
 [[package]]
