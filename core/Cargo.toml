@@ -19,9 +19,11 @@ dev = [
 dev_native = [
     "dev",
     # Enable asset hot reloading for native dev builds.
-    "bevy/file_watcher",
+    # TODO: Fix? does not get disabled for web builds
+    #"bevy/file_watcher",
+    # TODO: Fix? does not get disabled for web builds
     # Enable embedded asset hot reloading for native dev builds.
-    "bevy/embedded_watcher",
+    #"bevy/embedded_watcher",
 ]
 
 [dependencies]
@@ -32,3 +34,4 @@ bevy-inspector-egui = { workspace = true, optional = true }
 
 [lints]
 workspace = true
+
