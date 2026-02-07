@@ -29,3 +29,6 @@ bevy.workspace = true
 avian3d.workspace = true
 
 bevy-inspector-egui = { workspace = true, optional = true }
+
+[lints]
+workspace = true

@@ -23,3 +23,6 @@ rand.workspace = true
 
 bevy-inspector-egui = { workspace = true, optional = true }
 bevy_skein = { workspace = true, optional = true }
+
+[lints]
+workspace = true
