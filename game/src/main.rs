@@ -11,8 +11,20 @@ mod dev_tools;
 mod menus;
 mod screens;
 mod theme;
+mod camera_controller;
+mod character_controller;
+mod prelude;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
+
+#[derive(States, PartialEq, Eq, Clone, Copy, Debug, Default, Hash)]
+enum AppState {
+    #[cfg_attr(not(feature = "dev"), default)]
+    MainMenu,
+    Loading,
+    #[cfg_attr(feature = "dev", default)]
+    InGame,
+}
 
 fn main() -> AppExit {
     App::new().add_plugins(AppPlugin).run()
@@ -54,6 +66,15 @@ impl Plugin for AppPlugin {
             screens::plugin,
             theme::plugin,
         ));
+
+        // Ecosystem plugins
+        app.add_plugins(PhysicsPlugins::default());
+
+        // Custom game plugins
+        app.add_plugins((CameraControllerPlugin, CharacterControllerPlugin));
+
+        // App states
+        app.init_state::<AppState>();
 
         // Order new `AppSystems` variants by adding them here:
         app.configure_sets(
