@@ -12,7 +12,18 @@ feverdream_trap_core.path = "core"
 
 # Bevy & plugins
 bevy = { version = "0.18", default-features = false, features = ["3d"] }
-avian3d = "0.6.0-rc.1"
+avian3d = { version = "0.6.0-rc.1", default-features = false, features = [
+  # Default
+  "3d",
+  "f32",
+  "parry-f32",
+  "bevy_scene",
+  "bevy_picking",
+  "debug-plugin",
+  "parallel",
+  # Non-default
+  "simd",
+] }
 
 # Dev dependencies
 bevy-inspector-egui.version = "0.36"
