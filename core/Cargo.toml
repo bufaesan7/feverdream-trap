@@ -1,0 +1,14 @@
+[package]
+name = "feverdream_trap_core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[features]
+dev = ["dep:bevy-inspector-egui"]
+
+[dependencies]
+bevy.workspace = true
+avian3d.workspace = true
+
+bevy-inspector-egui = { workspace = true, optional = true }

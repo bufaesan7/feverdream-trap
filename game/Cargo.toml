@@ -1,0 +1,23 @@
+[package]
+name = "feverdream_trap_game"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[features]
+default = ["dev"]
+dev = [
+  "feverdream_trap_core/dev",
+  "bevy/dynamic_linking",
+  "dep:bevy-inspector-egui",
+  "dep:bevy_skein",
+]
+
+[dependencies]
+feverdream_trap_core.workspace = true
+
+bevy.workspace = true
+avian3d.workspace = true
+
+bevy-inspector-egui = { workspace = true, optional = true }
+bevy_skein = { workspace = true, optional = true }
