@@ -2690,6 +2690,7 @@ dependencies = [
  "avian3d",
  "bevy",
  "bevy-inspector-egui",
+ "getrandom",
 ]
 
 [[package]]
@@ -2700,6 +2701,7 @@ dependencies = [
  "bevy-inspector-egui",
  "bevy_skein",
  "feverdream_trap_core",
+ "getrandom",
 ]
 
 [[package]]
@@ -2711,6 +2713,7 @@ dependencies = [
  "bevy-inspector-egui",
  "bevy_skein",
  "feverdream_trap_core",
+ "getrandom",
  "rand",
 ]
 

@@ -42,20 +42,6 @@ tracing = { version = "0.1", features = [
     "release_max_level_warn",
 ] }
 
-[workspace.target.wasm32-unknown-unknown.dependencies]
-getrandom = { version = "0.3", features = ["wasm_js"] }
-
-[workspace.package.metadata.bevy_cli.release]
-# Disable dev features for release builds.
-default-features = false
-
-[workspace.package.metadata.bevy_cli.web]
-# Disable native features for web builds.
-default-features = false
-
-[workspace.package.metadata.bevy_cli.web.dev]
-features = ["dev"]
-
 
 [workspace.lints.rust]
 # Mark `bevy_lint` as a valid `cfg`, as it is set when the Bevy linter runs.
@@ -69,12 +55,6 @@ too_many_arguments = "allow"
 type_complexity = "allow"
 # Make sure macros use their standard braces, such as `[]` for `bevy_ecs::children!`.
 nonstandard_macro_braces = "warn"
-
-# You can configure the warning levels of Bevy lints here. For a list of all lints, see:
-# <https://thebevyflock.github.io/bevy_cli/bevy_lint/lints/>
-[workspace.package.metadata.bevy_lint]
-# panicking_methods = "deny"
-# pedantic = "warn"
 
 
 # Compile with Performance Optimizations:

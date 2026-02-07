@@ -1,8 +1,10 @@
 [package]
 name = "feverdream_trap_game"
+default-run = "feverdream_trap_game"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
+metadata.workspace = true
 
 [features]
 default = ["dev_native"]
@@ -23,6 +25,26 @@ rand.workspace = true
 
 bevy-inspector-egui = { workspace = true, optional = true }
 bevy_skein = { workspace = true, optional = true }
+
+[target.wasm32-unknown-unknown.dependencies]
+getrandom = { version = "0.3", features = ["wasm_js"] }
+
+[package.metadata.bevy_cli.release]
+# Disable dev features for release builds.
+default-features = false
+
+[package.metadata.bevy_cli.web]
+# Disable native features for web builds.
+default-features = false
+
+# You can configure the warning levels of Bevy lints here. For a list of all lints, see:
+# <https://thebevyflock.github.io/bevy_cli/bevy_lint/lints/>
+[package.metadata.bevy_lint]
+# panicking_methods = "deny"
+# pedantic = "warn"
+
+[package.metadata.bevy_cli.web.dev]
+features = ["dev"]
 
 [lints]
 workspace = true
