@@ -99,6 +99,8 @@ impl Plugin for AppPlugin {
 
         // Spawn the main camera.
         app.add_systems(Startup, spawn_camera);
+
+        app.add_systems(OnEnter(AppState::InGame), demo_scene);
     }
 }
 
@@ -125,4 +127,28 @@ struct PausableSystems;
 
 fn spawn_camera(mut commands: Commands) {
     commands.spawn((Name::new("Camera"), Camera2d));
+}
+
+fn demo_scene(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    commands.spawn((
+        Name::new("Plane"),
+        Transform::default(),
+        Visibility::Visible,
+        Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::splat(10.)))),
+        MeshMaterial3d(materials.add(StandardMaterial::from_color(Color::WHITE))),
+    ));
+
+    commands.spawn((
+        Name::new("Cube"),
+        Transform::from_xyz(0., 0., -20.),
+        Visibility::Visible,
+        Mesh3d(meshes.add(Cuboid::new(3., 3., 3.))),
+        MeshMaterial3d(materials.add(StandardMaterial::from_color(
+            bevy::color::palettes::css::BLUE,
+        ))),
+    ));
 }
