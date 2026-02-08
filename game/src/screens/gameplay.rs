@@ -2,10 +2,20 @@
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 
-use crate::{Pause, demo::demo_scene, menus::Menu, screens::Screen};
+use crate::{
+    Pause,
+    camera_controller::{cursor_grab, cursor_ungrab},
+    demo::demo_scene,
+    level::spawn_level,
+    menus::Menu,
+    screens::Screen,
+};
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(OnEnter(Screen::Gameplay), demo_scene);
+    app.add_systems(
+        OnEnter(Screen::Gameplay),
+        (demo_scene, spawn_level, cursor_grab),
+    );
 
     // Toggle pause on key press.
     app.add_systems(
@@ -23,7 +33,10 @@ pub(super) fn plugin(app: &mut App) {
             ),
         ),
     );
-    app.add_systems(OnExit(Screen::Gameplay), (close_menu, unpause));
+    app.add_systems(
+        OnExit(Screen::Gameplay),
+        (close_menu, unpause, cursor_ungrab),
+    );
     app.add_systems(
         OnEnter(Menu::None),
         unpause.run_if(in_state(Screen::Gameplay)),

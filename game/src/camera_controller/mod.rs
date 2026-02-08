@@ -1,3 +1,5 @@
+use bevy::window::{CursorGrabMode, CursorOptions};
+
 use crate::prelude::*;
 
 mod rotate;
@@ -19,4 +21,14 @@ impl Plugin for CameraControllerPlugin {
 pub struct CameraMarker {
     /// Motion sensivity, determines the rotation speed.
     pub sensivity: Vec2,
+}
+
+pub fn cursor_grab(mut cursor_options: Single<&mut CursorOptions>) {
+    cursor_options.visible = false;
+    cursor_options.grab_mode = CursorGrabMode::Locked;
+}
+
+pub fn cursor_ungrab(mut cursor_options: Single<&mut CursorOptions>) {
+    cursor_options.visible = true;
+    cursor_options.grab_mode = CursorGrabMode::None;
 }

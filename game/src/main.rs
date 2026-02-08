@@ -10,6 +10,7 @@ mod character_controller;
 mod demo;
 #[cfg(feature = "dev")]
 mod dev_tools;
+mod level;
 mod menus;
 mod prelude;
 mod screens;
