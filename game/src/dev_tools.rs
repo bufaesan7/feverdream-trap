@@ -1,5 +1,7 @@
 //! Development tools for the game. This plugin is only enabled in dev builds.
 
+use std::any::TypeId;
+
 use crate::{camera_controller::CameraMarker, prelude::*};
 use bevy::{
     dev_tools::{
@@ -58,6 +60,11 @@ pub(super) fn plugin(app: &mut App) {
         Update,
         toggle_fog.run_if(input_just_pressed(TOGGLE_FOG_KEY)),
     );
+
+    app.add_systems(
+        Update,
+        toggle_physics_gizmos.run_if(input_just_pressed(TOGGLE_PHYSICS_GIZMOS_KEY)),
+    );
 }
 
 const TOGGLE_INSPECTOR_KEY: KeyCode = KeyCode::F1;
@@ -89,6 +96,14 @@ fn toggle_fog(
         commands.entity(entity).remove::<DistanceFog>();
     } else {
         commands.entity(entity).insert(previous.clone());
+    }
+}
+
+const TOGGLE_PHYSICS_GIZMOS_KEY: KeyCode = KeyCode::F5;
+
+fn toggle_physics_gizmos(mut gizmo: ResMut<GizmoConfigStore>) {
+    if let Some((config, _)) = gizmo.get_config_mut_dyn(&TypeId::of::<PhysicsGizmos>()) {
+        config.enabled = !config.enabled;
     }
 }
 
