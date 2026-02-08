@@ -3,15 +3,11 @@
 use crate::prelude::*;
 use crate::{
     camera_controller::{cursor_grab, cursor_ungrab},
-    demo::demo_scene,
     level::spawn_level,
 };
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(
-        OnEnter(Screen::Gameplay),
-        (demo_scene, spawn_level, cursor_grab),
-    );
+    app.add_systems(OnEnter(Screen::Gameplay), (spawn_level, cursor_grab));
 
     // Toggle pause on keypress.
     app.add_systems(
