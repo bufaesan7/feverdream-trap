@@ -1,12 +1,9 @@
 //! Spawn the main level.
 
-use bevy::prelude::*;
-
+use crate::prelude::*;
 use crate::{
     asset_tracking::LoadResource,
-    audio::music,
     demo::player::{PlayerAssets, player},
-    screens::Screen,
 };
 
 pub(super) fn plugin(app: &mut App) {

@@ -16,13 +16,10 @@ mod prelude;
 mod screens;
 mod theme;
 
+use crate::prelude::*;
 use avian3d::PhysicsPlugins;
-use bevy::prelude::*;
-use feverdream_trap_core::prelude::*;
 
-use crate::{
-    camera_controller::CameraControllerPlugin, character_controller::CharacterControllerPlugin,
-};
+use crate::character_controller::CharacterControllerPlugin;
 
 fn main() -> AppExit {
     App::new().add_plugins(AppPlugin).run()
@@ -61,7 +58,7 @@ impl Plugin for AppPlugin {
         app.add_plugins(PhysicsPlugins::default());
 
         // Custom game plugins
-        app.add_plugins((CameraControllerPlugin, CharacterControllerPlugin));
+        app.add_plugins(CharacterControllerPlugin);
 
         // Order new `AppSystems` variants by adding them here:
         app.configure_sets(

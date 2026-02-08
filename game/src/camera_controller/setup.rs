@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use crate::prelude::*;
 
 use crate::{camera_controller::CameraMarker, character_controller::CharacterController};
 
@@ -14,6 +14,7 @@ pub fn spawn_camera(mut commands: Commands) {
         },
         CharacterController,
         Camera3d::default(),
+        DespawnOnExit(Screen::Gameplay),
     ));
 }
 

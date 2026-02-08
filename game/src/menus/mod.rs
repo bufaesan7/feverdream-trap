@@ -5,7 +5,7 @@ mod main;
 mod pause;
 mod settings;
 
-use bevy::prelude::*;
+use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
     app.init_state::<Menu>();

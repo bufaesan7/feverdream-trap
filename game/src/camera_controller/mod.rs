@@ -2,10 +2,11 @@ use bevy::window::{CursorGrabMode, CursorOptions};
 
 use crate::prelude::*;
 
-mod rotate;
 mod setup;
-
 pub use setup::reset_camera;
+pub use setup::spawn_camera;
+
+mod rotate;
 
 pub struct CameraControllerPlugin;
 

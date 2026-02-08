@@ -12,7 +12,7 @@ pub mod prelude {
     pub use super::{interaction::InteractionPalette, palette as ui_palette, widget};
 }
 
-use bevy::prelude::*;
+use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(interaction::plugin);

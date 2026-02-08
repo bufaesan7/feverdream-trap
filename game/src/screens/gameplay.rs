@@ -1,14 +1,10 @@
 //! The screen state for the main gameplay.
 
-use bevy::{input::common_conditions::input_just_pressed, prelude::*};
-
+use crate::prelude::*;
 use crate::{
-    Pause,
     camera_controller::{cursor_grab, cursor_ungrab, reset_camera},
     demo::demo_scene,
     level::spawn_level,
-    menus::Menu,
-    screens::Screen,
 };
 
 pub(super) fn plugin(app: &mut App) {
