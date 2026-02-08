@@ -5,6 +5,8 @@ use crate::prelude::*;
 mod rotate;
 mod setup;
 
+pub use setup::reset_camera;
+
 pub struct CameraControllerPlugin;
 
 impl Plugin for CameraControllerPlugin {
