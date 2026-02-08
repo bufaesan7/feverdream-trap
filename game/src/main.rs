@@ -23,16 +23,6 @@ use crate::{
     camera_controller::CameraControllerPlugin, character_controller::CharacterControllerPlugin,
 };
 
-#[allow(dead_code)]
-#[derive(States, PartialEq, Eq, Clone, Copy, Debug, Default, Hash)]
-enum AppState {
-    #[cfg_attr(not(feature = "dev"), default)]
-    MainMenu,
-    Loading,
-    #[cfg_attr(feature = "dev", default)]
-    InGame,
-}
-
 fn main() -> AppExit {
     App::new().add_plugins(AppPlugin).run()
 }
@@ -72,9 +62,6 @@ impl Plugin for AppPlugin {
         // Custom game plugins
         app.add_plugins((CameraControllerPlugin, CharacterControllerPlugin));
 
-        // App states
-        app.init_state::<AppState>();
-
         // Order new `AppSystems` variants by adding them here:
         app.configure_sets(
             Update,
@@ -89,11 +76,6 @@ impl Plugin for AppPlugin {
         // Set up the `Pause` state.
         app.init_state::<Pause>();
         app.configure_sets(Update, PausableSystems.run_if(in_state(Pause(false))));
-
-        // Spawn the main camera.
-        app.add_systems(Startup, spawn_camera);
-
-        app.add_systems(OnEnter(AppState::InGame), demo_scene);
     }
 }
 
@@ -117,31 +99,3 @@ struct Pause(pub bool);
 /// A system set for systems that shouldn't run while the game is paused.
 #[derive(SystemSet, Copy, Clone, Eq, PartialEq, Hash, Debug)]
 struct PausableSystems;
-
-fn spawn_camera(mut commands: Commands) {
-    commands.spawn((Name::new("Camera"), Camera2d));
-}
-
-fn demo_scene(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    commands.spawn((
-        Name::new("Plane"),
-        Transform::default(),
-        Visibility::Visible,
-        Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::splat(10.)))),
-        MeshMaterial3d(materials.add(StandardMaterial::from_color(Color::WHITE))),
-    ));
-
-    commands.spawn((
-        Name::new("Cube"),
-        Transform::from_xyz(0., 0., -20.),
-        Visibility::Visible,
-        Mesh3d(meshes.add(Cuboid::new(3., 3., 3.))),
-        MeshMaterial3d(materials.add(StandardMaterial::from_color(
-            bevy::color::palettes::css::BLUE,
-        ))),
-    ));
-}
