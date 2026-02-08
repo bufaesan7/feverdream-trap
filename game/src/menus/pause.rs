@@ -13,7 +13,7 @@ pub(super) fn plugin(app: &mut App) {
     );
     app.add_systems(
         OnExit(Menu::Pause),
-        cursor_grab.run_if(in_state(Screen::Gameplay)),
+        cursor_grab.run_if(in_state(Screen::Gameplay).and(in_state(Menu::None))),
     );
 }
 
