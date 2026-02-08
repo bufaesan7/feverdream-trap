@@ -1,8 +1,8 @@
 //! The credits menu.
 
-use bevy::{ecs::spawn::SpawnIter, input::common_conditions::input_just_pressed, prelude::*};
+use bevy::ecs::spawn::SpawnIter;
 
-use crate::{asset_tracking::LoadResource, audio::music, menus::Menu, theme::prelude::*};
+use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Menu::Credits), spawn_credits_menu);

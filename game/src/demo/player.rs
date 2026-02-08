@@ -1,17 +1,13 @@
 //! Player-specific behavior.
 
-use bevy::{
-    image::{ImageLoaderSettings, ImageSampler},
-    prelude::*,
-};
+use bevy::image::{ImageLoaderSettings, ImageSampler};
 
 use crate::{
-    AppSystems, PausableSystems,
-    asset_tracking::LoadResource,
     demo::{
         animation::PlayerAnimation,
         movement::{MovementController, ScreenWrap},
     },
+    prelude::*,
 };
 
 pub(super) fn plugin(app: &mut App) {

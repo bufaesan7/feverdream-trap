@@ -16,10 +16,12 @@ mod prelude;
 mod screens;
 mod theme;
 
-use crate::prelude::*;
 use avian3d::PhysicsPlugins;
 
-use crate::character_controller::CharacterControllerPlugin;
+use crate::{
+    camera_controller::CameraControllerPlugin, character_controller::CharacterControllerPlugin,
+    prelude::*,
+};
 
 fn main() -> AppExit {
     App::new().add_plugins(AppPlugin).run()
@@ -42,6 +44,9 @@ impl Plugin for AppPlugin {
             }),
         );
 
+        // Ecosystem plugins
+        app.add_plugins(PhysicsPlugins::default());
+
         // Add other plugins.
         app.add_plugins((
             asset_tracking::plugin,
@@ -54,11 +59,8 @@ impl Plugin for AppPlugin {
             theme::plugin,
         ));
 
-        // Ecosystem plugins
-        app.add_plugins(PhysicsPlugins::default());
-
         // Custom game plugins
-        app.add_plugins(CharacterControllerPlugin);
+        app.add_plugins((CameraControllerPlugin, CharacterControllerPlugin));
 
         // Order new `AppSystems` variants by adding them here:
         app.configure_sets(
@@ -73,7 +75,10 @@ impl Plugin for AppPlugin {
 
         // Set up the `Pause` state.
         app.init_state::<Pause>();
-        app.configure_sets(Update, PausableSystems.run_if(in_state(Pause(false))));
+        app.configure_sets(
+            Update,
+            PausableSystems.run_if(in_state(Pause(false)).and(in_state(Screen::Gameplay))),
+        );
     }
 }
 
