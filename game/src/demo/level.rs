@@ -1,10 +1,7 @@
 //! Spawn the main level.
 
+use crate::demo::player::{PlayerAssets, player};
 use crate::prelude::*;
-use crate::{
-    asset_tracking::LoadResource,
-    demo::player::{PlayerAssets, player},
-};
 
 pub(super) fn plugin(app: &mut App) {
     app.load_resource::<LevelAssets>();

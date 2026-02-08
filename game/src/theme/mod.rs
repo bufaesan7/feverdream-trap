@@ -9,7 +9,7 @@ pub mod widget;
 
 #[allow(unused_imports)]
 pub mod prelude {
-    pub use super::{interaction::InteractionPalette, palette as ui_palette, widget};
+    pub use super::{interaction::InteractionPalette, palette as ui_palette};
 }
 
 use crate::prelude::*;

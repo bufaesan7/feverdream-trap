@@ -12,12 +12,12 @@ pub fn spawn_camera(mut commands: Commands) {
             sensivity: -Vec2::splat(0.001),
         },
         CharacterController,
-        Camera3d::default(),
         Camera {
             is_active: false,
+            order: -1,
             ..Default::default()
         },
-        DespawnOnExit(Screen::Gameplay),
+        Camera3d::default(),
     ));
 }
 
