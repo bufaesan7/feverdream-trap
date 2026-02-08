@@ -1,4 +1,3 @@
-use crate::camera_controller::post_process::PostProcessSettings;
 use crate::prelude::*;
 
 use crate::{camera_controller::CameraMarker, character_controller::CharacterController};
@@ -19,6 +18,14 @@ pub fn spawn_camera(mut commands: Commands) {
             ..Default::default()
         },
         Camera3d::default(),
+        DistanceFog {
+            color: Color::srgb(0.25, 0.25, 0.25),
+            falloff: FogFalloff::Linear {
+                start: 5.0,
+                end: 250.0,
+            },
+            ..Default::default()
+        },
         PostProcessSettings {
             intensity: 0.02,
             ..default()

@@ -76,6 +76,26 @@ pub fn spawn_level(
             commands.entity(level).add_child(wall);
         }
     }
+
+    commands.spawn((
+        Name::new("Plane"),
+        Transform::default(),
+        Visibility::Visible,
+        DespawnOnExit(Screen::Gameplay),
+        Mesh3d(meshes.add(Plane3d::new(Vec3::X, Vec2::splat(10.)))),
+        MeshMaterial3d(materials.add(StandardMaterial::from_color(Color::BLACK))),
+    ));
+
+    commands.spawn((
+        Name::new("Cube"),
+        Transform::from_xyz(0., 0., -20.),
+        Visibility::Visible,
+        DespawnOnExit(Screen::Gameplay),
+        Mesh3d(meshes.add(Cuboid::new(3., 3., 3.))),
+        MeshMaterial3d(materials.add(StandardMaterial::from_color(
+            bevy::color::palettes::css::BLUE,
+        ))),
+    ));
 }
 
 fn position_to_transform(x: i32, y: f32, z: i32) -> Transform {
