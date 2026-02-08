@@ -4,6 +4,7 @@ use crate::prelude::*;
 use bevy::asset::AssetMetaCheck;
 
 pub fn asset_plugin() -> AssetPlugin {
+    #[allow(unused_mut)]
     let mut asset_plugin = AssetPlugin {
         meta_check: AssetMetaCheck::Never,
         ..Default::default()
