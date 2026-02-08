@@ -12,7 +12,8 @@ dev = [
   "dep:bevy_skein",
 ]
 dev_native = [
-  "feverdream_trap_core/dev_native"
+  "feverdream_trap_core/dev_native",
+  "dev",
 ]
 
 [dependencies]

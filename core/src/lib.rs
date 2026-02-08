@@ -1,6 +1,7 @@
-use bevy::{asset::AssetMetaCheck, prelude::*};
-
 pub mod prelude;
+
+use crate::prelude::*;
+use bevy::asset::AssetMetaCheck;
 
 pub fn asset_plugin() -> AssetPlugin {
     let mut asset_plugin = AssetPlugin {
