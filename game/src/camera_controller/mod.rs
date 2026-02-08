@@ -2,7 +2,6 @@ use bevy::window::{CursorGrabMode, CursorOptions};
 
 use crate::prelude::*;
 
-mod rotate;
 mod setup;
 
 pub struct CameraControllerPlugin;
@@ -11,8 +10,7 @@ impl Plugin for CameraControllerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup::spawn_camera)
             .add_systems(OnEnter(Screen::Gameplay), setup::activate_camera)
-            .add_systems(OnExit(Screen::Gameplay), setup::deactivate_camera)
-            .add_systems(Update, rotate::rotate_camera.in_set(PausableSystems));
+            .add_systems(OnExit(Screen::Gameplay), setup::deactivate_camera);
     }
 }
 

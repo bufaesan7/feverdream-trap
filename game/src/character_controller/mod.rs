@@ -1,43 +1,54 @@
-use crate::prelude::*;
+use bevy_ahoy::prelude::*;
+use bevy_enhanced_input::prelude::*;
+
+use crate::{camera_controller::CameraMarker, prelude::*};
 
 pub struct CharacterControllerPlugin;
 
 impl Plugin for CharacterControllerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            character_controller.run_if(in_state(Screen::Gameplay).and(in_state(Menu::None))),
-        );
+        app.add_plugins((EnhancedInputPlugin, AhoyPlugins::default()))
+            .add_input_context::<PlayerInput>();
     }
 }
 
-#[derive(Debug, Default, Component, Reflect)]
-#[reflect(Component)]
-pub struct CharacterController;
+#[derive(Component)]
+struct PlayerInput;
 
-// TODO: Replace with avian velocity
-const VELOCITY: f32 = 100.0;
+pub fn spawn_player(mut commands: Commands, camera: Single<Entity, With<CameraMarker>>) {
+    // Spawn the player entity
+    let player = commands
+        .spawn((
+            // The character controller configuration
+            CharacterController::default(),
+            // The KCC currently behaves best when using a cylinder
+            Collider::cylinder(0.7, 1.8),
+            Transform::from_xyz(0.0, 20.0, 0.0),
+            // Configure inputs
+            PlayerInput,
+            actions!(PlayerInput[
+                (
+                    Action::<Movement>::new(),
+                    DeadZone::default(),
+                    Bindings::spawn((
+                        Cardinal::wasd_keys(),
+                        Axial::left_stick()
+                    ))
+                ),
+                (
+                    Action::<RotateCamera>::new(),
+                    Scale::splat(0.04),
+                    Bindings::spawn((
+                        Spawn(Binding::mouse_motion()),
+                        Axial::right_stick()
+                    ))
+                ),
+            ]),
+        ))
+        .id();
 
-fn character_controller(
-    time: Res<Time>,
-    key_input: Res<ButtonInput<KeyCode>>,
-    mut controller: Query<&mut Transform, With<CharacterController>>,
-) {
-    let mut velocity = Vec3::ZERO;
-
-    for mut transform in &mut controller {
-        let local_z = transform.local_z();
-        let forward = -Vec3::new(local_z.x, 0., local_z.z);
-
-        if key_input.pressed(KeyCode::KeyW) {
-            velocity += forward;
-        }
-        if key_input.pressed(KeyCode::KeyS) {
-            velocity -= forward;
-        }
-
-        velocity = velocity.normalize_or_zero();
-
-        transform.translation += velocity * VELOCITY * time.delta_secs();
-    }
+    // Spawn the camera
+    commands
+        .entity(*camera)
+        .insert(CharacterControllerCameraOf::new(player));
 }
