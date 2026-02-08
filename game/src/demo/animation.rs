@@ -131,6 +131,7 @@ impl PlayerAnimation {
         }
     }
 
+    #[allow(unused)]
     pub fn new() -> Self {
         Self::idling()
     }

@@ -29,6 +29,7 @@ impl FromWorld for LevelAssets {
     }
 }
 
+#[allow(unused)]
 /// A system that spawns the main level.
 pub fn spawn_level(
     mut commands: Commands,
