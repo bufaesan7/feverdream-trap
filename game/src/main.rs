@@ -1,12 +1,29 @@
-use crate::{
-    camera_controller::CameraControllerPlugin, character_controller::CharacterControllerPlugin,
-    prelude::*,
-};
+// Support configuring Bevy lints within code.
+#![cfg_attr(bevy_lint, feature(register_tool), register_tool(bevy))]
+// Disable console on Windows for non-dev builds.
+#![cfg_attr(not(feature = "dev"), windows_subsystem = "windows")]
 
+mod asset_tracking;
+mod audio;
 mod camera_controller;
 mod character_controller;
+mod demo;
+#[cfg(feature = "dev")]
+mod dev_tools;
+mod menus;
 mod prelude;
+mod screens;
+mod theme;
 
+use avian3d::PhysicsPlugins;
+use bevy::prelude::*;
+use feverdream_trap_core::prelude::*;
+
+use crate::{
+    camera_controller::CameraControllerPlugin, character_controller::CharacterControllerPlugin,
+};
+
+#[allow(dead_code)]
 #[derive(States, PartialEq, Eq, Clone, Copy, Debug, Default, Hash)]
 enum AppState {
     #[cfg_attr(not(feature = "dev"), default)]
@@ -16,32 +33,93 @@ enum AppState {
     InGame,
 }
 
-fn main() {
-    let mut app = App::new();
+fn main() -> AppExit {
+    App::new().add_plugins(AppPlugin).run()
+}
 
-    let window_plugin = WindowPlugin {
-        primary_window: Some(Window {
-            title: "Feverdream Trap".to_string(),
-            name: Some("feverdream_trap".to_string()),
-            ..Default::default()
-        }),
-        ..Default::default()
-    };
-    // Default plugins
-    app.add_plugins(DefaultPlugins.set(window_plugin));
+pub struct AppPlugin;
 
-    // Ecosystem plugins
-    app.add_plugins(PhysicsPlugins::default());
+impl Plugin for AppPlugin {
+    fn build(&self, app: &mut App) {
+        // Add Bevy plugins.
+        app.add_plugins(
+            DefaultPlugins.set(asset_plugin()).set(WindowPlugin {
+                primary_window: Window {
+                    title: "Feverdream Trap".to_string(),
+                    fit_canvas_to_parent: true,
+                    ..default()
+                }
+                .into(),
+                ..default()
+            }),
+        );
 
-    // Custom game plugins
-    app.add_plugins((CameraControllerPlugin, CharacterControllerPlugin));
+        // Add other plugins.
+        app.add_plugins((
+            asset_tracking::plugin,
+            audio::plugin,
+            demo::plugin,
+            #[cfg(feature = "dev")]
+            dev_tools::plugin,
+            menus::plugin,
+            screens::plugin,
+            theme::plugin,
+        ));
 
-    // App states
-    app.init_state::<AppState>();
+        // Ecosystem plugins
+        app.add_plugins(PhysicsPlugins::default());
 
-    app.add_systems(OnEnter(AppState::InGame), demo_scene);
+        // Custom game plugins
+        app.add_plugins((CameraControllerPlugin, CharacterControllerPlugin));
 
-    app.run();
+        // App states
+        app.init_state::<AppState>();
+
+        // Order new `AppSystems` variants by adding them here:
+        app.configure_sets(
+            Update,
+            (
+                AppSystems::TickTimers,
+                AppSystems::RecordInput,
+                AppSystems::Update,
+            )
+                .chain(),
+        );
+
+        // Set up the `Pause` state.
+        app.init_state::<Pause>();
+        app.configure_sets(Update, PausableSystems.run_if(in_state(Pause(false))));
+
+        // Spawn the main camera.
+        app.add_systems(Startup, spawn_camera);
+
+        app.add_systems(OnEnter(AppState::InGame), demo_scene);
+    }
+}
+
+/// High-level groupings of systems for the app in the `Update` schedule.
+/// When adding a new variant, make sure to order it in the `configure_sets`
+/// call above.
+#[derive(SystemSet, Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]
+enum AppSystems {
+    /// Tick timers.
+    TickTimers,
+    /// Record player input.
+    RecordInput,
+    /// Do everything else (consider splitting this into further variants).
+    Update,
+}
+
+/// Whether or not the game is paused.
+#[derive(States, Copy, Clone, Eq, PartialEq, Hash, Debug, Default)]
+struct Pause(pub bool);
+
+/// A system set for systems that shouldn't run while the game is paused.
+#[derive(SystemSet, Copy, Clone, Eq, PartialEq, Hash, Debug)]
+struct PausableSystems;
+
+fn spawn_camera(mut commands: Commands) {
+    commands.spawn((Name::new("Camera"), Camera2d));
 }
 
 fn demo_scene(

@@ -1,16 +1,26 @@
 [package]
 name = "feverdream_trap_game"
+default-run = "feverdream_trap_game"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
+metadata.workspace = true
 
 [features]
-default = ["dev"]
+default = ["dev_native"]
 dev = [
   "feverdream_trap_core/dev",
+  # Improve compile times for dev builds by linking Bevy as a dynamic library.
   "bevy/dynamic_linking",
-  "dep:bevy-inspector-egui",
+  "bevy/bevy_dev_tools",
+  "bevy/bevy_ui_debug",
+  # Improve error messages coming from Bevy
+  "bevy/track_location",
   "dep:bevy_skein",
+]
+dev_native = [
+  "feverdream_trap_core/dev_native",
+  "dev",
 ]
 
 [dependencies]
@@ -18,6 +28,28 @@ feverdream_trap_core.workspace = true
 
 bevy.workspace = true
 avian3d.workspace = true
+rand.workspace = true
 
 bevy-inspector-egui = { workspace = true, optional = true }
 bevy_skein = { workspace = true, optional = true }
+
+
+[package.metadata.bevy_cli.release]
+# Disable dev features for release builds.
+default-features = false
+
+[package.metadata.bevy_cli.web]
+# Disable native features for web builds.
+default-features = false
+
+# You can configure the warning levels of Bevy lints here. For a list of all lints, see:
+# <https://thebevyflock.github.io/bevy_cli/bevy_lint/lints/>
+[package.metadata.bevy_lint]
+# panicking_methods = "deny"
+# pedantic = "warn"
+
+[package.metadata.bevy_cli.web.dev]
+features = ["dev"]
+
+[lints]
+workspace = true
