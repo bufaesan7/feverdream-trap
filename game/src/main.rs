@@ -12,6 +12,7 @@ mod dev_tools;
 mod level;
 mod menus;
 mod prelude;
+mod scene;
 mod screens;
 mod theme;
 
@@ -54,6 +55,7 @@ impl Plugin for AppPlugin {
             dev_tools::plugin,
             menus::plugin,
             screens::plugin,
+            scene::plugin,
             theme::plugin,
         ));
 
