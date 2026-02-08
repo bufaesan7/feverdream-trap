@@ -2,7 +2,7 @@
 
 use std::collections::VecDeque;
 
-use bevy::prelude::*;
+use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
     app.init_resource::<ResourceHandles>();

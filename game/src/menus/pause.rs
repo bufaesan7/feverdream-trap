@@ -1,12 +1,8 @@
 //! The pause menu.
 
-use bevy::{input::common_conditions::input_just_pressed, prelude::*};
-
 use crate::{
     camera_controller::{cursor_grab, cursor_ungrab},
-    menus::Menu,
-    screens::Screen,
-    theme::widget,
+    prelude::*,
 };
 
 pub(super) fn plugin(app: &mut App) {

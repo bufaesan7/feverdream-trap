@@ -2,12 +2,12 @@
 
 use std::borrow::Cow;
 
-use bevy::{
-    ecs::{spawn::SpawnWith, system::IntoObserverSystem},
-    prelude::*,
-};
+use bevy::ecs::{spawn::SpawnWith, system::IntoObserverSystem};
 
-use crate::theme::{interaction::InteractionPalette, palette::*};
+use crate::{
+    prelude::*,
+    theme::{interaction::InteractionPalette, palette::*},
+};
 
 /// A root UI node that fills the window and centers its content.
 pub fn ui_root(name: impl Into<Cow<'static, str>>) -> impl Bundle {

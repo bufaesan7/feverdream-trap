@@ -5,23 +5,21 @@ use crate::prelude::*;
 mod rotate;
 mod setup;
 
-pub use setup::reset_camera;
-
 pub struct CameraControllerPlugin;
 
 impl Plugin for CameraControllerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup::spawn_camera).add_systems(
-            Update,
-            rotate::rotate_camera.run_if(in_state(Screen::Gameplay).and(in_state(Menu::None))),
-        );
+        app.add_systems(Startup, setup::spawn_camera)
+            .add_systems(OnEnter(Screen::Gameplay), setup::activate_camera)
+            .add_systems(OnExit(Screen::Gameplay), setup::deactivate_camera)
+            .add_systems(Update, rotate::rotate_camera.in_set(PausableSystems));
     }
 }
 
 #[derive(Component, Reflect)]
 #[reflect(Component)]
 pub struct CameraMarker {
-    /// Motion sensivity, determines the rotation speed.
+    /// Motion sensitivity, determines the rotation speed.
     pub sensivity: Vec2,
 }
 

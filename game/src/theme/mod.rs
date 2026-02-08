@@ -9,10 +9,10 @@ pub mod widget;
 
 #[allow(unused_imports)]
 pub mod prelude {
-    pub use super::{interaction::InteractionPalette, palette as ui_palette, widget};
+    pub use super::{interaction::InteractionPalette, palette as ui_palette};
 }
 
-use bevy::prelude::*;
+use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(interaction::plugin);

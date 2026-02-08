@@ -1,6 +1,4 @@
-use bevy::prelude::*;
-
-use crate::{asset_tracking::LoadResource, audio::sound_effect};
+use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_observer(apply_interaction_palette_on_click);

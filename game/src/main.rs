@@ -17,11 +17,10 @@ mod screens;
 mod theme;
 
 use avian3d::PhysicsPlugins;
-use bevy::prelude::*;
-use feverdream_trap_core::prelude::*;
 
 use crate::{
     camera_controller::CameraControllerPlugin, character_controller::CharacterControllerPlugin,
+    prelude::*,
 };
 
 fn main() -> AppExit {
@@ -45,6 +44,9 @@ impl Plugin for AppPlugin {
             }),
         );
 
+        // Ecosystem plugins
+        app.add_plugins(PhysicsPlugins::default());
+
         // Add other plugins.
         app.add_plugins((
             asset_tracking::plugin,
@@ -56,9 +58,6 @@ impl Plugin for AppPlugin {
             screens::plugin,
             theme::plugin,
         ));
-
-        // Ecosystem plugins
-        app.add_plugins(PhysicsPlugins::default());
 
         // Custom game plugins
         app.add_plugins((CameraControllerPlugin, CharacterControllerPlugin));
@@ -76,7 +75,10 @@ impl Plugin for AppPlugin {
 
         // Set up the `Pause` state.
         app.init_state::<Pause>();
-        app.configure_sets(Update, PausableSystems.run_if(in_state(Pause(false))));
+        app.configure_sets(
+            Update,
+            PausableSystems.run_if(in_state(Pause(false)).and(in_state(Screen::Gameplay))),
+        );
     }
 }
 
