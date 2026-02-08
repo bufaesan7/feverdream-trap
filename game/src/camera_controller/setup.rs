@@ -1,3 +1,4 @@
+use crate::camera_controller::post_process::PostProcessSettings;
 use crate::prelude::*;
 
 use crate::{camera_controller::CameraMarker, character_controller::CharacterController};
@@ -18,6 +19,10 @@ pub fn spawn_camera(mut commands: Commands) {
             ..Default::default()
         },
         Camera3d::default(),
+        PostProcessSettings {
+            intensity: 0.02,
+            ..default()
+        },
     ));
 }
 
