@@ -9,7 +9,7 @@ pub fn spawn_camera(mut commands: Commands) {
         Visibility::Visible,
         CameraMarker {
             // Might need tweaking, I only tested on a touchpad
-            sensivity: -Vec2::splat(0.001),
+            sensivity: Vec2::splat(0.001),
         },
         CharacterController,
         Camera {
