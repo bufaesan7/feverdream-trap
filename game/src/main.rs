@@ -7,7 +7,6 @@ mod asset_tracking;
 mod audio;
 mod camera_controller;
 mod character_controller;
-mod demo;
 #[cfg(feature = "dev")]
 mod dev_tools;
 mod level;
@@ -51,7 +50,6 @@ impl Plugin for AppPlugin {
         app.add_plugins((
             asset_tracking::plugin,
             audio::plugin,
-            demo::plugin,
             #[cfg(feature = "dev")]
             dev_tools::plugin,
             menus::plugin,

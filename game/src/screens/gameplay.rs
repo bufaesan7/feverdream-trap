@@ -4,14 +4,13 @@ use crate::character_controller::spawn_player;
 use crate::prelude::*;
 use crate::{
     camera_controller::{cursor_grab, cursor_ungrab},
-    demo::demo_scene,
     level::spawn_level,
 };
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(
         OnEnter(Screen::Gameplay),
-        (demo_scene, spawn_level, spawn_player, cursor_grab),
+        (spawn_level, spawn_player, cursor_grab),
     );
 
     // Toggle pause on keypress.

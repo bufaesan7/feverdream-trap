@@ -17,6 +17,14 @@ pub fn spawn_camera(mut commands: Commands) {
             ..Default::default()
         },
         Camera3d::default(),
+        DistanceFog {
+            color: Color::srgb(0.25, 0.25, 0.25),
+            falloff: FogFalloff::Linear {
+                start: 5.0,
+                end: 250.0,
+            },
+            ..Default::default()
+        },
     ));
 }
 
