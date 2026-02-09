@@ -7,7 +7,6 @@ mod asset_tracking;
 mod audio;
 mod camera_controller;
 mod character_controller;
-mod chunk;
 #[cfg(feature = "dev")]
 mod dev_tools;
 mod level;
@@ -56,6 +55,7 @@ impl Plugin for AppPlugin {
             menus::plugin,
             screens::plugin,
             theme::plugin,
+            level::plugin,
         ));
 
         // Custom game plugins
