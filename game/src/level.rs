@@ -1,17 +1,17 @@
+use crate::chunk::Chunk;
 use crate::prelude::*;
 
-// TODO: made redundant by asset loading
-const LEVEL_WIDTH: i32 = 20;
-const LEVEL_HEIGHT: i32 = 20;
-const LEVEL_SIZE: f32 = 20.0;
-const LEVEL_GROUND_Y: f32 = -LEVEL_SIZE / 2.0;
+// number of chunks per axis
+const GRID_SIZE: usize = 5;
+const CHUNKS: usize = GRID_SIZE * GRID_SIZE;
+const TILE_SIZE: f32 = 20.;
 
-/// Marker component for the level entity
+// Marker component for the level entity
 #[derive(Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 struct Level;
 
-/// Spawns a very simple level; no input at this moment
+/// spawn demo level with a grid of entities grouped in chunks
 pub fn spawn_level(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -27,84 +27,68 @@ pub fn spawn_level(
         ))
         .id();
 
-    // Ground
-    for x in 0..LEVEL_WIDTH {
-        for z in 0..LEVEL_HEIGHT {
-            // TODO: If we have a single elevation, we can just have a giant plane
-            let ground = commands
-                .spawn((
-                    Name::new("Ground"),
-                    position_to_transform(x, LEVEL_GROUND_Y, z),
-                    Visibility::default(),
-                    RigidBody::Static,
-                    Collider::cuboid(LEVEL_SIZE, 0.1, LEVEL_SIZE),
-                    Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::splat(LEVEL_SIZE / 2.0)))),
-                    MeshMaterial3d(materials.add(StandardMaterial::from_color(Color::WHITE))),
-                ))
-                .id();
+    let mut chunk_index = 0;
 
-            commands.entity(level).add_child(ground);
+    for chunk_x in 0..GRID_SIZE {
+        for chunk_z in 0..GRID_SIZE {
+            let transform = grid_position_to_transform(chunk_x, chunk_z);
+            let chunk = commands
+                .spawn((Visibility::default(), Chunk, transform, ChildOf(level)))
+                .id();
+            let chunk_color = Hsva::hsv((chunk_index as f32 / CHUNKS as f32) * 360., 1.0, 1.0);
+
+            info!(
+                "spawned chunk at {} with index {}",
+                transform.translation.xz(),
+                chunk_index
+            );
+
+            // spawn debug cube of chunk color
+            if chunk_index == 8 {
+                commands.spawn((
+                    Name::new("Cube"),
+                    Transform::from_xyz(0., 2., 0.),
+                    Visibility::Visible,
+                    DespawnOnExit(Screen::Gameplay),
+                    RigidBody::Static,
+                    Collider::cuboid(2., 2., 2.),
+                    Mesh3d(meshes.add(Cuboid::new(2., 2., 2.))),
+                    MeshMaterial3d(materials.add(StandardMaterial::from_color(chunk_color))),
+                    ChildOf(chunk),
+                ));
+            }
+
+            if chunk_index == 17 {
+                commands.spawn((
+                    Name::new("Sphere"),
+                    Transform::from_xyz(0., 2., 0.),
+                    Visibility::Visible,
+                    DespawnOnExit(Screen::Gameplay),
+                    RigidBody::Static,
+                    Collider::sphere(0.7),
+                    Mesh3d(meshes.add(Sphere::new(0.7))),
+                    MeshMaterial3d(materials.add(StandardMaterial::from_color(chunk_color))),
+                    ChildOf(chunk),
+                ));
+            }
+
+            // Ground
+            commands.spawn((
+                Name::new("Ground"),
+                Transform::default(),
+                Visibility::Visible,
+                RigidBody::Static,
+                Collider::cuboid(TILE_SIZE, 0.1, TILE_SIZE),
+                Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::splat(TILE_SIZE / 2.)))),
+                MeshMaterial3d(materials.add(StandardMaterial::from_color(chunk_color))),
+                ChildOf(chunk),
+            ));
+
+            chunk_index += 1;
         }
     }
-
-    // Walls
-    for z in [-1, LEVEL_HEIGHT] {
-        for x in 0..LEVEL_WIDTH {
-            let wall = commands
-                .spawn((
-                    Name::new("Wall"),
-                    position_to_transform(x, 0.0, z),
-                    Visibility::default(),
-                    RigidBody::Static,
-                    Collider::cuboid(LEVEL_SIZE, LEVEL_SIZE, LEVEL_SIZE),
-                    Mesh3d(meshes.add(Cuboid::from_length(LEVEL_SIZE))),
-                    MeshMaterial3d(materials.add(StandardMaterial::from_color(Color::BLACK))),
-                ))
-                .id();
-
-            commands.entity(level).add_child(wall);
-        }
-    }
-    for x in [-1, LEVEL_WIDTH] {
-        for z in 0..LEVEL_HEIGHT {
-            let wall = commands
-                .spawn((
-                    Name::new("Wall"),
-                    position_to_transform(x, 0.0, z),
-                    Visibility::default(),
-                    RigidBody::Static,
-                    Collider::cuboid(LEVEL_SIZE, LEVEL_SIZE, LEVEL_SIZE),
-                    Mesh3d(meshes.add(Cuboid::from_length(LEVEL_SIZE))),
-                    MeshMaterial3d(materials.add(StandardMaterial::from_color(Color::BLACK))),
-                ))
-                .id();
-
-            commands.entity(level).add_child(wall);
-        }
-    }
-
-    commands.spawn((
-        Name::new("Plane"),
-        Transform::default(),
-        Visibility::Visible,
-        DespawnOnExit(Screen::Gameplay),
-        Mesh3d(meshes.add(Plane3d::new(Vec3::X, Vec2::splat(10.)))),
-        MeshMaterial3d(materials.add(StandardMaterial::from_color(Color::BLACK))),
-    ));
-
-    commands.spawn((
-        Name::new("Cube"),
-        Transform::from_xyz(0., 0., -20.),
-        Visibility::Visible,
-        DespawnOnExit(Screen::Gameplay),
-        Mesh3d(meshes.add(Cuboid::new(3., 3., 3.))),
-        MeshMaterial3d(materials.add(StandardMaterial::from_color(
-            bevy::color::palettes::css::BLUE,
-        ))),
-    ));
 }
 
-fn position_to_transform(x: i32, y: f32, z: i32) -> Transform {
-    // TODO: Offset by some amount for now, because I dont want to move camera :D
-    Transform::from_xyz((x - 1) as f32 * LEVEL_SIZE, y, (z - 1) as f32 * LEVEL_SIZE)
+fn grid_position_to_transform(x: usize, z: usize) -> Transform {
+    Transform::from_xyz(x as f32 * TILE_SIZE, 0.0, z as f32 * TILE_SIZE)
 }

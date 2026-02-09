@@ -67,7 +67,7 @@ pub fn spawn_player(mut commands: Commands, camera: Single<Entity, With<CameraMa
             CharacterController::default(),
             // The KCC currently behaves best when using a cylinder
             Collider::cylinder(0.7, 1.8),
-            Transform::from_xyz(0.0, 20.0, 0.0),
+            Transform::from_xyz(50., 1., 70.),
             Player,
             PlayerInput,
         ))
