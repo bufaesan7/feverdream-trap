@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-use crate::{camera_controller::CameraMarker, character_controller::CharacterController};
+use crate::camera_controller::CameraMarker;
 
 pub fn spawn_camera(mut commands: Commands) {
     commands.spawn((
@@ -11,7 +11,6 @@ pub fn spawn_camera(mut commands: Commands) {
             // Might need tweaking, I only tested on a touchpad
             sensivity: Vec2::splat(0.001),
         },
-        CharacterController,
         Camera {
             is_active: false,
             order: -1,

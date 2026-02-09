@@ -36,6 +36,8 @@ pub fn spawn_level(
                     Name::new("Ground"),
                     position_to_transform(x, LEVEL_GROUND_Y, z),
                     Visibility::default(),
+                    RigidBody::Static,
+                    Collider::cuboid(LEVEL_SIZE, 0.1, LEVEL_SIZE),
                     Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::splat(LEVEL_SIZE / 2.0)))),
                     MeshMaterial3d(materials.add(StandardMaterial::from_color(Color::WHITE))),
                 ))
@@ -53,6 +55,8 @@ pub fn spawn_level(
                     Name::new("Wall"),
                     position_to_transform(x, 0.0, z),
                     Visibility::default(),
+                    RigidBody::Static,
+                    Collider::cuboid(LEVEL_SIZE, LEVEL_SIZE, LEVEL_SIZE),
                     Mesh3d(meshes.add(Cuboid::from_length(LEVEL_SIZE))),
                     MeshMaterial3d(materials.add(StandardMaterial::from_color(Color::BLACK))),
                 ))
@@ -68,6 +72,8 @@ pub fn spawn_level(
                     Name::new("Wall"),
                     position_to_transform(x, 0.0, z),
                     Visibility::default(),
+                    RigidBody::Static,
+                    Collider::cuboid(LEVEL_SIZE, LEVEL_SIZE, LEVEL_SIZE),
                     Mesh3d(meshes.add(Cuboid::from_length(LEVEL_SIZE))),
                     MeshMaterial3d(materials.add(StandardMaterial::from_color(Color::BLACK))),
                 ))
