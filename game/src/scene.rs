@@ -1,3 +1,4 @@
+use bevy::scene::SceneInstanceReady;
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::tasks::IoTaskPool;
 use bevy_ahoy::CharacterController;
@@ -115,7 +116,7 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
     }
 }
 
-fn spawn_scene(mut spawner: ResMut<SceneSpawner>, game_scene: Res<GameSceneStorage>) {
+fn spawn_scene(mut commands: Commands, game_scene: Res<GameSceneStorage>) {
     let handle = if let Some(handle) = &game_scene.handle {
         handle.clone()
     } else {
@@ -123,5 +124,15 @@ fn spawn_scene(mut spawner: ResMut<SceneSpawner>, game_scene: Res<GameSceneStora
     };
     // This will sometimes trigger a `B0004` warning, that's a bevy bug:
     // https://github.com/bevyengine/bevy/pull/22675
-    spawner.spawn_dynamic(handle);
+    commands
+        .spawn((
+            Name::new("Game scene spawner"),
+            Transform::default(),
+            Visibility::default(),
+            DynamicSceneRoot(handle),
+            DespawnOnExit(Screen::Gameplay),
+        ))
+        .observe(|event: On<SceneInstanceReady>, mut commands: Commands| {
+            commands.entity(event.entity).detach_all_children();
+        });
 }
