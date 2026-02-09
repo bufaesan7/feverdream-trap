@@ -1,6 +1,5 @@
 //! The screen state for the main gameplay.
 
-use crate::character_controller::spawn_player;
 use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {

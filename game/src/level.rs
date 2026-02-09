@@ -57,7 +57,7 @@ impl LevelComponent3d {
         };
 
         let collider = match mesh_type {
-            LevelComponent3d::Plane { size } => Collider::cuboid(size.x, 0.1, size.y),
+            LevelComponent3d::Plane { size } => Collider::cuboid(size.x * 2., 0.1, size.y * 2.),
             LevelComponent3d::Cube { length, .. } => Collider::cuboid(length, length, length),
         };
 

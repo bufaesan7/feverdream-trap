@@ -1,9 +1,10 @@
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::tasks::IoTaskPool;
+use bevy_ahoy::CharacterController;
 
 use crate::{
-    camera_controller::{CameraMarker, spawn_camera},
-    character_controller::CharacterController,
+    camera_controller::{CameraMarker, CameraTargetCharacterController, spawn_camera},
+    character_controller::{Player, PlayerInput, spawn_player},
     level::{Level, LevelComponent, LevelComponent3d, spawn_level},
     prelude::*,
 };
@@ -43,11 +44,17 @@ impl FromWorld for GameSceneStorage {
             let type_registry = world.resource::<AppTypeRegistry>().clone();
             scene_world.insert_resource(type_registry);
 
-            let systems = [spawn_level, spawn_camera];
-            for system in systems {
+            fn run_system<M>(
+                scene_world: &mut World,
+                system: impl IntoSystem<(), (), M> + 'static,
+            ) {
                 let system_id = scene_world.register_system(system);
                 scene_world.run_system(system_id).unwrap();
             }
+
+            run_system(&mut scene_world, spawn_level);
+            run_system(&mut scene_world, spawn_camera);
+            run_system(&mut scene_world, spawn_player);
 
             let scene = DynamicScene::from_world(&scene_world);
             let mut scenes = world.resource_mut::<Assets<DynamicScene>>();
@@ -71,7 +78,11 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             .allow_component::<Transform>()
             .allow_component::<Visibility>()
             .allow_component::<CameraMarker>()
+            .allow_component::<CameraTargetCharacterController>()
             .allow_component::<CharacterController>()
+            .allow_component::<Player>()
+            .allow_component::<PlayerInput>()
+            .allow_component::<Collider>()
             .allow_component::<Children>()
             .allow_component::<ChildOf>()
             .extract_entities(query.iter())
