@@ -38,6 +38,15 @@ pub struct Player;
 #[component(on_add)]
 pub struct PlayerInput;
 
+/// move to apropriate module
+#[derive(PhysicsLayer, Default)]
+pub enum GameLayer {
+    #[default]
+    Default,
+    Player,
+    Sensor,
+}
+
 impl PlayerInput {
     fn on_add(mut world: DeferredWorld, ctx: HookContext) {
         world
@@ -68,11 +77,13 @@ pub fn spawn_player(mut commands: Commands, camera: Single<Entity, With<CameraMa
     // Spawn the player entity
     let player = commands
         .spawn((
+            Name::new("Player"),
             // The character controller configuration
             CharacterController::default(),
             // The KCC currently behaves best when using a cylinder
             Collider::cylinder(0.7, 1.8),
-            Transform::from_xyz(0.0, 20.0, 0.0),
+            CollisionLayers::new([GameLayer::Player], [GameLayer::Default, GameLayer::Sensor]),
+            Transform::from_xyz(0.0, 1.0, 0.0),
             Player,
             PlayerInput,
         ))
