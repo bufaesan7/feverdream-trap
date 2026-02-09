@@ -56,10 +56,18 @@ impl LevelComponent3d {
             }
         };
 
+        let collider = match mesh_type {
+            LevelComponent3d::Plane { size } => Collider::cuboid(size.x, 0.1, size.y),
+            LevelComponent3d::Cube { length, .. } => Collider::cuboid(length, length, length),
+        };
+
         let mut commands = world.commands();
-        commands
-            .entity(hook.entity)
-            .insert((Mesh3d(mesh), MeshMaterial3d(material)));
+        commands.entity(hook.entity).insert((
+            RigidBody::Static,
+            collider,
+            Mesh3d(mesh),
+            MeshMaterial3d(material),
+        ));
     }
 }
 

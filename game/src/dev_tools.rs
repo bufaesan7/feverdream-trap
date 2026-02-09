@@ -33,7 +33,10 @@ pub(super) fn plugin(app: &mut App) {
             aabb_color: Some(Color::WHITE),
             ..default()
         },
-        GizmoConfig::default(),
+        GizmoConfig {
+            enabled: false,
+            ..default()
+        },
     );
 
     // Log `Screen` state transitions.

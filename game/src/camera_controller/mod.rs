@@ -2,7 +2,6 @@ use bevy::window::{CursorGrabMode, CursorOptions};
 
 use crate::prelude::*;
 
-mod rotate;
 mod setup;
 
 pub use setup::spawn_camera;
@@ -15,8 +14,7 @@ impl Plugin for CameraControllerPlugin {
             sensivity: Vec2::splat(0.001),
         });
         app.add_systems(OnEnter(Screen::Gameplay), cursor_grab)
-            .add_systems(OnExit(Screen::Gameplay), cursor_ungrab)
-            .add_systems(Update, rotate::rotate_camera.in_set(PausableSystems));
+            .add_systems(OnExit(Screen::Gameplay), cursor_ungrab);
     }
 }
 
