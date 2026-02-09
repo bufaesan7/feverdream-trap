@@ -7,18 +7,14 @@ authors.workspace = true
 [features]
 # Default to a native dev build.
 default = ["dev_native"]
-dev = [
-    "dep:bevy-inspector-egui",
-    "avian3d/diagnostic_ui",
-]
-dev_native = [
-    "dev",
-]
+dev = ["dep:bevy_egui", "dep:bevy-inspector-egui", "avian3d/diagnostic_ui"]
+dev_native = ["dev"]
 
 [dependencies]
 bevy.workspace = true
 avian3d.workspace = true
 
+bevy_egui = { workspace = true, optional = true }
 bevy-inspector-egui = { workspace = true, optional = true }
 
 

@@ -5,7 +5,11 @@ resolver = "3"
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
-authors = ["faervan <faervan@proton.me>", "KirmesBude <kirmesbude@gmail.com>", "angauber"]
+authors = [
+  "faervan <faervan@proton.me>",
+  "KirmesBude <kirmesbude@gmail.com>",
+  "angauber",
+]
 
 [workspace.dependencies]
 feverdream_trap_core.path = "core"
@@ -26,6 +30,7 @@ avian3d = { version = "0.6.0-rc.1", default-features = false, features = [
 ] }
 
 # Dev dependencies
+bevy_egui.version = "0.39"
 bevy-inspector-egui.version = "0.36"
 bevy_skein.version = "0.5"
 
@@ -38,11 +43,11 @@ rand = "0.9"
 # Remove these features if you want to profile your game with tracy.
 # (see <https://github.com/bevyengine/bevy/blob/main/docs/profiling.md#tracy-profiler>)
 tracing = { version = "0.1", features = [
-    "max_level_debug",
-    "release_max_level_warn",
+  "max_level_debug",
+  "release_max_level_warn",
 ] }
 getrandom = { version = "0.3", default-features = false, features = [
-    "wasm_js",
+  "wasm_js",
 ] }
 
 

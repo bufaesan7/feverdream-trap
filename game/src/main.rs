@@ -36,6 +36,7 @@ impl Plugin for AppPlugin {
             DefaultPlugins.set(asset_plugin()).set(WindowPlugin {
                 primary_window: Window {
                     title: "Feverdream Trap".to_string(),
+                    name: Some("feverdream_trap".to_string()),
                     fit_canvas_to_parent: true,
                     ..default()
                 }
