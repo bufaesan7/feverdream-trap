@@ -138,6 +138,7 @@ pub fn spawn_level(mut commands: Commands) {
         Transform::default(),
         Visibility::Visible,
         DespawnOnExit(Screen::Gameplay),
+        LevelComponent,
         LevelComponent3d::Plane {
             size: Vec2::splat(10.),
         },
@@ -148,6 +149,7 @@ pub fn spawn_level(mut commands: Commands) {
         Transform::from_xyz(0., 0., -20.),
         Visibility::Visible,
         DespawnOnExit(Screen::Gameplay),
+        LevelComponent,
         LevelComponent3d::Cube {
             length: 3.,
             color: bevy::color::palettes::css::BLUE.into(),

@@ -72,6 +72,8 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             .allow_component::<Visibility>()
             .allow_component::<CameraMarker>()
             .allow_component::<CharacterController>()
+            .allow_component::<Children>()
+            .allow_component::<ChildOf>()
             .extract_entities(query.iter())
             .build()
     };
@@ -100,15 +102,13 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
         .detach();
 }
 
-fn spawn_scene(mut commands: Commands, game_scene: Res<GameSceneStorage>) {
+fn spawn_scene(mut spawner: ResMut<SceneSpawner>, game_scene: Res<GameSceneStorage>) {
     let handle = if let Some(handle) = &game_scene.handle {
         handle.clone()
     } else {
         game_scene.scene.clone().unwrap()
     };
-    commands.spawn((
-        Name::new("Game Scene"),
-        DynamicSceneRoot(handle),
-        DespawnOnExit(Screen::Gameplay),
-    ));
+    // This will sometimes trigger a `B0004` warning, that's a bevy bug:
+    // https://github.com/bevyengine/bevy/pull/22675
+    spawner.spawn_dynamic(handle);
 }
