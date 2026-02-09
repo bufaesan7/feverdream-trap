@@ -1,3 +1,5 @@
+use bevy::ecs::{lifecycle::HookContext, world::DeferredWorld};
+
 use crate::prelude::*;
 
 // TODO: made redundant by asset loading
@@ -9,21 +11,76 @@ const LEVEL_GROUND_Y: f32 = -LEVEL_SIZE / 2.0;
 /// Marker component for the level entity
 #[derive(Debug, Default, Component, Reflect)]
 #[reflect(Component)]
-struct Level;
+#[require(LevelComponent)]
+pub struct Level;
+
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
+#[require(DespawnOnExit<Screen> = DespawnOnExit(Screen::Gameplay))]
+/// Marker component for each [`Entity`] that is part of the level scene
+pub struct LevelComponent;
+
+#[derive(Component, Reflect, Debug, Clone)]
+#[reflect(Component)]
+#[require(LevelComponent)]
+#[component(on_add)]
+/// Abstract [`Mesh3d`] and [`MeshMaterial3d`] insertion to avoid inserting them in the
+/// [`DynamicScene`] storage.
+pub enum LevelComponent3d {
+    Plane { size: Vec2 },
+    Cube { length: f32, color: Color },
+}
+
+impl LevelComponent3d {
+    fn on_add<'a>(mut world: DeferredWorld<'a>, hook: HookContext) {
+        if !world.contains_resource::<Assets<Mesh>>()
+            || !world.contains_resource::<Assets<StandardMaterial>>()
+        {
+            // Skip this hook when we're constructing a [`DynamicScene`]
+            return;
+        }
+
+        let mesh_type = world.get::<LevelComponent3d>(hook.entity).unwrap().clone();
+
+        let mut meshes: Mut<Assets<Mesh>> = world.resource_mut();
+        let mesh = match mesh_type {
+            LevelComponent3d::Plane { size } => meshes.add(Plane3d::new(Vec3::Y, size)),
+            LevelComponent3d::Cube { length, .. } => meshes.add(Cuboid::from_length(length)),
+        };
+
+        let mut materials: Mut<Assets<StandardMaterial>> = world.resource_mut();
+        let material = match mesh_type {
+            LevelComponent3d::Plane { .. } => {
+                materials.add(StandardMaterial::from_color(Color::WHITE))
+            }
+            LevelComponent3d::Cube { color, .. } => {
+                materials.add(StandardMaterial::from_color(color))
+            }
+        };
+
+        let collider = match mesh_type {
+            LevelComponent3d::Plane { size } => Collider::cuboid(size.x * 2., 0.1, size.y * 2.),
+            LevelComponent3d::Cube { length, .. } => Collider::cuboid(length, length, length),
+        };
+
+        let mut commands = world.commands();
+        commands.entity(hook.entity).insert((
+            RigidBody::Static,
+            collider,
+            Mesh3d(mesh),
+            MeshMaterial3d(material),
+        ));
+    }
+}
 
 /// Spawns a very simple level; no input at this moment
-pub fn spawn_level(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
+pub fn spawn_level(mut commands: Commands) {
     let level = commands
         .spawn((
             Name::new("Level"),
             Level,
             Transform::default(),
             Visibility::default(),
-            DespawnOnExit(Screen::Gameplay),
         ))
         .id();
 
@@ -36,10 +93,9 @@ pub fn spawn_level(
                     Name::new("Ground"),
                     position_to_transform(x, LEVEL_GROUND_Y, z),
                     Visibility::default(),
-                    RigidBody::Static,
-                    Collider::cuboid(LEVEL_SIZE, 0.1, LEVEL_SIZE),
-                    Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::splat(LEVEL_SIZE / 2.0)))),
-                    MeshMaterial3d(materials.add(StandardMaterial::from_color(Color::WHITE))),
+                    LevelComponent3d::Plane {
+                        size: Vec2::splat(LEVEL_SIZE / 2.),
+                    },
                 ))
                 .id();
 
@@ -55,10 +111,10 @@ pub fn spawn_level(
                     Name::new("Wall"),
                     position_to_transform(x, 0.0, z),
                     Visibility::default(),
-                    RigidBody::Static,
-                    Collider::cuboid(LEVEL_SIZE, LEVEL_SIZE, LEVEL_SIZE),
-                    Mesh3d(meshes.add(Cuboid::from_length(LEVEL_SIZE))),
-                    MeshMaterial3d(materials.add(StandardMaterial::from_color(Color::BLACK))),
+                    LevelComponent3d::Cube {
+                        length: LEVEL_SIZE,
+                        color: Color::BLACK,
+                    },
                 ))
                 .id();
 
@@ -72,10 +128,10 @@ pub fn spawn_level(
                     Name::new("Wall"),
                     position_to_transform(x, 0.0, z),
                     Visibility::default(),
-                    RigidBody::Static,
-                    Collider::cuboid(LEVEL_SIZE, LEVEL_SIZE, LEVEL_SIZE),
-                    Mesh3d(meshes.add(Cuboid::from_length(LEVEL_SIZE))),
-                    MeshMaterial3d(materials.add(StandardMaterial::from_color(Color::BLACK))),
+                    LevelComponent3d::Cube {
+                        length: LEVEL_SIZE,
+                        color: Color::BLACK,
+                    },
                 ))
                 .id();
 
@@ -87,20 +143,19 @@ pub fn spawn_level(
         Name::new("Plane"),
         Transform::default(),
         Visibility::Visible,
-        DespawnOnExit(Screen::Gameplay),
-        Mesh3d(meshes.add(Plane3d::new(Vec3::X, Vec2::splat(10.)))),
-        MeshMaterial3d(materials.add(StandardMaterial::from_color(Color::BLACK))),
+        LevelComponent3d::Plane {
+            size: Vec2::splat(10.),
+        },
     ));
 
     commands.spawn((
         Name::new("Cube"),
         Transform::from_xyz(0., 0., -20.),
         Visibility::Visible,
-        DespawnOnExit(Screen::Gameplay),
-        Mesh3d(meshes.add(Cuboid::new(3., 3., 3.))),
-        MeshMaterial3d(materials.add(StandardMaterial::from_color(
-            bevy::color::palettes::css::BLUE,
-        ))),
+        LevelComponent3d::Cube {
+            length: 3.,
+            color: bevy::color::palettes::css::BLUE.into(),
+        },
     ));
 }
 

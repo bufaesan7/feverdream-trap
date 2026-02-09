@@ -1,7 +1,12 @@
 # Rust builds
 /target
+
+# Game save
+assets/game_state.scn.ron
+
 # This file contains environment-specific configuration like linker settings
 .cargo/config.toml
+
 # Nightly toolchain
 rust-toolchain.toml
 justfile

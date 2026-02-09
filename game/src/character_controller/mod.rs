@@ -2,7 +2,11 @@ use bevy::ecs::{lifecycle::HookContext, world::DeferredWorld};
 use bevy_ahoy::prelude::*;
 use bevy_enhanced_input::prelude::*;
 
-use crate::{camera_controller::CameraMarker, prelude::*};
+use crate::{
+    camera_controller::{CameraMarker, CameraTargetCharacterController},
+    level::LevelComponent,
+    prelude::*,
+};
 
 pub struct CharacterControllerPlugin;
 
@@ -24,14 +28,15 @@ impl Plugin for CharacterControllerPlugin {
 /// This is a marker component for the Player
 #[derive(Debug, Default, Component, Reflect)]
 #[reflect(Component)]
-struct Player;
+#[require(LevelComponent)]
+pub struct Player;
 
 /// This marker component is registered with bevy_ahoy/bevy_enhanced_input
 /// to drive the input->movement.
 #[derive(Debug, Default, Component, Reflect)]
 #[reflect(Component)]
-#[component(on_add = PlayerInput::on_add)]
-struct PlayerInput;
+#[component(on_add)]
+pub struct PlayerInput;
 
 impl PlayerInput {
     fn on_add(mut world: DeferredWorld, ctx: HookContext) {
@@ -76,7 +81,7 @@ pub fn spawn_player(mut commands: Commands, camera: Single<Entity, With<CameraMa
     // Spawn the camera
     commands
         .entity(*camera)
-        .insert(CharacterControllerCameraOf::new(player));
+        .insert(CameraTargetCharacterController(player));
 }
 
 // PlayerInput needs to be removed if Screen::Gameplay + (Event)Menu::Pause
