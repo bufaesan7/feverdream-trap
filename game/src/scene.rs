@@ -95,22 +95,24 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
         scene: None,
     });
 
-    let type_registry = world.resource::<AppTypeRegistry>();
-    let type_registry = type_registry.read();
-    let serialized_scene = scene().serialize(&type_registry).unwrap();
-
     // This can't work in WASM as there is no filesystem access.
     #[cfg(not(target_arch = "wasm32"))]
-    IoTaskPool::get()
-        .spawn(async move {
-            // Write the scene RON data to file
+    {
+        let type_registry = world.resource::<AppTypeRegistry>();
+        let type_registry = type_registry.read();
+        let serialized_scene = scene().serialize(&type_registry).unwrap();
 
-            use std::{fs::File, io::Write as _};
-            File::create(SCENE_FILE_PATH)
-                .and_then(|mut file| file.write(serialized_scene.as_bytes()))
-                .expect("Error while writing scene to file");
-        })
-        .detach();
+        IoTaskPool::get()
+            .spawn(async move {
+                // Write the scene RON data to file
+
+                use std::{fs::File, io::Write as _};
+                File::create(SCENE_FILE_PATH)
+                    .and_then(|mut file| file.write(serialized_scene.as_bytes()))
+                    .expect("Error while writing scene to file");
+            })
+            .detach();
+    }
 }
 
 fn spawn_scene(mut spawner: ResMut<SceneSpawner>, game_scene: Res<GameSceneStorage>) {

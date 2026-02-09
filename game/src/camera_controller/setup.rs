@@ -1,4 +1,3 @@
-use crate::level::LevelComponent;
 use crate::prelude::*;
 
 use crate::camera_controller::CameraMarker;
@@ -9,6 +8,5 @@ pub fn spawn_camera(mut commands: Commands) {
         Transform::default(),
         Visibility::Visible,
         CameraMarker,
-        LevelComponent,
     ));
 }

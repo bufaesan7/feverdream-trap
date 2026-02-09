@@ -11,9 +11,10 @@ const LEVEL_GROUND_Y: f32 = -LEVEL_SIZE / 2.0;
 /// Marker component for the level entity
 #[derive(Debug, Default, Component, Reflect)]
 #[reflect(Component)]
+#[require(LevelComponent)]
 pub struct Level;
 
-#[derive(Component, Reflect)]
+#[derive(Component, Reflect, Default)]
 #[reflect(Component)]
 #[require(DespawnOnExit<Screen> = DespawnOnExit(Screen::Gameplay))]
 /// Marker component for each [`Entity`] that is part of the level scene
@@ -21,6 +22,7 @@ pub struct LevelComponent;
 
 #[derive(Component, Reflect, Debug, Clone)]
 #[reflect(Component)]
+#[require(LevelComponent)]
 #[component(on_add)]
 /// Abstract [`Mesh3d`] and [`MeshMaterial3d`] insertion to avoid inserting them in the
 /// [`DynamicScene`] storage.
@@ -77,7 +79,6 @@ pub fn spawn_level(mut commands: Commands) {
         .spawn((
             Name::new("Level"),
             Level,
-            LevelComponent,
             Transform::default(),
             Visibility::default(),
         ))
@@ -92,7 +93,6 @@ pub fn spawn_level(mut commands: Commands) {
                     Name::new("Ground"),
                     position_to_transform(x, LEVEL_GROUND_Y, z),
                     Visibility::default(),
-                    LevelComponent,
                     LevelComponent3d::Plane {
                         size: Vec2::splat(LEVEL_SIZE / 2.),
                     },
@@ -111,7 +111,6 @@ pub fn spawn_level(mut commands: Commands) {
                     Name::new("Wall"),
                     position_to_transform(x, 0.0, z),
                     Visibility::default(),
-                    LevelComponent,
                     LevelComponent3d::Cube {
                         length: LEVEL_SIZE,
                         color: Color::BLACK,
@@ -129,7 +128,6 @@ pub fn spawn_level(mut commands: Commands) {
                     Name::new("Wall"),
                     position_to_transform(x, 0.0, z),
                     Visibility::default(),
-                    LevelComponent,
                     LevelComponent3d::Cube {
                         length: LEVEL_SIZE,
                         color: Color::BLACK,
@@ -145,8 +143,6 @@ pub fn spawn_level(mut commands: Commands) {
         Name::new("Plane"),
         Transform::default(),
         Visibility::Visible,
-        DespawnOnExit(Screen::Gameplay),
-        LevelComponent,
         LevelComponent3d::Plane {
             size: Vec2::splat(10.),
         },
@@ -156,8 +152,6 @@ pub fn spawn_level(mut commands: Commands) {
         Name::new("Cube"),
         Transform::from_xyz(0., 0., -20.),
         Visibility::Visible,
-        DespawnOnExit(Screen::Gameplay),
-        LevelComponent,
         LevelComponent3d::Cube {
             length: 3.,
             color: bevy::color::palettes::css::BLUE.into(),

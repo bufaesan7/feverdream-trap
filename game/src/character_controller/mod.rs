@@ -28,6 +28,7 @@ impl Plugin for CharacterControllerPlugin {
 /// This is a marker component for the Player
 #[derive(Debug, Default, Component, Reflect)]
 #[reflect(Component)]
+#[require(LevelComponent)]
 pub struct Player;
 
 /// This marker component is registered with bevy_ahoy/bevy_enhanced_input
@@ -74,7 +75,6 @@ pub fn spawn_player(mut commands: Commands, camera: Single<Entity, With<CameraMa
             Transform::from_xyz(0.0, 20.0, 0.0),
             Player,
             PlayerInput,
-            LevelComponent,
         ))
         .id();
 

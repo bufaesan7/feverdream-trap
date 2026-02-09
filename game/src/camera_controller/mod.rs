@@ -32,6 +32,7 @@ struct CameraSettings {
 #[reflect(Component)]
 #[require(
     Camera3d::default(),
+    LevelComponent,
     PrimaryEguiContext = PrimaryEguiContext,
     DistanceFog {
         color: Color::srgb(0.25, 0.25, 0.25),
