@@ -6,7 +6,9 @@ use crate::{
 };
 
 pub(super) fn plugin(app: &mut App) {
-    app.init_asset::<ChunkLayout>()
+    app.init_asset::<ChunkElement>()
+        .init_asset::<ChunkDescriptor>()
+        .init_asset::<ChunkLayout>()
         .register_asset_loader(RonAssetLoader::<ChunkElementAsset>::new())
         .register_asset_loader(RonAssetLoader::<ChunkDescriptorAsset>::new())
         .register_asset_loader(RonAssetLoader::<ChunkLayoutAsset>::new())
@@ -65,6 +67,7 @@ impl RonAsset for ChunkElementAsset {
 
 #[derive(Asset, TypePath, Debug, Deserialize)]
 pub struct ChunkDescriptorAsset {
+    pub name: String,
     pub elements: Vec<String>,
 }
 
