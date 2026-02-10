@@ -16,7 +16,7 @@ feverdream_trap_core.path = "core"
 
 # Bevy & plugins
 bevy = { version = "0.18", default-features = false, features = ["3d"] }
-avian3d = { version = "0.6.0-rc.1", default-features = false, features = [
+avian3d = { version = "0.5.0", default-features = false, features = [
   # Default
   "3d",
   "f32",
