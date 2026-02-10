@@ -40,10 +40,15 @@ pub fn header(text: impl Into<String>) -> impl Bundle {
 
 /// A simple text label.
 pub fn label(text: impl Into<String>) -> impl Bundle {
+    label_sized(text, 24.)
+}
+
+/// A simple text label with a custom font size.
+pub fn label_sized(text: impl Into<String>, font_size: f32) -> impl Bundle {
     (
         Name::new("Label"),
         Text(text.into()),
-        TextFont::from_font_size(24.0),
+        TextFont::from_font_size(font_size),
         TextColor(LABEL_TEXT),
     )
 }
@@ -57,6 +62,7 @@ where
 {
     button_base(
         text,
+        40.,
         action,
         Node {
             min_width: px(380),
@@ -77,11 +83,18 @@ where
     B: Bundle,
     I: IntoObserverSystem<E, B, M>,
 {
+    let text = text.into();
+    let font_size = match text.len() {
+        v if v > 1 => 20.,
+        _ => 40.,
+    };
+    let width = text.len() * 12 + 18;
     button_base(
         text,
+        font_size,
         action,
         Node {
-            width: px(30),
+            width: px(width),
             height: px(30),
             align_items: AlignItems::Center,
             justify_content: JustifyContent::Center,
@@ -93,6 +106,7 @@ where
 /// A simple button with text and an action defined as an [`Observer`]. The button's layout is provided by `button_bundle`.
 fn button_base<E, B, M, I>(
     text: impl Into<String>,
+    font_size: f32,
     action: I,
     button_bundle: impl Bundle,
 ) -> impl Bundle
@@ -106,7 +120,7 @@ where
     (
         Name::new("Button"),
         Node::default(),
-        Children::spawn(SpawnWith(|parent: &mut ChildSpawner| {
+        Children::spawn(SpawnWith(move |parent: &mut ChildSpawner| {
             parent
                 .spawn((
                     Name::new("Button Inner"),
@@ -120,7 +134,7 @@ where
                     children![(
                         Name::new("Button Text"),
                         Text(text),
-                        TextFont::from_font_size(40.0),
+                        TextFont::from_font_size(font_size),
                         TextColor(BUTTON_TEXT),
                         // Don't bubble picking events from the text up to the button.
                         Pickable::IGNORE,
@@ -129,5 +143,68 @@ where
                 .insert(button_bundle)
                 .observe(action);
         })),
+    )
+}
+
+/// If `left_side` is false, the sidebar will be at the very right instead
+pub fn sidebar(items_top: impl Bundle, items_bottom: impl Bundle, left_side: bool) -> impl Bundle {
+    let mut root_node = Node {
+        width: percent(30),
+        height: percent(100),
+        position_type: PositionType::Absolute,
+        left: Val::ZERO,
+        top: Val::ZERO,
+        ..Default::default()
+    };
+    match left_side {
+        true => root_node.left = Val::ZERO,
+        false => root_node.right = Val::ZERO,
+    }
+    (
+        Name::new("Sidebar"),
+        root_node,
+        Pickable::IGNORE,
+        children![
+            (
+                Node {
+                    width: percent(100),
+                    height: percent(100),
+                    position_type: PositionType::Absolute,
+                    flex_direction: FlexDirection::Column,
+                    justify_content: JustifyContent::Start,
+                    ..Default::default()
+                },
+                Pickable::IGNORE,
+                children![item_collection(items_top)],
+            ),
+            (
+                Node {
+                    width: percent(100),
+                    height: percent(100),
+                    position_type: PositionType::Absolute,
+                    flex_direction: FlexDirection::Column,
+                    justify_content: JustifyContent::End,
+                    ..Default::default()
+                },
+                Pickable::IGNORE,
+                children![item_collection(items_bottom)],
+            )
+        ],
+    )
+}
+
+/// A column of items
+pub fn item_collection(items: impl Bundle) -> impl Bundle {
+    (
+        Name::new("Item collection"),
+        Node {
+            width: percent(100),
+            flex_direction: FlexDirection::Column,
+            row_gap: px(5),
+            padding: UiRect::all(px(10)),
+            ..Default::default()
+        },
+        Pickable::IGNORE,
+        items,
     )
 }
