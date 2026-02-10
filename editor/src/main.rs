@@ -1,4 +1,7 @@
-use feverdream_trap_core::prelude::*;
+use crate::prelude::*;
+
+mod prelude;
+mod screens;
 
 fn main() -> AppExit {
     let mut app = App::new();
@@ -17,18 +20,24 @@ fn main() -> AppExit {
         }),
     );
 
-    app.add_systems(Startup, (spawn_2d_camera, spawn_menu));
+    app.init_state::<EditorState>();
+
+    app.add_plugins((feverdream_trap_core::utility_plugin, screens::plugin));
+
+    app.add_systems(Startup, spawn_2d_camera);
 
     app.run()
 }
 
-fn spawn_2d_camera(mut commands: Commands) {
-    commands.spawn((Name::new("Camera 2D"), Transform::default(), Camera2d));
+#[derive(States, Hash, Clone, Copy, PartialEq, Eq, Debug, Default)]
+#[repr(u32)]
+enum EditorState {
+    #[default]
+    EditorMenu,
+    ChunkEditor,
+    ChunkLayoutEditor,
 }
 
-fn spawn_menu(mut commands: Commands) {
-    commands.spawn((
-        widget::ui_root("Editor menu"),
-        children![widget::label("Editor")],
-    ));
+fn spawn_2d_camera(mut commands: Commands) {
+    commands.spawn((Name::new("Camera 2D"), Transform::default(), Camera2d));
 }
