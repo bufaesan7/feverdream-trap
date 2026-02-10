@@ -21,6 +21,7 @@ pub fn spawn_player(mut commands: Commands, camera: Single<Entity, With<CameraMa
     // Spawn the player entity
     commands
         .spawn((
+            Name::new("Player"),
             Collider::cylinder(0.7, 1.8),
             RigidBody::Kinematic,
             Transform::from_xyz(0.0, 0.0, 0.0),
@@ -37,22 +38,24 @@ pub struct CharacterController;
 
 fn character_control(
     keys: Res<ButtonInput<KeyCode>>,
-    mut velocities: Query<&mut LinearVelocity, With<CharacterController>>,
+    mut velocities: Query<(&mut LinearVelocity, &Transform), With<CharacterController>>,
 ) {
-    for mut velocity in &mut velocities {
+    for (mut velocity, transform) in &mut velocities {
         let mut direction = Vec3::ZERO;
+        let forward = -transform.local_z().with_y(0.0);
+        let right = transform.local_x().with_y(0.0);
 
         if keys.pressed(KeyCode::KeyW) {
-            direction.z -= 1.0;
+            direction += forward;
         }
         if keys.pressed(KeyCode::KeyA) {
-            direction.x -= 1.0;
+            direction -= right;
         }
         if keys.pressed(KeyCode::KeyS) {
-            direction.z += 1.0;
+            direction -= forward;
         }
         if keys.pressed(KeyCode::KeyD) {
-            direction.x += 1.0;
+            direction += right;
         }
 
         velocity.0 = direction.normalize_or_zero() * CHARACTER_VELOCITY;
