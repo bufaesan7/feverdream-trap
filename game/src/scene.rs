@@ -1,7 +1,6 @@
 use bevy::scene::SceneInstanceReady;
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::tasks::IoTaskPool;
-use bevy_ahoy::CharacterController;
 
 use crate::chunk::{Chunk, ChunkCullingEntity, ReplaceableChunk};
 use crate::level::LevelCollider;
