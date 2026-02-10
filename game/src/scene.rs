@@ -4,7 +4,7 @@ use bevy::tasks::IoTaskPool;
 
 use crate::{
     camera_controller::{CameraMarker, spawn_camera},
-    character_controller::{Player, spawn_player},
+    character_controller::{CharacterController, Player, spawn_player},
     level::{Level, LevelComponent, LevelComponent3d, spawn_level},
     prelude::*,
 };
@@ -82,6 +82,7 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             .allow_component::<Collider>()
             .allow_component::<Children>()
             .allow_component::<ChildOf>()
+            .allow_component::<CharacterController>()
             .extract_entities(query.iter())
             .build()
     };
