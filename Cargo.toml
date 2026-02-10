@@ -15,7 +15,10 @@ authors = [
 feverdream_trap_core.path = "core"
 
 # Bevy & plugins
-bevy = { version = "0.18", default-features = false, features = ["3d"] }
+bevy = { version = "0.18", default-features = false, features = [
+  "3d",
+  "serialize",
+] }
 avian3d = { version = "0.6.0-rc.1", default-features = false, features = [
   # Default
   "3d",
