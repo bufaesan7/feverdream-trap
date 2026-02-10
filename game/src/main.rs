@@ -9,6 +9,7 @@ mod camera_controller;
 mod character_controller;
 #[cfg(feature = "dev")]
 mod dev_tools;
+mod focus;
 mod level;
 mod menus;
 mod prelude;
@@ -58,6 +59,7 @@ impl Plugin for AppPlugin {
             screens::plugin,
             scene::plugin,
             theme::plugin,
+            focus::plugin,
         ));
 
         // Custom game plugins

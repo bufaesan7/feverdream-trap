@@ -6,6 +6,7 @@ use bevy_ahoy::CharacterController;
 use crate::{
     camera_controller::{CameraMarker, CameraTargetCharacterController, spawn_camera},
     character_controller::{Player, PlayerInput, spawn_player},
+    focus::Focusable,
     level::{Level, LevelComponent, LevelComponent3d, spawn_level},
     prelude::*,
 };
@@ -86,6 +87,7 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             .allow_component::<Collider>()
             .allow_component::<Children>()
             .allow_component::<ChildOf>()
+            .allow_component::<Focusable>()
             .extract_entities(query.iter())
             .build()
     };

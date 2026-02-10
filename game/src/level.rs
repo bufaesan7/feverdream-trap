@@ -1,6 +1,6 @@
 use bevy::ecs::{lifecycle::HookContext, world::DeferredWorld};
 
-use crate::prelude::*;
+use crate::{focus::Focusable, prelude::*};
 
 // TODO: made redundant by asset loading
 const LEVEL_WIDTH: i32 = 20;
@@ -156,6 +156,7 @@ pub fn spawn_level(mut commands: Commands) {
             length: 3.,
             color: bevy::color::palettes::css::BLUE.into(),
         },
+        Focusable::default(),
     ));
 }
 
