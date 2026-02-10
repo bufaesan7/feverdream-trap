@@ -1,10 +1,5 @@
-use bevy::{
-    ecs::{lifecycle::HookContext, world::DeferredWorld},
-    window::{CursorGrabMode, CursorOptions},
-};
-use bevy_ahoy::camera::CharacterControllerCameraOf;
-
 use crate::prelude::*;
+use bevy::window::{CursorGrabMode, CursorOptions};
 
 mod setup;
 
@@ -44,34 +39,6 @@ struct CameraSettings {
     },
 )]
 pub struct CameraMarker;
-
-#[derive(Component, Reflect)]
-#[reflect(Component)]
-#[component(on_add)]
-#[relationship(relationship_target = CharacterControllerCameraTarget)]
-/// Needed because [`CharacterControllerCameraOf`] does not implement [`Reflect`]
-/// This component on the camera points to the player
-pub struct CameraTargetCharacterController(pub Entity);
-
-#[derive(Component, Reflect)]
-#[reflect(Component)]
-#[relationship_target(relationship = CameraTargetCharacterController)]
-/// Component on the player marking it as the target of the camera
-pub struct CharacterControllerCameraTarget(Vec<Entity>);
-
-impl CameraTargetCharacterController {
-    fn on_add<'a>(mut world: DeferredWorld<'a>, hook: HookContext) {
-        let target = world
-            .get::<CameraTargetCharacterController>(hook.entity)
-            .unwrap()
-            .0;
-
-        world
-            .commands()
-            .entity(hook.entity)
-            .insert(CharacterControllerCameraOf::new(target));
-    }
-}
 
 pub fn cursor_grab(mut cursor_options: Single<&mut CursorOptions>) {
     cursor_options.visible = false;
