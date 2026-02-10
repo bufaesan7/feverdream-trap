@@ -1,6 +1,5 @@
 //! The main menu (seen on the title screen).
 
-use crate::asset_tracking::ResourceHandles;
 use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
