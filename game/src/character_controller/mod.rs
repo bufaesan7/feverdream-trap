@@ -58,6 +58,9 @@ fn character_control(
             direction += right;
         }
 
-        velocity.0 = direction.normalize_or_zero() * CHARACTER_VELOCITY;
+        direction = direction.normalize_or_zero() * CHARACTER_VELOCITY;
+
+        velocity.0.x = direction.x;
+        velocity.0.z = direction.z;
     }
 }
