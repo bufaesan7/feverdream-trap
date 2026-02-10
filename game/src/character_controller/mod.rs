@@ -4,7 +4,6 @@ use bevy_enhanced_input::prelude::*;
 
 use crate::{
     camera_controller::{CameraMarker, CameraTargetCharacterController},
-    level::LevelComponent,
     prelude::*,
 };
 
@@ -28,7 +27,16 @@ impl Plugin for CharacterControllerPlugin {
 /// This is a marker component for the Player
 #[derive(Debug, Default, Component, Reflect)]
 #[reflect(Component)]
-#[require(LevelComponent)]
+#[require(
+    LevelComponent,
+    // The character controller configuration
+    CharacterController::default(),
+    // The KCC currently behaves best when using a cylinder
+    Collider::cylinder(0.7, 1.8),
+    CollisionLayers::new([GameLayer::Player], [GameLayer::Default, GameLayer::Sensor]),
+    // Having this be a normal collider will conflict with ahoy and result in buggy movement
+    Sensor
+)]
 pub struct Player;
 
 /// This marker component is registered with bevy_ahoy/bevy_enhanced_input
@@ -78,11 +86,6 @@ pub fn spawn_player(mut commands: Commands, camera: Single<Entity, With<CameraMa
     let player = commands
         .spawn((
             Name::new("Player"),
-            // The character controller configuration
-            CharacterController::default(),
-            // The KCC currently behaves best when using a cylinder
-            Collider::cylinder(0.7, 1.8),
-            CollisionLayers::new([GameLayer::Player], [GameLayer::Default, GameLayer::Sensor]),
             Transform::from_xyz(0.0, 1.0, 0.0),
             Player,
             PlayerInput,

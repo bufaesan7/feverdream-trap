@@ -136,6 +136,7 @@ pub fn spawn_level(mut commands: Commands) {
                     Chunk,
                     transform,
                     LevelCollider::Cube { length: TILE_SIZE },
+                    RigidBody::Static,
                     Sensor,
                     CollisionEventsEnabled,
                     CollisionLayers::new([GameLayer::Sensor], [GameLayer::Player]),

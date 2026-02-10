@@ -84,7 +84,6 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             .allow_component::<Visibility>()
             .allow_component::<CameraMarker>()
             .allow_component::<CameraTargetCharacterController>()
-            .allow_component::<CharacterController>()
             .allow_component::<Player>()
             .allow_component::<PlayerInput>()
             // Physics

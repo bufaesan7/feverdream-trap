@@ -37,7 +37,7 @@ impl Plugin for ChunkPlugin {
         app.init_resource::<LastFocusedChunk>()
             // .init_resource::<PlayerChunk>()
             .add_observer(on_swap_chunks)
-            .add_systems(Update, print_started_collisions)
+            .add_systems(FixedUpdate, print_started_collisions)
             .add_systems(
                 Update,
                 (update_chunk_focus, swap_chunks_on_chunk_focus).chain(),
