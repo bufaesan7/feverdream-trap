@@ -17,6 +17,10 @@ avian3d.workspace = true
 bevy_egui = { workspace = true, optional = true }
 bevy-inspector-egui = { workspace = true, optional = true }
 
+thiserror.workspace = true
+ron.workspace = true
+serde.workspace = true
+
 
 [package.metadata.bevy_cli.release]
 # Disable dev features for release builds.
