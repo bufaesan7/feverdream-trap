@@ -1,120 +1,115 @@
-use crate::character_controller::GameLayer;
+use crate::character_controller::Player;
 use crate::prelude::*;
-
-#[derive(Default, Component, Reflect)]
-#[require(Transform, Visibility, LevelComponent)]
-#[reflect(Component)]
-pub struct Chunk;
-
-#[derive(Component, Reflect)]
-#[require(Chunk)]
-#[reflect(Component)]
-pub struct ReplaceableChunk;
-
-#[derive(Debug, Event)]
-pub struct SwapChunks(Entity, Entity);
-
-#[derive(Component, Reflect)]
-#[require(LevelComponent)]
-#[reflect(Component)]
-pub struct ChunkCullingEntity;
-
-#[derive(Component)]
-#[require(Chunk)]
-pub struct ChunkFocused;
-
-#[derive(Resource, Default)]
-pub struct LastFocusedChunk(pub Option<Entity>);
-
-// /// the chunk the player is currently in
-// #[derive(Resource, Default)]
-// pub struct PlayerChunk(pub Option<Entity>);
-
-pub struct ChunkPlugin;
+use std::mem::swap;
 
 impl Plugin for ChunkPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<LastFocusedChunk>()
-            // .init_resource::<PlayerChunk>()
+        app.init_resource::<PlayerChunk>()
+            .add_observer(on_player_entered_chunk)
             .add_observer(on_swap_chunks)
-            .add_systems(FixedUpdate, print_started_collisions)
-            .add_systems(
-                Update,
-                (update_chunk_focus, swap_chunks_on_chunk_focus).chain(),
-            );
+            .add_systems(PreUpdate, swap_chunks_on_contact_with_sensor);
     }
 }
 
-fn print_started_collisions(mut collision_reader: MessageReader<CollisionStart>) {
-    for event in collision_reader.read() {
-        info!(
-            "{} and {} started colliding",
-            event.collider1, event.collider2
-        );
-    }
-}
+#[derive(Default, Component, Reflect)]
+#[require(Transform, Visibility, Sensor, LevelComponent)]
+#[reflect(Component)]
+pub struct Chunk;
 
-fn update_chunk_focus(
-    mut commands: Commands,
-    camera_transform: Single<&GlobalTransform, With<Camera>>,
-    spatial_query: SpatialQuery,
-    culling_entities: Query<&ChildOf, With<ChunkCullingEntity>>,
-    replaceable_chunks: Query<Entity, With<ReplaceableChunk>>,
-    focused_chunks: Query<Entity, With<ChunkFocused>>,
-    mut last_focused: ResMut<LastFocusedChunk>,
+#[derive(Default, Component, Reflect, Debug, Copy, Clone)]
+#[require(Chunk)]
+#[reflect(Component)]
+pub struct ChunkId(pub u32);
+
+#[derive(Component, Reflect)]
+#[require(Chunk)]
+#[reflect(Component)]
+pub struct SwappableChunk;
+
+/// swaps the two associated chunks on player entrance
+#[derive(Component, Reflect)]
+#[require(Chunk)]
+#[reflect(Component)]
+pub struct SwapSensorChunk(pub ChunkId, pub ChunkId);
+
+#[derive(Debug, Event)]
+pub struct SwapChunks(pub ChunkId, pub ChunkId);
+
+/// the Chunk the player is currently in
+#[derive(Resource, Default)]
+pub struct PlayerChunk(pub Option<Entity>);
+
+pub struct ChunkPlugin;
+
+pub fn on_player_entered_chunk(
+    event: On<CollisionStart>,
+    player_query: Query<&Player>,
+    chunk_query: Query<&ChunkId>,
+    mut player_chunk: ResMut<PlayerChunk>,
 ) {
-    let ray_pos = camera_transform.translation();
-    let ray_dir = camera_transform.forward();
+    let chunk = event.collider1;
+    let player = event.collider2;
 
-    if let Some(hit) = spatial_query.cast_ray(
-        ray_pos,
-        ray_dir,
-        100.0,
-        true,
-        &SpatialQueryFilter::default().with_mask(GameLayer::default()),
-    ) && let Ok(ChildOf(chunk)) = culling_entities.get(hit.entity)
-        && replaceable_chunks.contains(*chunk)
-    {
-        // If not already focused
-        if !focused_chunks.contains(*chunk) {
-            commands.entity(*chunk).insert(ChunkFocused);
-            info!("Chunk {:?} gained focus", *chunk);
-        }
+    if !player_query.contains(player) {
         return;
     }
 
-    // If no hit or not a culling entity, clear focus
-    for old_focused in focused_chunks.iter() {
-        commands.entity(old_focused).remove::<ChunkFocused>();
-        info!("Chunk {:?} lost focus", old_focused);
-        last_focused.0 = Some(old_focused);
+    let Ok(ChunkId(chunk_id)) = chunk_query.get(chunk) else {
+        return;
+    };
+
+    info!("Player {player} entered chunk {chunk_id}");
+
+    player_chunk.0 = Some(chunk);
+}
+
+fn on_swap_chunks(
+    event: On<SwapChunks>,
+    mut chunk_transform_query: Query<(&ChunkId, &mut Transform), With<SwappableChunk>>,
+) {
+    let SwapChunks(ChunkId(chunk_a), ChunkId(chunk_b)) = *event;
+
+    // retrieve the chunk entities from their id
+
+    info!(
+        "chunk_transform: {:?} ",
+        chunk_transform_query.iter().collect::<Vec<_>>()
+    );
+
+    println!("Swapping chunk {:?} with {:?}", chunk_a, chunk_b);
+
+    let mut chunk_transforms =
+        chunk_transform_query
+            .iter_mut()
+            .filter_map(|(ChunkId(id), transform)| match *id {
+                a if [chunk_a, chunk_b].contains(&a) => Some(transform),
+                _ => None,
+            });
+
+    let (chunk_a_transform, chunk_b_transform) = (chunk_transforms.next(), chunk_transforms.next());
+
+    info!("chunk_a_transform: {:?}", chunk_a_transform);
+    info!("chunk_b_transform: {:?}", chunk_b_transform);
+
+    if let (Some(mut transform_a), Some(mut transform_b)) = (chunk_a_transform, chunk_b_transform) {
+        swap(&mut transform_a.translation, &mut transform_b.translation);
+        info!("Swapped chunk {:?} with {:?}", chunk_a, chunk_b);
     }
 }
 
-fn on_swap_chunks(event: On<SwapChunks>, mut chunk_query: Query<&mut Transform, With<Chunk>>) {
-    let SwapChunks(chunk_a, chunk_b) = *event;
-
-    let Ok([mut transform_a, mut transform_b]) = chunk_query.get_many_mut([chunk_a, chunk_b])
+fn swap_chunks_on_contact_with_sensor(
+    mut commands: Commands,
+    player_chunk: Res<PlayerChunk>,
+    sensors_query: Query<(&SwapSensorChunk, &ChunkId)>,
+) {
+    let Some(chunk) = player_chunk.0 else { return };
+    let Ok((SwapSensorChunk(chunk_a, chunk_b), ChunkId(chunk_id))) = sensors_query.get(chunk)
     else {
         return;
     };
 
-    std::mem::swap(&mut transform_a.translation, &mut transform_b.translation);
-    info!("Swapped chunk {:?} with {:?}", chunk_a, chunk_b);
-}
+    info!("Player triggered chunk swaps by entering sensor chunk {chunk_id}");
 
-fn swap_chunks_on_chunk_focus(
-    mut commands: Commands,
-    mut last_focused: ResMut<LastFocusedChunk>,
-    focused_chunks: Query<Entity, Added<ChunkFocused>>,
-) {
-    for new_focused in focused_chunks.iter() {
-        if let Some(last_entity) = last_focused.0
-            && last_entity != new_focused
-        {
-            commands.trigger(SwapChunks(last_entity, new_focused));
-        }
-
-        last_focused.0 = None;
-    }
+    commands.trigger(SwapChunks(*chunk_a, *chunk_b));
+    commands.entity(chunk).remove::<SwapSensorChunk>();
 }

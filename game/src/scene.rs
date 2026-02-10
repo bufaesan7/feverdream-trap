@@ -2,7 +2,7 @@ use bevy::scene::SceneInstanceReady;
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::tasks::IoTaskPool;
 
-use crate::chunk::{Chunk, ChunkCullingEntity, ReplaceableChunk};
+use crate::chunk::{Chunk, ChunkId, SwapSensorChunk, SwappableChunk};
 use crate::level::LevelCollider;
 use crate::{
     camera_controller::{CameraMarker, CameraTargetCharacterController, spawn_camera},
@@ -10,7 +10,6 @@ use crate::{
     level::{Level, LevelComponent, LevelComponent3d, spawn_level},
     prelude::*,
 };
-// use crate::level::LevelCollider;
 
 pub(crate) fn plugin(app: &mut App) {
     app.load_resource::<GameSceneStorage>()
@@ -92,8 +91,9 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             .allow_component::<Sensor>()
             // Chunks
             .allow_component::<Chunk>()
-            .allow_component::<ReplaceableChunk>()
-            .allow_component::<ChunkCullingEntity>()
+            .allow_component::<ChunkId>()
+            .allow_component::<SwappableChunk>()
+            .allow_component::<SwapSensorChunk>()
             // Relationships
             .allow_component::<Children>()
             .allow_component::<ChildOf>()
