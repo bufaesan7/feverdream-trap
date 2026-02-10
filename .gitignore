@@ -4,9 +4,13 @@
 # Game save
 assets/game_state.scn.ron
 
+# IDE Configs
+.idea
+
 # This file contains environment-specific configuration like linker settings
 .cargo/config.toml
 
 # Nightly toolchain
 rust-toolchain.toml
 justfile
+

@@ -1,14 +1,16 @@
 use bevy::scene::SceneInstanceReady;
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::tasks::IoTaskPool;
-use bevy_ahoy::CharacterController;
 
+use crate::chunk::{Chunk, ChunkCullingEntity, ReplaceableChunk};
+use crate::level::LevelCollider;
 use crate::{
     camera_controller::{CameraMarker, CameraTargetCharacterController, spawn_camera},
     character_controller::{Player, PlayerInput, spawn_player},
     level::{Level, LevelComponent, LevelComponent3d, spawn_level},
     prelude::*,
 };
+// use crate::level::LevelCollider;
 
 pub(crate) fn plugin(app: &mut App) {
     app.load_resource::<GameSceneStorage>()
@@ -75,15 +77,24 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             .allow_component::<Name>()
             .allow_component::<Level>()
             .allow_component::<LevelComponent>()
+            .allow_component::<LevelCollider>()
             .allow_component::<LevelComponent3d>()
             .allow_component::<Transform>()
             .allow_component::<Visibility>()
             .allow_component::<CameraMarker>()
             .allow_component::<CameraTargetCharacterController>()
-            .allow_component::<CharacterController>()
             .allow_component::<Player>()
             .allow_component::<PlayerInput>()
+            // Physics
             .allow_component::<Collider>()
+            .allow_component::<CollisionEventsEnabled>()
+            .allow_component::<CollisionLayers>()
+            .allow_component::<Sensor>()
+            // Chunks
+            .allow_component::<Chunk>()
+            .allow_component::<ReplaceableChunk>()
+            .allow_component::<ChunkCullingEntity>()
+            // Relationships
             .allow_component::<Children>()
             .allow_component::<ChildOf>()
             .extract_entities(query.iter())

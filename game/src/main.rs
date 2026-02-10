@@ -5,6 +5,7 @@
 
 mod camera_controller;
 mod character_controller;
+mod chunk;
 #[cfg(feature = "dev")]
 mod dev_tools;
 mod level;
@@ -17,7 +18,7 @@ use avian3d::PhysicsPlugins;
 
 use crate::{
     camera_controller::CameraControllerPlugin, character_controller::CharacterControllerPlugin,
-    prelude::*,
+    chunk::ChunkPlugin, prelude::*,
 };
 
 fn main() -> AppExit {
@@ -56,7 +57,11 @@ impl Plugin for AppPlugin {
         ));
 
         // Custom game plugins
-        app.add_plugins((CameraControllerPlugin, CharacterControllerPlugin));
+        app.add_plugins((
+            CameraControllerPlugin,
+            CharacterControllerPlugin,
+            ChunkPlugin,
+        ));
 
         // Order new `AppSystems` variants by adding them here:
         app.configure_sets(
