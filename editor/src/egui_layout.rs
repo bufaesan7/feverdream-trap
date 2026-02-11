@@ -17,7 +17,9 @@ use crate::{
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(bevy_egui::EguiPlugin::default());
     app.add_plugins(DefaultInspectorConfigPlugin);
+
     app.insert_resource(UiState::new());
+
     app.add_systems(OnEnter(Screen::Editor), setup);
     app.add_systems(
         EguiPrimaryContextPass,
@@ -165,10 +167,16 @@ impl egui_dock::TabViewer for TabViewer<'_> {
             EguiWindow::GameView => *self.viewport_rect = ui.clip_rect(),
             EguiWindow::SidebarMenu => {
                 ui.vertical(|ui| {
+                    // ------------------------------
+                    // Chunk elements
+                    // ------------------------------
                     ui.heading("ChunkElements");
                     ui_for_assets::<ChunkElement>(self.world, ui);
                     ui.separator();
-                    let path = &mut self.world.resource_mut::<EguiActionBuffer>().new_asset_name;
+                    let path = &mut self
+                        .world
+                        .resource_mut::<EguiActionBuffer>()
+                        .new_element_name;
                     ui.horizontal(|ui| {
                         ui.label("Name:");
                         ui.text_edit_singleline(path);
@@ -188,13 +196,49 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                                 .push(handle);
                         }
                     }
+                    // ------------------------------
+                    // Chunk descriptors
+                    // ------------------------------
+                    ui.separator();
+                    ui.heading("ChunkDescriptors");
+                    ui_for_assets::<ChunkDescriptor>(self.world, ui);
+                    ui.separator();
+                    let path = &mut self
+                        .world
+                        .resource_mut::<EguiActionBuffer>()
+                        .new_descriptor_name;
+                    ui.horizontal(|ui| {
+                        ui.label("Name:");
+                        ui.text_edit_singleline(path);
+                    });
+                    if ui
+                        .button(format!("Create ChunkDescriptor ({path})"))
+                        .clicked()
+                    {
+                        if path.is_empty() {
+                            error!("Choose a more descriptive name!");
+                        } else {
+                            let path = path.clone();
+                            let handle = self
+                                .world
+                                .resource::<AssetServer>()
+                                .add(ChunkDescriptor::new(path));
+                            self.world
+                                .resource_mut::<AssetHandleStash>()
+                                .descriptors
+                                .push(handle);
+                        }
+                    }
                 });
             }
             EguiWindow::Options => {
                 ui.vertical(|ui| {
                     if ui.button("Save Assets").clicked() {
-                        let assets = self.world.resource::<Assets<ChunkElement>>();
-                        for (_, asset) in assets.iter() {
+                        // ------------------------------
+                        // Chunk elements
+                        // ------------------------------
+                        let element_assets = self.world.resource::<Assets<ChunkElement>>();
+                        for (_, asset) in element_assets.iter() {
                             let element_asset = ChunkElementAsset::from(asset);
                             let asset_string = to_string(&element_asset).unwrap();
 
@@ -204,6 +248,24 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                                 "{}.{}",
                                 element_asset.name,
                                 ChunkElementAsset::EXTENSION
+                            ));
+                            std::fs::write(chunk_asset_path, asset_string).unwrap();
+                        }
+                        // ------------------------------
+                        // Chunk descriptors
+                        // ------------------------------
+                        let descriptor_assets = self.world.resource::<Assets<ChunkDescriptor>>();
+                        for (_, asset) in descriptor_assets.iter() {
+                            let descriptor_asset =
+                                ChunkDescriptorAsset::from((asset, element_assets));
+                            let asset_string = to_string(&descriptor_asset).unwrap();
+
+                            let mut chunk_asset_path = PathBuf::from("assets");
+                            chunk_asset_path.push("chunks");
+                            chunk_asset_path.push(format!(
+                                "{}.{}",
+                                descriptor_asset.name,
+                                ChunkDescriptorAsset::EXTENSION
                             ));
                             std::fs::write(chunk_asset_path, asset_string).unwrap();
                         }

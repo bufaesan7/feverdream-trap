@@ -2965,6 +2965,7 @@ dependencies = [
  "bevy",
  "bevy-inspector-egui",
  "bevy_egui",
+ "egui",
  "ron",
  "serde",
  "thiserror 2.0.18",

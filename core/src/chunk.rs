@@ -1,3 +1,7 @@
+use std::path::PathBuf;
+
+#[cfg(feature = "dev")]
+use bevy_inspector_egui::inspector_egui_impls::InspectorEguiImpl;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -5,17 +9,19 @@ use crate::{
     prelude::*,
 };
 
-use bevy::asset::ReflectAsset;
+use bevy::asset::{ReflectAsset, VisitAssetDependencies};
 
 pub(super) fn plugin(app: &mut App) {
     app.init_asset::<ChunkElement>()
         .init_asset::<ChunkDescriptor>()
         .init_asset::<ChunkLayout>()
-        .register_asset_reflect::<ChunkElement>()
         .register_asset_loader(RonAssetLoader::<ChunkElementAsset>::new())
         .register_asset_loader(RonAssetLoader::<ChunkDescriptorAsset>::new())
         .register_asset_loader(RonAssetLoader::<ChunkLayoutAsset>::new())
         .load_resource::<ChunkLayoutStorage>();
+
+    #[cfg(feature = "dev")]
+    app.register_type_data::<Wrapper<Handle<ChunkElement>>, InspectorEguiImpl>();
 }
 
 pub const CHUNK_SIZE: Vec2 = Vec2 { x: 16., y: 16. };
@@ -27,10 +33,8 @@ pub enum ChunkElementShapeAsset {
     Gltf { mesh_path: String },
 }
 
-#[derive(Debug, Reflect, Default)]
-#[reflect(Default)]
+#[derive(Debug, Reflect)]
 pub enum ChunkElementShape {
-    #[default]
     Cube,
     Sphere,
     Gltf {
@@ -46,7 +50,7 @@ pub struct ChunkElementAsset {
     pub shape: ChunkElementShapeAsset,
 }
 
-#[derive(Asset, Reflect, Debug, Default)]
+#[derive(Asset, Reflect, Debug)]
 #[reflect(Asset)]
 pub struct ChunkElement {
     pub name: String,
@@ -58,7 +62,8 @@ impl ChunkElement {
     pub fn new(name: String) -> Self {
         Self {
             name,
-            ..Default::default()
+            transform: Transform::default(),
+            shape: ChunkElementShape::Cube,
         }
     }
 }
@@ -100,29 +105,123 @@ impl RonAsset for ChunkElementAsset {
     }
 }
 
-#[derive(Asset, TypePath, Debug, Deserialize)]
+#[derive(Asset, TypePath, Debug, Serialize, Deserialize)]
 pub struct ChunkDescriptorAsset {
     pub name: String,
     pub elements: Vec<String>,
 }
 
-#[derive(Asset, TypePath, Debug)]
+#[derive(Reflect, Debug, Default, Clone, Deref)]
+#[reflect(Default)]
+/// New type wrapper to allow implementing [`InspectorPrimitive`]
+pub struct Wrapper<T: Default>(pub T);
+
+#[derive(Reflect, Debug)]
+#[reflect(Asset)]
 pub struct ChunkDescriptor {
-    #[dependency]
-    pub elements: Vec<Handle<ChunkElement>>,
+    pub name: String,
+    pub elements: Vec<Wrapper<Handle<ChunkElement>>>,
+}
+
+impl ChunkDescriptor {
+    pub fn new(name: String) -> Self {
+        Self {
+            name,
+            elements: vec![],
+        }
+    }
+}
+
+impl From<(&ChunkDescriptor, &Assets<ChunkElement>)> for ChunkDescriptorAsset {
+    fn from((value, assets): (&ChunkDescriptor, &Assets<ChunkElement>)) -> Self {
+        Self {
+            name: value.name.clone(),
+            elements: value
+                .elements
+                .iter()
+                .filter_map(|handle| assets.get(&handle.0).map(|e| e.name.clone()))
+                .collect(),
+        }
+    }
+}
+
+impl Asset for ChunkDescriptor {}
+
+impl VisitAssetDependencies for ChunkDescriptor {
+    fn visit_dependencies(&self, visit: &mut impl FnMut(bevy::asset::UntypedAssetId)) {
+        for e in &self.elements {
+            visit(e.id().untyped())
+        }
+    }
+}
+
+#[cfg(feature = "dev")]
+impl bevy_inspector_egui::inspector_egui_impls::InspectorPrimitive
+    for Wrapper<Handle<ChunkElement>>
+{
+    fn ui(
+        &mut self,
+        ui: &mut bevy_egui::egui::Ui,
+        _options: &dyn std::any::Any,
+        _id: bevy_egui::egui::Id,
+        env: bevy_inspector_egui::reflect_inspector::InspectorUi<'_, '_>,
+    ) -> bool {
+        let world = env.context.world.as_mut().unwrap();
+        let (element_assets, asset_server) =
+            world.get_two_resources_mut::<Assets<ChunkElement>, AssetServer>();
+        let element_assets = element_assets.unwrap();
+        let asset_server = asset_server.unwrap();
+        let selected_name = element_assets
+            .get(&self.0)
+            .map(|e| e.name.clone())
+            .unwrap_or_default();
+        ui.push_id(self.0.id(), |ui| {
+            let selected = &mut self.0;
+            egui::ComboBox::from_label("Pick handle")
+                .selected_text(selected_name)
+                .show_ui(ui, |ui| {
+                    for (index, (id, asset)) in element_assets.iter().enumerate() {
+                        ui.push_id(index, |ui| {
+                            ui.selectable_value(
+                                selected,
+                                asset_server.get_id_handle(id).unwrap(),
+                                &asset.name,
+                            );
+                        });
+                    }
+                });
+        });
+        false
+    }
+    fn ui_readonly(
+        &self,
+        ui: &mut bevy_egui::egui::Ui,
+        _options: &dyn std::any::Any,
+        _id: bevy_egui::egui::Id,
+        _env: bevy_inspector_egui::reflect_inspector::InspectorUi<'_, '_>,
+    ) {
+        ui.label("Hello ui_readonly");
+    }
 }
 
 impl RonAsset for ChunkDescriptorAsset {
     type Asset = ChunkDescriptor;
-    const EXTENSION: &str = ".chunk";
+    const EXTENSION: &str = "chunk";
 
     async fn load_dependencies(self, context: &mut bevy::asset::LoadContext<'_>) -> Self::Asset {
         let elements = self
             .elements
             .into_iter()
-            .map(|path| context.load(path + "." + ChunkElementAsset::EXTENSION))
+            .map(|path| {
+                let mut p = PathBuf::from("chunks");
+                p.push(path + "." + ChunkElementAsset::EXTENSION);
+                Wrapper(context.load(p))
+            })
             .collect();
-        ChunkDescriptor { elements }
+        ChunkDescriptor {
+            name: self.name,
+            elements,
+        }
     }
 }
 
@@ -146,7 +245,11 @@ impl RonAsset for ChunkLayoutAsset {
         let grid = self
             .grid
             .into_iter()
-            .map(|(pos, path)| (pos, context.load(path + ChunkDescriptorAsset::EXTENSION)))
+            .map(|(pos, path)| {
+                let mut p = PathBuf::from("chunks");
+                p.push(path + "." + ChunkDescriptorAsset::EXTENSION);
+                (pos, context.load(p))
+            })
             .collect();
         ChunkLayout { grid }
     }
