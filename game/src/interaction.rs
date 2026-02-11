@@ -157,7 +157,7 @@ impl FromWorld for HighlightStorageBuffer {
         let mut buffers = world
             .get_resource_mut::<Assets<ShaderStorageBuffer>>()
             .unwrap();
-        let color_data: Vec<[f32; 4]> = vec![[1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0]];
+        let color_data: Vec<[f32; 4]> = vec![[1.0, 1.0, 1.0, 1.0], [0.9, 0.9, 0.9, 0.9]];
 
         Self(buffers.add(ShaderStorageBuffer::from(color_data)))
     }

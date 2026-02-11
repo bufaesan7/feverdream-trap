@@ -43,7 +43,7 @@ fn fragment(
     // note this does not include fullscreen postprocessing effects like bloom.
     out.color = main_pass_post_lighting_processing(pbr_input, out.color);
 
-    out.color = out.color * colors[tag];
+    out.color = mix(vec4<f32>(0.1, 0.1, 0.1, 0.1), out.color, colors[tag]);
 #endif
 
     return out;
