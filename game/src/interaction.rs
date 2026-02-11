@@ -10,7 +10,11 @@ use crate::{camera_controller::CameraMarker, character_controller::GameLayer, pr
 
 pub(crate) fn plugin(app: &mut App) {
     app.add_plugins(MeshPickingPlugin)
-        .add_systems(Update, (interactable_in_range, interact))
+        .add_systems(
+            Update,
+            (interactable_in_range, interact)
+                .run_if(in_state(Screen::Gameplay).and(in_state(Menu::None))),
+        )
         .init_resource::<HighlightStorageBuffer>()
         .add_plugins(MaterialPlugin::<
             ExtendedMaterial<StandardMaterial, HighlightExtension>,
@@ -127,10 +131,42 @@ impl MaterialExtension for HighlightExtension {
     }
 }
 
-fn interact(mouse: Res<ButtonInput<MouseButton>>, focus_targets: Query<Entity, With<FocusTarget>>) {
+#[derive(Debug, EntityEvent, Reflect)]
+#[reflect(Event)]
+pub struct Interact {
+    pub entity: Entity,
+}
+
+impl From<Entity> for Interact {
+    fn from(entity: Entity) -> Self {
+        Interact { entity }
+    }
+}
+
+#[derive(Debug, Default, Component, Reflect)]
+#[reflect(Component)]
+#[component(on_add)]
+pub struct DebugInteraction;
+
+impl DebugInteraction {
+    fn on_add(mut world: DeferredWorld, ctx: HookContext) {
+        world.commands().spawn(
+            Observer::new(|on_interact: On<Interact>| {
+                info!("interact with {:?}", on_interact.entity);
+            })
+            .with_entity(ctx.entity),
+        );
+    }
+}
+
+fn interact(
+    mut commands: Commands,
+    mouse: Res<ButtonInput<MouseButton>>,
+    focus_targets: Query<Entity, With<FocusTarget>>,
+) {
     for entity in &focus_targets {
         if mouse.just_pressed(MouseButton::Left) {
-            info!("Interact with {:?}", entity);
+            commands.entity(entity).trigger(Interact::from);
         }
     }
 }

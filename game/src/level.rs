@@ -1,10 +1,13 @@
 use bevy::{
+    color::palettes::css::YELLOW,
     ecs::{lifecycle::HookContext, world::DeferredWorld},
     pbr::ExtendedMaterial,
 };
 
 use crate::{
-    interaction::{HighlightExtension, HighlightStorageBuffer, Interactable},
+    interaction::{
+        DebugInteraction, HighlightExtension, HighlightStorageBuffer, Interact, Interactable,
+    },
     prelude::*,
 };
 
@@ -207,18 +210,22 @@ pub fn spawn_level(mut commands: Commands) {
             }
             if chunk_index == 8 {
                 commands.entity(chunk).insert(SwappableChunk);
-                commands.spawn((
-                    Name::new("Cube"),
-                    Transform::from_xyz(0., 1., 0.),
-                    Visibility::Visible,
-                    LevelComponent3d::Cube {
-                        length: 2.,
-                        color: chunk_color,
-                        rigid_body: RigidBody::Dynamic,
-                    },
-                    Interactable,
-                    ChildOf(chunk),
-                ));
+                commands
+                    .spawn((
+                        Name::new("Cube"),
+                        Transform::from_xyz(0., 1., 0.),
+                        Visibility::Visible,
+                        LevelComponent3d::Cube {
+                            length: 2.,
+                            color: chunk_color,
+                            rigid_body: RigidBody::Dynamic,
+                        },
+                        Interactable,
+                        ChildOf(chunk),
+                    ))
+                    .observe(|on_interact: On<Interact>| {
+                        info!("Interact with {:?}", on_interact.entity);
+                    }); // TODO: This does not work
             }
             if chunk_index == 17 {
                 commands.entity(chunk).insert(SwappableChunk);
@@ -312,6 +319,19 @@ pub fn spawn_level(mut commands: Commands) {
             chunk_index += 1;
         }
     }
+
+    commands.spawn((
+        Name::new("Cube"),
+        Transform::from_xyz(0., 30., 0.),
+        Visibility::Visible,
+        LevelComponent3d::Cube {
+            length: 2.,
+            color: YELLOW.into(),
+            rigid_body: RigidBody::Dynamic,
+        },
+        Interactable,
+        DebugInteraction,
+    ));
 }
 
 fn grid_position_to_transform(x: usize, z: usize) -> Transform {
