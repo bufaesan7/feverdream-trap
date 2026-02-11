@@ -1,12 +1,9 @@
-use crate::character_controller::GameLayer;
-use crate::chunk::{Chunk, ChunkId, SwapSensorChunk};
+use crate::chunk::{ChunkId, SpawnChunk};
+use crate::chunk_assets::{ChunkDescriptor, ChunkElement, ChunkLayout};
 use crate::prelude::*;
-use bevy::ecs::{lifecycle::HookContext, world::DeferredWorld};
-use feverdream_trap_core::chunk::{ChunkDescriptor, ChunkElement, ChunkElementShape, ChunkLayout};
+use bevy::ecs::lifecycle::HookContext;
+use bevy::ecs::world::DeferredWorld;
 
-const TILE_SIZE: f32 = 5.;
-
-// Marker component for the level entity
 #[derive(Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 #[require(LevelComponent)]
@@ -14,8 +11,6 @@ pub struct Level;
 
 #[derive(Component, Reflect, Default)]
 #[reflect(Component)]
-#[require(DespawnOnExit<Screen> = DespawnOnExit(Screen::Gameplay))]
-/// Marker component for each [`Entity`] that is part of the level scene
 pub struct LevelComponent;
 
 #[derive(Component, Reflect, Debug, Clone)]
@@ -158,55 +153,19 @@ pub fn spawn_level_from_layout(
             return;
         };
 
-        let transform = Transform::from_xyz(*x as f32 * TILE_SIZE, 0.0, *z as f32 * TILE_SIZE);
-
         let chunk_id = (*z + *x * grid_size_z) as u32;
 
-        info!("Spawning chunk ({}, {}) with id {}", x, z, chunk_id);
-        let chunk_entity = commands
-            .spawn((
-                Name::new(format!("Chunk ({}, {})", x, z)),
-                Visibility::default(),
-                Chunk,
-                ChunkId(chunk_id),
-                transform,
-                LevelCollider::Cube { length: TILE_SIZE },
-                RigidBody::Static,
-                Sensor,
-                CollisionEventsEnabled,
-                CollisionLayers::new([GameLayer::Sensor], [GameLayer::Player]),
-                ChildOf(level),
-            ))
-            .id();
+        let elements = chunk_descriptor
+            .elements
+            .iter()
+            .map(|element| chunk_elements.get(element).unwrap().clone())
+            .collect();
 
-        let color = Color::srgb(0.95, 0.95, 0.95);
-
-        for chunk_element in &chunk_descriptor.elements {
-            let element = chunk_elements.get(chunk_element).unwrap();
-
-            let level_component = match &element.shape {
-                ChunkElementShape::Plane => LevelComponent3d::Plane {
-                    size: Vec2::splat(0.5),
-                    color,
-                },
-                ChunkElementShape::Cube => LevelComponent3d::Cube { length: 1., color },
-                ChunkElementShape::Sphere => LevelComponent3d::Sphere { radius: 1., color },
-                s => panic!("Shape is not supported yet {:?}", s),
-            };
-
-            commands.spawn((
-                Name::new(element.name.clone()),
-                element.transform,
-                Visibility::Visible,
-                level_component,
-                ChildOf(chunk_entity),
-            ));
-        }
-
-        if chunk_id == 23 {
-            commands
-                .entity(chunk_entity)
-                .insert(SwapSensorChunk(ChunkId(9), ChunkId(8)));
-        }
+        commands.trigger(SpawnChunk {
+            level,
+            id: ChunkId(chunk_id),
+            grid_position: Vec2::new(*x as f32, *z as f32),
+            elements,
+        });
     }
 }

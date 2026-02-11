@@ -4,9 +4,6 @@ use bevy::tasks::IoTaskPool;
 
 use crate::camera_controller::{CameraMarker, CameraTargetCharacterController, spawn_camera};
 use crate::character_controller::{Player, PlayerInput, spawn_player};
-use crate::chunk::{Chunk, ChunkId, SwapSensorChunk};
-use crate::level::LevelCollider;
-use crate::level::{Level, LevelComponent, LevelComponent3d, spawn_level_from_layout};
 use crate::prelude::*;
 use bevy::ecs::system::RunSystemOnce;
 
@@ -69,6 +66,7 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             .allow_component::<Chunk>()
             .allow_component::<ChunkId>()
             .allow_component::<SwapSensorChunk>()
+            .allow_component::<ReplaceAssetSensorChunk>()
             // Relationships
             .allow_component::<Children>()
             .allow_component::<ChildOf>()
