@@ -185,7 +185,7 @@ pub fn spawn_level(mut commands: Commands) {
 
     commands.spawn((
         Name::new("Cube"),
-        Transform::from_xyz(10., 0., -20.),
+        Transform::from_xyz(5., 0., -20.),
         Visibility::Visible,
         LevelComponent3d::Cube {
             length: 3.,

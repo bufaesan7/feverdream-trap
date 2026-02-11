@@ -25,6 +25,7 @@ const INTERACTION_DISTANCE: f32 = 10.0;
 #[require(MeshTag)]
 pub struct Interactable;
 
+// SpatialQuery ray cast from camera for interactable entities
 fn interactable_in_range(
     mut commands: Commands,
     spatial_query: SpatialQuery,
@@ -39,7 +40,7 @@ fn interactable_in_range(
         INTERACTION_DISTANCE,
         true,
         &SpatialQueryFilter::default(),
-        &|entity| interactables.contains(entity),
+        &|_| true,
     );
 
     // TODO: This is not optimal
@@ -47,7 +48,9 @@ fn interactable_in_range(
         commands.entity(entity).try_remove::<FocusTarget>();
     }
     if let Some(first_hit) = hit {
-        commands.entity(first_hit.entity).insert(FocusTarget);
+        if interactables.contains(first_hit.entity) {
+            commands.entity(first_hit.entity).insert(FocusTarget);
+        }
     }
 }
 
