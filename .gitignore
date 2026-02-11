@@ -8,7 +8,7 @@ assets/game_state.scn.ron
 .idea
 
 # Chunk assets
-assets/**/*
+assets/chunks/*
 
 # This file contains environment-specific configuration like linker settings
 .cargo/config.toml
