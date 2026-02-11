@@ -1,5 +1,5 @@
 use crate::character_controller::GameLayer;
-use crate::chunk::{Chunk, ChunkCullingEntity, ReplaceableChunk};
+use crate::chunk::{Chunk, ChunkId, SwapSensorChunk, SwappableChunk};
 use crate::prelude::*;
 use bevy::ecs::{lifecycle::HookContext, world::DeferredWorld};
 
@@ -112,7 +112,7 @@ impl LevelComponent3d {
     }
 }
 
-// spawn demo level with a grid of chunked1 entities
+/// spawn demo level with a grid of chunked entities
 pub fn spawn_level(mut commands: Commands) {
     let level = commands
         .spawn((
@@ -134,6 +134,7 @@ pub fn spawn_level(mut commands: Commands) {
                     Name::new("Chunk"),
                     Visibility::default(),
                     Chunk,
+                    ChunkId(chunk_index as u32),
                     transform,
                     LevelCollider::Cube { length: TILE_SIZE },
                     RigidBody::Static,
@@ -144,6 +145,13 @@ pub fn spawn_level(mut commands: Commands) {
                 ))
                 .id();
 
+            // swap the two special chunks with cube and sphere when the player enters the chunk with id 1
+            if chunk_index == 12 {
+                commands
+                    .entity(chunk)
+                    .insert(SwapSensorChunk(ChunkId(17), ChunkId(8)));
+            }
+
             let chunk_color: Color =
                 Hsva::hsv((chunk_index as f32 / CHUNKS as f32) * 360., 1.0, 1.0).into();
 
@@ -153,12 +161,11 @@ pub fn spawn_level(mut commands: Commands) {
                 chunk_index
             );
 
-            // spawn debug entities
+            // Spawn debug entities
             if chunk_index == 8 {
-                commands.entity(chunk).insert(ReplaceableChunk);
+                commands.entity(chunk).insert(SwappableChunk);
                 commands.spawn((
                     Name::new("Cube"),
-                    ChunkCullingEntity,
                     Transform::from_xyz(0., 1., 0.),
                     Visibility::Visible,
                     LevelComponent3d::Cube {
@@ -169,10 +176,9 @@ pub fn spawn_level(mut commands: Commands) {
                 ));
             }
             if chunk_index == 17 {
-                commands.entity(chunk).insert(ReplaceableChunk);
+                commands.entity(chunk).insert(SwappableChunk);
                 commands.spawn((
                     Name::new("Sphere"),
-                    ChunkCullingEntity,
                     Transform::from_xyz(0., 1.5, 0.),
                     Visibility::Visible,
                     LevelComponent3d::Sphere {
