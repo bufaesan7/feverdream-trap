@@ -1,0 +1,9 @@
+(
+    name: "Wall West",
+    transform: (
+        translation: (-2.5, 2.5, 0),
+        rotation: (0, 0, 0, 1),
+        scale: (0.1, 5, 5),
+    ),
+    shape: Cube,
+)

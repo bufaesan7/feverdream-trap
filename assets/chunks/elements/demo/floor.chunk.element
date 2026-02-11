@@ -1,0 +1,9 @@
+(
+    name: "Floor",
+    transform: (
+        translation: (0, 0, 0),
+        rotation: (0, 0, 0, 1),
+        scale: (5, 0.1, 5),
+    ),
+    shape: Plane,
+)
