@@ -17,21 +17,24 @@ pub(super) fn plugin(app: &mut App) {
 
 pub const CHUNK_SIZE: Vec2 = Vec2 { x: 16., y: 16. };
 
-#[derive(Debug, Deserialize)]
+#[derive(Reflect, Debug, Deserialize)]
 pub enum ChunkElementShapeAsset {
     Cube,
     Sphere,
-    Gltf { mesh: String },
+    Gltf { mesh_path: String },
 }
 
 #[derive(Debug)]
 pub enum ChunkElementShape {
     Cube,
     Sphere,
-    Gltf { mesh: Handle<Gltf> },
+    Gltf {
+        mesh_path: String,
+        mesh: Handle<Gltf>,
+    },
 }
 
-#[derive(Asset, TypePath, Debug, Deserialize)]
+#[derive(Asset, Reflect, Debug, Deserialize)]
 pub struct ChunkElementAsset {
     pub name: String,
     pub transform: Transform,
@@ -53,8 +56,9 @@ impl RonAsset for ChunkElementAsset {
         let shape = match self.shape {
             ChunkElementShapeAsset::Cube => ChunkElementShape::Cube,
             ChunkElementShapeAsset::Sphere => ChunkElementShape::Sphere,
-            ChunkElementShapeAsset::Gltf { mesh } => ChunkElementShape::Gltf {
-                mesh: context.load(mesh),
+            ChunkElementShapeAsset::Gltf { mesh_path } => ChunkElementShape::Gltf {
+                mesh: context.load(&mesh_path),
+                mesh_path,
             },
         };
         ChunkElement {

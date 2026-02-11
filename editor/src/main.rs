@@ -7,9 +7,9 @@ use bevy_text_edit::TextEditPluginAnyState;
 
 use crate::prelude::*;
 
+mod egui_layout;
+mod elements;
 mod prelude;
-mod screens;
-mod widget;
 
 fn main() -> AppExit {
     let mut app = App::new();
@@ -32,9 +32,14 @@ fn main() -> AppExit {
 
     app.init_state::<Screen>();
 
-    app.add_plugins((feverdream_trap_core::utility_plugin, screens::plugin));
+    app.add_plugins((
+        feverdream_trap_core::utility_plugin,
+        egui_layout::plugin,
+        elements::plugin,
+    ));
 
-    app.add_systems(Startup, spawn_2d_camera);
+    app.add_systems(OnEnter(Screen::Loading), spawn_loading_screen);
+    app.add_systems(Update, enter_menu_state.run_if(in_state(Screen::Loading)));
 
     app.run()
 }
@@ -44,12 +49,22 @@ fn main() -> AppExit {
 enum Screen {
     #[default]
     Loading,
-    EditorMenu,
-    ElementEditor,
-    ChunkEditor,
-    ChunkLayoutEditor,
+    Editor,
 }
 
-fn spawn_2d_camera(mut commands: Commands) {
-    commands.spawn((Name::new("Camera 2D"), Transform::default(), Camera2d));
+fn spawn_loading_screen(mut commands: Commands) {
+    commands.spawn((
+        widget::ui_root("Editor loading screen"),
+        DespawnOnExit(Screen::Loading),
+        children![widget::label("Loading..."),],
+    ));
+}
+
+fn enter_menu_state(
+    resource_handles: Res<ResourceHandles>,
+    mut next_state: ResMut<NextState<Screen>>,
+) {
+    if resource_handles.is_all_done() {
+        next_state.set(Screen::Editor);
+    }
 }
