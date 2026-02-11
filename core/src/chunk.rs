@@ -1,14 +1,17 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     asset_loader::{RonAsset, RonAssetLoader},
     prelude::*,
 };
 
+use bevy::asset::ReflectAsset;
+
 pub(super) fn plugin(app: &mut App) {
     app.init_asset::<ChunkElement>()
         .init_asset::<ChunkDescriptor>()
         .init_asset::<ChunkLayout>()
+        .register_asset_reflect::<ChunkElement>()
         .register_asset_loader(RonAssetLoader::<ChunkElementAsset>::new())
         .register_asset_loader(RonAssetLoader::<ChunkDescriptorAsset>::new())
         .register_asset_loader(RonAssetLoader::<ChunkLayoutAsset>::new())
@@ -17,15 +20,17 @@ pub(super) fn plugin(app: &mut App) {
 
 pub const CHUNK_SIZE: Vec2 = Vec2 { x: 16., y: 16. };
 
-#[derive(Reflect, Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum ChunkElementShapeAsset {
     Cube,
     Sphere,
     Gltf { mesh_path: String },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Reflect, Default)]
+#[reflect(Default)]
 pub enum ChunkElementShape {
+    #[default]
     Cube,
     Sphere,
     Gltf {
@@ -34,23 +39,49 @@ pub enum ChunkElementShape {
     },
 }
 
-#[derive(Asset, Reflect, Debug, Deserialize)]
+#[derive(Asset, TypePath, Debug, Serialize, Deserialize)]
 pub struct ChunkElementAsset {
     pub name: String,
     pub transform: Transform,
     pub shape: ChunkElementShapeAsset,
 }
 
-#[derive(Asset, TypePath, Debug)]
+#[derive(Asset, Reflect, Debug, Default)]
+#[reflect(Asset)]
 pub struct ChunkElement {
     pub name: String,
     pub transform: Transform,
     pub shape: ChunkElementShape,
 }
 
+impl ChunkElement {
+    pub fn new(name: String) -> Self {
+        Self {
+            name,
+            ..Default::default()
+        }
+    }
+}
+
+impl From<&ChunkElement> for ChunkElementAsset {
+    fn from(value: &ChunkElement) -> Self {
+        Self {
+            name: value.name.clone(),
+            transform: value.transform,
+            shape: match &value.shape {
+                ChunkElementShape::Cube => ChunkElementShapeAsset::Cube,
+                ChunkElementShape::Sphere => ChunkElementShapeAsset::Sphere,
+                ChunkElementShape::Gltf { mesh_path, .. } => ChunkElementShapeAsset::Gltf {
+                    mesh_path: mesh_path.clone(),
+                },
+            },
+        }
+    }
+}
+
 impl RonAsset for ChunkElementAsset {
     type Asset = ChunkElement;
-    const EXTENSION: &str = ".chunk.element";
+    const EXTENSION: &str = "chunk.element";
 
     async fn load_dependencies(self, context: &mut bevy::asset::LoadContext<'_>) -> Self::Asset {
         let shape = match self.shape {
@@ -89,7 +120,7 @@ impl RonAsset for ChunkDescriptorAsset {
         let elements = self
             .elements
             .into_iter()
-            .map(|path| context.load(path + ChunkElementAsset::EXTENSION))
+            .map(|path| context.load(path + "." + ChunkElementAsset::EXTENSION))
             .collect();
         ChunkDescriptor { elements }
     }

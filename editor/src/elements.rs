@@ -1,34 +1,59 @@
+use std::path::PathBuf;
+
 use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(OnEnter(Screen::Editor), insert_element_stash);
+    app.init_resource::<AssetHandleStash>();
+    app.init_resource::<EguiActionBuffer>();
+    app.load_resource::<ChunkElementStash>();
 }
 
-fn insert_element_stash(world: &World, mut commands: Commands) {
-    commands.insert_resource(ChunkElementStash::new(world));
-}
-
-#[derive(Resource, Reflect, Debug)]
+#[derive(Default, Resource, Reflect, Debug)]
 #[reflect(Resource)]
-pub struct ChunkElementStash(pub Vec<ChunkElementAsset>);
+pub struct EguiActionBuffer {
+    pub new_asset_name: String,
+}
 
-impl ChunkElementStash {
-    pub fn new(world: &World) -> Self {
-        let assets = world.resource::<Assets<ChunkElement>>();
-        let elements = assets
-            .iter()
-            .map(|(_, element)| ChunkElementAsset {
-                name: element.name.clone(),
-                transform: element.transform,
-                shape: match &element.shape {
-                    ChunkElementShape::Cube => ChunkElementShapeAsset::Cube,
-                    ChunkElementShape::Sphere => ChunkElementShapeAsset::Sphere,
-                    ChunkElementShape::Gltf { mesh_path, .. } => ChunkElementShapeAsset::Gltf {
-                        mesh_path: mesh_path.clone(),
-                    },
-                },
-            })
-            .collect();
+#[derive(Default, Resource, Reflect, Debug)]
+#[reflect(Resource)]
+pub struct AssetHandleStash {
+    pub elements: Vec<Handle<ChunkElement>>,
+}
+
+#[derive(Asset, Resource, Reflect, Debug, Clone)]
+#[reflect(Resource)]
+pub struct ChunkElementStash(pub Vec<Handle<ChunkElement>>);
+
+impl FromWorld for ChunkElementStash {
+    fn from_world(world: &mut World) -> Self {
+        let asset_server = world.resource::<AssetServer>();
+
+        let mut chunk_asset_path = PathBuf::from("assets");
+        chunk_asset_path.push("chunks");
+        let chunk_assets = std::fs::read_dir(chunk_asset_path).unwrap();
+
+        let mut elements = vec![];
+        for entry in chunk_assets.flatten() {
+            if entry
+                .path()
+                .to_str()
+                .unwrap()
+                .ends_with(ChunkElementAsset::EXTENSION)
+            {
+                let mut path = PathBuf::from("chunks");
+                path.push(
+                    entry
+                        .path()
+                        .components()
+                        .next_back()
+                        .unwrap()
+                        .as_os_str()
+                        .to_str()
+                        .unwrap(),
+                );
+                elements.push(asset_server.load(path));
+            }
+        }
         Self(elements)
     }
 }
