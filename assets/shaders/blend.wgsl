@@ -1,6 +1,7 @@
 #import bevy_pbr::{
     pbr_fragment::pbr_input_from_standard_material,
     pbr_functions::alpha_discard,
+    mesh_functions,
 }
 
 #ifdef PREPASS_PIPELINE
@@ -15,18 +16,15 @@
 }
 #endif
 
-struct HighlightMaterial {
-    color: vec4<f32>,
-}
-
-@group(#{MATERIAL_BIND_GROUP}) @binding(100)
-var<uniform> highlight_material: HighlightMaterial;
+@group(#{MATERIAL_BIND_GROUP}) @binding(100) var<storage, read> colors: array<vec4<f32>, 2>;
 
 @fragment
 fn fragment(
     in: VertexOutput,
     @builtin(front_facing) is_front: bool,
 ) -> FragmentOutput {
+    let tag = mesh_functions::get_tag(in.instance_index);
+
     // generate a PbrInput struct from the StandardMaterial bindings
     var pbr_input = pbr_input_from_standard_material(in, is_front);
 
@@ -44,9 +42,10 @@ fn fragment(
     // apply in-shader post processing (fog, alpha-premultiply, and also tonemapping, debanding if the camera is non-hdr)
     // note this does not include fullscreen postprocessing effects like bloom.
     out.color = main_pass_post_lighting_processing(pbr_input, out.color);
+
+    out.color = out.color * colors[tag];
 #endif
 
-    out.color = out.color * highlight_material.color;
-
     return out;
+
 }

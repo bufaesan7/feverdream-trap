@@ -1,6 +1,12 @@
-use bevy::ecs::{lifecycle::HookContext, world::DeferredWorld};
+use bevy::{
+    ecs::{lifecycle::HookContext, world::DeferredWorld},
+    pbr::ExtendedMaterial,
+};
 
-use crate::{interaction::Interactable, prelude::*};
+use crate::{
+    interaction::{HighlightExtension, HighlightStorageBuffer, Interactable},
+    prelude::*,
+};
 
 // TODO: made redundant by asset loading
 const LEVEL_WIDTH: i32 = 20;
@@ -34,7 +40,7 @@ pub enum LevelComponent3d {
 impl LevelComponent3d {
     fn on_add<'a>(mut world: DeferredWorld<'a>, hook: HookContext) {
         if !world.contains_resource::<Assets<Mesh>>()
-            || !world.contains_resource::<Assets<StandardMaterial>>()
+            || !world.contains_resource::<Assets<ExtendedMaterial<StandardMaterial, HighlightExtension>>>()
         {
             // Skip this hook when we're constructing a [`DynamicScene`]
             return;
@@ -48,14 +54,18 @@ impl LevelComponent3d {
             LevelComponent3d::Cube { length, .. } => meshes.add(Cuboid::from_length(length)),
         };
 
-        let mut materials: Mut<Assets<StandardMaterial>> = world.resource_mut();
+        let colors = world.resource::<HighlightStorageBuffer>().0.clone();
+        let mut materials: Mut<Assets<ExtendedMaterial<StandardMaterial, HighlightExtension>>> =
+            world.resource_mut();
         let material = match mesh_type {
-            LevelComponent3d::Plane { .. } => {
-                materials.add(StandardMaterial::from_color(Color::WHITE))
-            }
-            LevelComponent3d::Cube { color, .. } => {
-                materials.add(StandardMaterial::from_color(color))
-            }
+            LevelComponent3d::Plane { .. } => materials.add(ExtendedMaterial {
+                base: StandardMaterial::from_color(Color::WHITE),
+                extension: HighlightExtension { colors },
+            }),
+            LevelComponent3d::Cube { color, .. } => materials.add(ExtendedMaterial {
+                base: StandardMaterial::from_color(color),
+                extension: HighlightExtension { colors },
+            }),
         };
 
         let collider = match mesh_type {

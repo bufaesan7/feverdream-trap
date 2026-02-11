@@ -1,13 +1,20 @@
 use bevy::{
     ecs::{lifecycle::HookContext, world::DeferredWorld},
     mesh::MeshTag,
+    pbr::{ExtendedMaterial, MaterialExtension},
+    render::{render_resource::AsBindGroup, storage::ShaderStorageBuffer},
+    shader::ShaderRef,
 };
 
 use crate::{camera_controller::CameraMarker, prelude::*};
 
 pub(crate) fn plugin(app: &mut App) {
     app.add_plugins(MeshPickingPlugin)
-        .add_systems(Update, focusable_highlight);
+        .add_systems(Update, focusable_highlight)
+        .init_resource::<HighlightStorageBuffer>()
+        .add_plugins(MaterialPlugin::<
+            ExtendedMaterial<StandardMaterial, HighlightExtension>,
+        >::default());
 }
 
 /// Indicates whether an entity can be interacted with
@@ -50,7 +57,10 @@ impl Interactable {
 
     fn on_remove(mut world: DeferredWorld, ctx: HookContext) {
         // Remove observer
-        let observer = world.entity(ctx.entity).get::<Self>().map(|interactable| (interactable.over_observer, interactable.out_observer));
+        let observer = world
+            .entity(ctx.entity)
+            .get::<Self>()
+            .map(|interactable| (interactable.over_observer, interactable.out_observer));
 
         if let Some(observer) = observer {
             world.commands().entity(observer.0).try_despawn();
@@ -135,4 +145,36 @@ impl FocusTarget {
     }
 }
 
-// TODO: Material
+const SHADER_ASSET_PATH: &str = "shaders/blend.wgsl";
+
+/// This resource holds the common color storage buffer for highlighting
+#[derive(Debug, Resource, Reflect)]
+#[reflect(Resource)]
+pub struct HighlightStorageBuffer(pub Handle<ShaderStorageBuffer>);
+
+impl FromWorld for HighlightStorageBuffer {
+    fn from_world(world: &mut World) -> Self {
+        let mut buffers = world
+            .get_resource_mut::<Assets<ShaderStorageBuffer>>()
+            .unwrap();
+        let color_data: Vec<[f32; 4]> = vec![[1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0]];
+
+        Self(buffers.add(ShaderStorageBuffer::from(color_data)))
+    }
+}
+
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+pub struct HighlightExtension {
+    #[storage(100, read_only)]
+    pub colors: Handle<ShaderStorageBuffer>,
+}
+
+impl MaterialExtension for HighlightExtension {
+    fn fragment_shader() -> ShaderRef {
+        SHADER_ASSET_PATH.into()
+    }
+
+    fn deferred_fragment_shader() -> ShaderRef {
+        SHADER_ASSET_PATH.into()
+    }
+}
