@@ -2,14 +2,13 @@ use bevy::scene::SceneInstanceReady;
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::tasks::IoTaskPool;
 
-use crate::chunk::{Chunk, ChunkId, SwapSensorChunk, SwappableChunk};
+use crate::camera_controller::{CameraMarker, CameraTargetCharacterController, spawn_camera};
+use crate::character_controller::{Player, PlayerInput, spawn_player};
+use crate::chunk::{Chunk, ChunkId, SwapSensorChunk};
 use crate::level::LevelCollider;
-use crate::{
-    camera_controller::{CameraMarker, CameraTargetCharacterController, spawn_camera},
-    character_controller::{Player, PlayerInput, spawn_player},
-    level::{Level, LevelComponent, LevelComponent3d, spawn_level},
-    prelude::*,
-};
+use crate::level::{Level, LevelComponent, LevelComponent3d, spawn_level_from_layout};
+use crate::prelude::*;
+use bevy::ecs::system::RunSystemOnce;
 
 pub(crate) fn plugin(app: &mut App) {
     app.load_resource::<GameSceneStorage>()
@@ -30,7 +29,6 @@ pub const SCENE_FILE_PATH: &str = "assets\\game_state.scn.ron";
 pub struct GameSceneStorage {
     #[dependency]
     pub handle: Option<Handle<DynamicScene>>,
-    pub scene: Option<Handle<DynamicScene>>,
 }
 
 impl FromWorld for GameSceneStorage {
@@ -39,31 +37,9 @@ impl FromWorld for GameSceneStorage {
             let asset_server = world.resource::<AssetServer>();
             Self {
                 handle: Some(asset_server.load(SCENE_FILE)),
-                scene: None,
             }
         } else {
-            let mut scene_world = World::new();
-            let type_registry = world.resource::<AppTypeRegistry>().clone();
-            scene_world.insert_resource(type_registry);
-
-            fn run_system<M>(
-                scene_world: &mut World,
-                system: impl IntoSystem<(), (), M> + 'static,
-            ) {
-                let system_id = scene_world.register_system(system);
-                scene_world.run_system(system_id).unwrap();
-            }
-
-            run_system(&mut scene_world, spawn_level);
-            run_system(&mut scene_world, spawn_camera);
-            run_system(&mut scene_world, spawn_player);
-
-            let scene = DynamicScene::from_world(&scene_world);
-            let mut scenes = world.resource_mut::<Assets<DynamicScene>>();
-            Self {
-                handle: None,
-                scene: Some(scenes.add(scene)),
-            }
+            Self { handle: None }
         }
     }
 }
@@ -92,7 +68,6 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             // Chunks
             .allow_component::<Chunk>()
             .allow_component::<ChunkId>()
-            .allow_component::<SwappableChunk>()
             .allow_component::<SwapSensorChunk>()
             // Relationships
             .allow_component::<Children>()
@@ -104,7 +79,6 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
     let handle = world.resource::<AssetServer>().add(scene());
     commands.insert_resource(GameSceneStorage {
         handle: Some(handle),
-        scene: None,
     });
 
     // This can't work in WASM as there is no filesystem access.
@@ -128,22 +102,25 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
 }
 
 fn spawn_scene(mut commands: Commands, game_scene: Res<GameSceneStorage>) {
-    let handle = if let Some(handle) = &game_scene.handle {
-        handle.clone()
+    if let Some(handle) = &game_scene.handle {
+        // Load saved scene
+        commands
+            .spawn((
+                Name::new("Game scene spawner"),
+                Transform::default(),
+                Visibility::default(),
+                DynamicSceneRoot(handle.clone()),
+                DespawnOnExit(Screen::Gameplay),
+            ))
+            .observe(|event: On<SceneInstanceReady>, mut commands: Commands| {
+                commands.entity(event.entity).detach_all_children();
+            });
     } else {
-        game_scene.scene.clone().unwrap()
-    };
-    // This will sometimes trigger a `B0004` warning, that's a bevy bug:
-    // https://github.com/bevyengine/bevy/pull/22675
-    commands
-        .spawn((
-            Name::new("Game scene spawner"),
-            Transform::default(),
-            Visibility::default(),
-            DynamicSceneRoot(handle),
-            DespawnOnExit(Screen::Gameplay),
-        ))
-        .observe(|event: On<SceneInstanceReady>, mut commands: Commands| {
-            commands.entity(event.entity).detach_all_children();
+        // No saved scene, spawn from layout
+        commands.queue(|world: &mut World| {
+            let _ = world.run_system_once(spawn_level_from_layout);
+            let _ = world.run_system_once(spawn_camera);
+            let _ = world.run_system_once(spawn_player);
         });
+    }
 }

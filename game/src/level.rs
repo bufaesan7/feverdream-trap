@@ -1,12 +1,10 @@
 use crate::character_controller::GameLayer;
-use crate::chunk::{Chunk, ChunkId, SwapSensorChunk, SwappableChunk};
+use crate::chunk::{Chunk, ChunkId, SwapSensorChunk};
 use crate::prelude::*;
 use bevy::ecs::{lifecycle::HookContext, world::DeferredWorld};
+use feverdream_trap_core::chunk::{ChunkDescriptor, ChunkElement, ChunkElementShape, ChunkLayout};
 
-// number of chunks per axis
-const GRID_SIZE: usize = 5;
-const CHUNKS: usize = GRID_SIZE * GRID_SIZE;
-const TILE_SIZE: f32 = 20.;
+const TILE_SIZE: f32 = 5.;
 
 // Marker component for the level entity
 #[derive(Debug, Default, Component, Reflect)]
@@ -103,6 +101,11 @@ impl LevelComponent3d {
 
         let mut commands = world.commands();
 
+        info!(
+            "spawning component 3d components for entity {}",
+            hook.entity
+        );
+
         commands.entity(hook.entity).insert((
             RigidBody::Static,
             collider,
@@ -112,8 +115,35 @@ impl LevelComponent3d {
     }
 }
 
-/// spawn demo level with a grid of chunked entities
-pub fn spawn_level(mut commands: Commands) {
+pub fn spawn_level_from_layout(
+    mut commands: Commands,
+    chunk_layout_storage: Res<ChunkLayoutStorage>,
+    chunk_layouts: Res<Assets<ChunkLayout>>,
+    chunk_descriptors: Res<Assets<ChunkDescriptor>>,
+    chunk_elements: Res<Assets<ChunkElement>>,
+) {
+    let Some(layout) = chunk_layouts.get(&chunk_layout_storage.handle) else {
+        warn!("Chunk layout not loaded yet");
+        return;
+    };
+
+    // Compute grid bounds to support arbitrary layout coordinates (including negatives)
+    let (min_z, max_z) = {
+        let mut min_z = i32::MAX;
+        let mut max_z = i32::MIN;
+        for (&(_x, z), _) in &layout.grid {
+            if z < min_z {
+                min_z = z;
+            }
+            if z > max_z {
+                max_z = z;
+            }
+        }
+        (min_z, max_z)
+    };
+
+    let grid_size_z = max_z - min_z + 1;
+
     let level = commands
         .spawn((
             Name::new("Level"),
@@ -123,149 +153,60 @@ pub fn spawn_level(mut commands: Commands) {
         ))
         .id();
 
-    let mut chunk_index = 0;
+    for ((x, z), descriptor_handle) in &layout.grid {
+        let Some(chunk_descriptor) = chunk_descriptors.get(descriptor_handle) else {
+            return;
+        };
 
-    for chunk_x in 0..GRID_SIZE {
-        for chunk_z in 0..GRID_SIZE {
-            let transform = grid_position_to_transform(chunk_x, chunk_z);
+        let transform = Transform::from_xyz(*x as f32 * TILE_SIZE, 0.0, *z as f32 * TILE_SIZE);
 
-            let chunk = commands
-                .spawn((
-                    Name::new("Chunk"),
-                    Visibility::default(),
-                    Chunk,
-                    ChunkId(chunk_index as u32),
-                    transform,
-                    LevelCollider::Cube { length: TILE_SIZE },
-                    RigidBody::Static,
-                    Sensor,
-                    CollisionEventsEnabled,
-                    CollisionLayers::new([GameLayer::Sensor], [GameLayer::Player]),
-                    ChildOf(level),
-                ))
-                .id();
+        let chunk_id = (*z + *x * grid_size_z) as u32;
 
-            // swap the two special chunks with cube and sphere when the player enters the chunk with id 1
-            if chunk_index == 12 {
-                commands
-                    .entity(chunk)
-                    .insert(SwapSensorChunk(ChunkId(17), ChunkId(8)));
-            }
+        info!("Spawning chunk ({}, {}) with id {}", x, z, chunk_id);
+        let chunk_entity = commands
+            .spawn((
+                Name::new(format!("Chunk ({}, {})", x, z)),
+                Visibility::default(),
+                Chunk,
+                ChunkId(chunk_id),
+                transform,
+                LevelCollider::Cube { length: TILE_SIZE },
+                RigidBody::Static,
+                Sensor,
+                CollisionEventsEnabled,
+                CollisionLayers::new([GameLayer::Sensor], [GameLayer::Player]),
+                ChildOf(level),
+            ))
+            .id();
 
-            let chunk_color: Color =
-                Hsva::hsv((chunk_index as f32 / CHUNKS as f32) * 360., 1.0, 1.0).into();
+        let color = Color::srgb(0.95, 0.95, 0.95);
 
-            info!(
-                "spawned chunk at {} with index {}",
-                transform.translation.xz(),
-                chunk_index
-            );
+        for chunk_element in &chunk_descriptor.elements {
+            let element = chunk_elements.get(chunk_element).unwrap();
 
-            // Spawn debug entities
-            if chunk_index == 8 {
-                commands.entity(chunk).insert(SwappableChunk);
-                commands.spawn((
-                    Name::new("Cube"),
-                    Transform::from_xyz(0., 1., 0.),
-                    Visibility::Visible,
-                    LevelComponent3d::Cube {
-                        length: 2.,
-                        color: chunk_color,
-                    },
-                    ChildOf(chunk),
-                ));
-            }
-            if chunk_index == 17 {
-                commands.entity(chunk).insert(SwappableChunk);
-                commands.spawn((
-                    Name::new("Sphere"),
-                    Transform::from_xyz(0., 1.5, 0.),
-                    Visibility::Visible,
-                    LevelComponent3d::Sphere {
-                        radius: 1.5,
-                        color: chunk_color,
-                    },
-                    ChildOf(chunk),
-                ));
-            }
-
-            // Ground
-            commands.spawn((
-                Name::new("Ground"),
-                Transform::default(),
-                Visibility::Visible,
-                LevelComponent3d::Plane {
-                    size: Vec2::splat(TILE_SIZE / 2.),
-                    color: chunk_color,
+            let level_component = match &element.shape {
+                ChunkElementShape::Plane => LevelComponent3d::Plane {
+                    size: Vec2::splat(0.5),
+                    color,
                 },
-                ChildOf(chunk),
+                ChunkElementShape::Cube => LevelComponent3d::Cube { length: 1., color },
+                ChunkElementShape::Sphere => LevelComponent3d::Sphere { radius: 1., color },
+                s => panic!("Shape is not supported yet {:?}", s),
+            };
+
+            commands.spawn((
+                Name::new(element.name.clone()),
+                element.transform,
+                Visibility::Visible,
+                level_component,
+                ChildOf(chunk_entity),
             ));
+        }
 
-            // Walls
-            let wall_height = 5.;
-            let wall_thickness = 0.5;
-            if chunk_x == 0 {
-                // West wall
-                commands.spawn((
-                    Name::new("West Wall"),
-                    Transform::from_xyz(-TILE_SIZE / 2., wall_height / 2., 0.)
-                        .with_scale(Vec3::new(wall_thickness, wall_height, TILE_SIZE)),
-                    Visibility::Visible,
-                    LevelComponent3d::Cube {
-                        length: 1.,
-                        color: chunk_color,
-                    },
-                    ChildOf(chunk),
-                ));
-            }
-            if chunk_x == GRID_SIZE - 1 {
-                // East wall
-                commands.spawn((
-                    Name::new("East Wall"),
-                    Transform::from_xyz(TILE_SIZE / 2., wall_height / 2., 0.)
-                        .with_scale(Vec3::new(wall_thickness, wall_height, TILE_SIZE)),
-                    Visibility::Visible,
-                    LevelComponent3d::Cube {
-                        length: 1.,
-                        color: chunk_color,
-                    },
-                    ChildOf(chunk),
-                ));
-            }
-            if chunk_z == 0 {
-                // North wall
-                commands.spawn((
-                    Name::new("North Wall"),
-                    Transform::from_xyz(0., wall_height / 2., -TILE_SIZE / 2.)
-                        .with_scale(Vec3::new(TILE_SIZE, wall_height, wall_thickness)),
-                    Visibility::Visible,
-                    LevelComponent3d::Cube {
-                        length: 1.,
-                        color: chunk_color,
-                    },
-                    ChildOf(chunk),
-                ));
-            }
-            if chunk_z == GRID_SIZE - 1 {
-                // South wall
-                commands.spawn((
-                    Name::new("South Wall"),
-                    Transform::from_xyz(0., wall_height / 2., TILE_SIZE / 2.)
-                        .with_scale(Vec3::new(TILE_SIZE, wall_height, wall_thickness)),
-                    Visibility::Visible,
-                    LevelComponent3d::Cube {
-                        length: 1.,
-                        color: chunk_color,
-                    },
-                    ChildOf(chunk),
-                ));
-            }
-
-            chunk_index += 1;
+        if chunk_id == 23 {
+            commands
+                .entity(chunk_entity)
+                .insert(SwapSensorChunk(ChunkId(9), ChunkId(8)));
         }
     }
-}
-
-fn grid_position_to_transform(x: usize, z: usize) -> Transform {
-    Transform::from_xyz(x as f32 * TILE_SIZE, 0.0, z as f32 * TILE_SIZE)
 }

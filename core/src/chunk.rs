@@ -6,7 +6,10 @@ use crate::{
 };
 
 pub(super) fn plugin(app: &mut App) {
-    app.init_asset::<ChunkElement>()
+    app.register_type::<ChunkElement>()
+        .register_type::<ChunkDescriptor>()
+        .register_type::<ChunkLayout>()
+        .init_asset::<ChunkElement>()
         .init_asset::<ChunkDescriptor>()
         .init_asset::<ChunkLayout>()
         .register_asset_loader(RonAssetLoader::<ChunkElementAsset>::new())
@@ -15,17 +18,19 @@ pub(super) fn plugin(app: &mut App) {
         .load_resource::<ChunkLayoutStorage>();
 }
 
-pub const CHUNK_SIZE: Vec2 = Vec2 { x: 16., y: 16. };
+pub const CHUNK_SIZE: Vec2 = Vec2 { x: 5., y: 5. };
 
 #[derive(Debug, Deserialize)]
 pub enum ChunkElementShapeAsset {
+    Plane,
     Cube,
     Sphere,
     Gltf { mesh: String },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Reflect)]
 pub enum ChunkElementShape {
+    Plane,
     Cube,
     Sphere,
     Gltf { mesh: Handle<Gltf> },
@@ -38,7 +43,7 @@ pub struct ChunkElementAsset {
     pub shape: ChunkElementShapeAsset,
 }
 
-#[derive(Asset, TypePath, Debug)]
+#[derive(Asset, Debug, Reflect)]
 pub struct ChunkElement {
     pub name: String,
     pub transform: Transform,
@@ -50,7 +55,9 @@ impl RonAsset for ChunkElementAsset {
     const EXTENSION: &str = ".chunk.element";
 
     async fn load_dependencies(self, context: &mut bevy::asset::LoadContext<'_>) -> Self::Asset {
+        debug!("Loading ChunkElementAsset: {}", self.name);
         let shape = match self.shape {
+            ChunkElementShapeAsset::Plane => ChunkElementShape::Plane,
             ChunkElementShapeAsset::Cube => ChunkElementShape::Cube,
             ChunkElementShapeAsset::Sphere => ChunkElementShape::Sphere,
             ChunkElementShapeAsset::Gltf { mesh } => ChunkElementShape::Gltf {
@@ -71,7 +78,7 @@ pub struct ChunkDescriptorAsset {
     pub elements: Vec<String>,
 }
 
-#[derive(Asset, TypePath, Debug)]
+#[derive(Asset, Debug, Reflect)]
 pub struct ChunkDescriptor {
     #[dependency]
     pub elements: Vec<Handle<ChunkElement>>,
@@ -82,6 +89,7 @@ impl RonAsset for ChunkDescriptorAsset {
     const EXTENSION: &str = ".chunk";
 
     async fn load_dependencies(self, context: &mut bevy::asset::LoadContext<'_>) -> Self::Asset {
+        debug!("Loading ChunkDescriptorAsset: {}", self.name);
         let elements = self
             .elements
             .into_iter()
@@ -96,7 +104,7 @@ pub struct ChunkLayoutAsset {
     pub grid: HashMap<(i32, i32), String>,
 }
 
-#[derive(Asset, TypePath, Debug)]
+#[derive(Asset, Debug, Reflect)]
 pub struct ChunkLayout {
     /// Maps chunk positions (in chunk space, world space is obtained by multiplying by
     /// [`CHUNK_SIZE`]) to [`ChunkDescriptor`]

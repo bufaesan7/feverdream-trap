@@ -7,7 +7,7 @@ impl Plugin for ChunkPlugin {
         app.init_resource::<PlayerChunk>()
             .add_observer(on_player_entered_chunk)
             .add_observer(on_swap_chunks)
-            .add_systems(PreUpdate, swap_chunks_on_contact_with_sensor);
+            .add_systems(PreUpdate, (swap_chunks_on_contact_with_sensor,));
     }
 }
 
@@ -20,11 +20,6 @@ pub struct Chunk;
 #[require(Chunk)]
 #[reflect(Component)]
 pub struct ChunkId(pub u32);
-
-#[derive(Component, Reflect)]
-#[require(Chunk)]
-#[reflect(Component)]
-pub struct SwappableChunk;
 
 /// swaps the two associated chunks on player entrance
 #[derive(Component, Reflect)]
@@ -65,31 +60,21 @@ pub fn on_player_entered_chunk(
 
 fn on_swap_chunks(
     event: On<SwapChunks>,
-    mut chunk_transform_query: Query<(&ChunkId, &mut Transform), With<SwappableChunk>>,
+    mut chunk_transform_query: Query<(&ChunkId, &mut Transform)>,
 ) {
     let SwapChunks(ChunkId(chunk_a), ChunkId(chunk_b)) = *event;
 
-    // retrieve the chunk entities from their id
-
-    info!(
-        "chunk_transform: {:?} ",
-        chunk_transform_query.iter().collect::<Vec<_>>()
-    );
-
-    println!("Swapping chunk {:?} with {:?}", chunk_a, chunk_b);
+    info!("Swapping chunk {:?} with {:?}", chunk_a, chunk_b);
 
     let mut chunk_transforms =
         chunk_transform_query
             .iter_mut()
-            .filter_map(|(ChunkId(id), transform)| match *id {
-                a if [chunk_a, chunk_b].contains(&a) => Some(transform),
+            .filter_map(|(ChunkId(id), transform)| match id {
+                chunk_id if [chunk_a, chunk_b].contains(chunk_id) => Some(transform),
                 _ => None,
             });
 
     let (chunk_a_transform, chunk_b_transform) = (chunk_transforms.next(), chunk_transforms.next());
-
-    info!("chunk_a_transform: {:?}", chunk_a_transform);
-    info!("chunk_b_transform: {:?}", chunk_b_transform);
 
     if let (Some(mut transform_a), Some(mut transform_b)) = (chunk_a_transform, chunk_b_transform) {
         swap(&mut transform_a.translation, &mut transform_b.translation);
