@@ -10,14 +10,14 @@ use crate::{camera_controller::CameraMarker, prelude::*};
 
 pub(crate) fn plugin(app: &mut App) {
     app.add_plugins(MeshPickingPlugin)
-        .add_systems(Update, interactable_in_range)
+        .add_systems(Update, (interactable_in_range, interact))
         .init_resource::<HighlightStorageBuffer>()
         .add_plugins(MaterialPlugin::<
             ExtendedMaterial<StandardMaterial, HighlightExtension>,
         >::default());
 }
 
-const INTERACTION_DISTANCE: f32 = 40.0;
+const INTERACTION_DISTANCE: f32 = 10.0;
 
 /// Indicates whether an entity can be interacted with
 #[derive(Debug, Component, Reflect)]
@@ -42,6 +42,7 @@ fn interactable_in_range(
         &|entity| interactables.contains(entity),
     );
 
+    // TODO: This is not optimal
     for entity in focus_targets {
         commands.entity(entity).try_remove::<FocusTarget>();
     }
@@ -107,5 +108,13 @@ impl MaterialExtension for HighlightExtension {
 
     fn deferred_fragment_shader() -> ShaderRef {
         SHADER_ASSET_PATH.into()
+    }
+}
+
+fn interact(mouse: Res<ButtonInput<MouseButton>>, focus_targets: Query<Entity, With<FocusTarget>>) {
+    for entity in &focus_targets {
+        if mouse.just_pressed(MouseButton::Left) {
+            info!("Interact with {:?}", entity);
+        }
     }
 }
