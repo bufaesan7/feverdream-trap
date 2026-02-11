@@ -1,4 +1,8 @@
-pub use crate::*;
+pub use crate::asset_plugin;
+pub use crate::asset_tracking::{LoadResource as _, ResourceHandles};
+pub use crate::audio::{music, sound_effect};
+pub use crate::chunk::{self, ChunkLayoutStorage};
+pub use crate::theme::widget;
 
 /// Bevy & ecosystem exports
 pub use avian3d::prelude::*;

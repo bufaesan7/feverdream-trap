@@ -1,7 +1,6 @@
 //! A loading screen during which game assets are loaded if necessary.
 //! This reduces stuttering, especially for audio on Wasm.
 
-use crate::asset_tracking::ResourceHandles;
 use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {

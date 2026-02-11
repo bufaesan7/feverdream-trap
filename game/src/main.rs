@@ -3,10 +3,9 @@
 // Disable console on Windows for non-dev builds.
 #![cfg_attr(not(feature = "dev"), windows_subsystem = "windows")]
 
-mod asset_tracking;
-mod audio;
 mod camera_controller;
 mod character_controller;
+mod chunk;
 #[cfg(feature = "dev")]
 mod dev_tools;
 mod interaction;
@@ -15,13 +14,12 @@ mod menus;
 mod prelude;
 mod scene;
 mod screens;
-mod theme;
 
 use avian3d::PhysicsPlugins;
 
 use crate::{
     camera_controller::CameraControllerPlugin, character_controller::CharacterControllerPlugin,
-    prelude::*,
+    chunk::ChunkPlugin, prelude::*,
 };
 
 fn main() -> AppExit {
@@ -51,19 +49,21 @@ impl Plugin for AppPlugin {
 
         // Add other plugins.
         app.add_plugins((
-            asset_tracking::plugin,
-            audio::plugin,
+            feverdream_trap_core::utility_plugin,
             #[cfg(feature = "dev")]
             dev_tools::plugin,
             menus::plugin,
             screens::plugin,
             scene::plugin,
-            theme::plugin,
             interaction::plugin,
         ));
 
         // Custom game plugins
-        app.add_plugins((CameraControllerPlugin, CharacterControllerPlugin));
+        app.add_plugins((
+            CameraControllerPlugin,
+            CharacterControllerPlugin,
+            ChunkPlugin,
+        ));
 
         // Order new `AppSystems` variants by adding them here:
         app.configure_sets(

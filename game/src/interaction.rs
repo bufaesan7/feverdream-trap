@@ -6,7 +6,7 @@ use bevy::{
     shader::ShaderRef,
 };
 
-use crate::{camera_controller::CameraMarker, prelude::*};
+use crate::{camera_controller::CameraMarker, character_controller::GameLayer, prelude::*};
 
 pub(crate) fn plugin(app: &mut App) {
     app.add_plugins(MeshPickingPlugin)
@@ -23,7 +23,20 @@ const INTERACTION_DISTANCE: f32 = 10.0;
 #[derive(Debug, Component, Reflect)]
 #[reflect(Component)]
 #[require(MeshTag)]
+#[component(on_add)]
 pub struct Interactable;
+
+impl Interactable {
+    fn on_add(mut world: DeferredWorld, ctx: HookContext) {
+        world
+            .commands()
+            .entity(ctx.entity)
+            .insert(CollisionLayers::new(
+                GameLayer::Interactable,
+                LayerMask::ALL,
+            ));
+    }
+}
 
 // SpatialQuery ray cast from camera for interactable entities
 fn interactable_in_range(
@@ -39,7 +52,7 @@ fn interactable_in_range(
         transform.forward(),
         INTERACTION_DISTANCE,
         true,
-        &SpatialQueryFilter::default(),
+        &SpatialQueryFilter::from_mask(GameLayer::Interactable),
         &|_| true,
     );
 
@@ -47,10 +60,10 @@ fn interactable_in_range(
     for entity in focus_targets {
         commands.entity(entity).try_remove::<FocusTarget>();
     }
-    if let Some(first_hit) = hit {
-        if interactables.contains(first_hit.entity) {
-            commands.entity(first_hit.entity).insert(FocusTarget);
-        }
+    if let Some(first_hit) = hit
+        && interactables.contains(first_hit.entity)
+    {
+        commands.entity(first_hit.entity).insert(FocusTarget);
     }
 }
 

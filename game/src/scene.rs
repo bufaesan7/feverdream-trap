@@ -1,8 +1,9 @@
 use bevy::scene::SceneInstanceReady;
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::tasks::IoTaskPool;
-use bevy_ahoy::CharacterController;
 
+use crate::chunk::{Chunk, ChunkId, SwapSensorChunk, SwappableChunk};
+use crate::level::LevelCollider;
 use crate::{
     camera_controller::{CameraMarker, CameraTargetCharacterController, spawn_camera},
     character_controller::{Player, PlayerInput, spawn_player},
@@ -76,15 +77,26 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             .allow_component::<Name>()
             .allow_component::<Level>()
             .allow_component::<LevelComponent>()
+            .allow_component::<LevelCollider>()
             .allow_component::<LevelComponent3d>()
             .allow_component::<Transform>()
             .allow_component::<Visibility>()
             .allow_component::<CameraMarker>()
             .allow_component::<CameraTargetCharacterController>()
-            .allow_component::<CharacterController>()
             .allow_component::<Player>()
             .allow_component::<PlayerInput>()
+            // Physics
             .allow_component::<Collider>()
+            .allow_component::<CollisionEventsEnabled>()
+            .allow_component::<CollisionLayers>()
+            .allow_component::<Sensor>()
+            .allow_component::<RigidBody>()
+            // Chunks
+            .allow_component::<Chunk>()
+            .allow_component::<ChunkId>()
+            .allow_component::<SwappableChunk>()
+            .allow_component::<SwapSensorChunk>()
+            // Relationships
             .allow_component::<Children>()
             .allow_component::<ChildOf>()
             .allow_component::<Interactable>()
