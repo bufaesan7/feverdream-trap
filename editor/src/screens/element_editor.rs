@@ -6,7 +6,7 @@ pub(super) fn plugin(app: &mut App) {
 
 fn spawn_editor(mut commands: Commands, chunks: Res<Assets<ChunkElement>>) {
     commands.spawn((
-        widget::sidebar(
+        editor_widget::sidebar(
             children![widget::button_small("New chunk element", new_element)],
             children![
                 widget::label_sized("Element editor", 12.),
@@ -22,6 +22,28 @@ fn spawn_editor(mut commands: Commands, chunks: Res<Assets<ChunkElement>>) {
     ));
 }
 
-fn new_element(_: On<Pointer<Click>>) {
-    debug!("New chunk!");
+fn new_element(_: On<Pointer<Click>>, mut commands: Commands) {
+    editor_widget::item_creation(
+        &mut commands,
+        "ChunkElement",
+        |p| {
+            p.spawn((
+                editor_widget::ui_row(),
+                children![
+                    widget::label_sized("Name:", 12.),
+                    (
+                        TextEditable::default(),
+                        Text::new("Name"),
+                        TextFont::from_font_size(12.)
+                    )
+                ],
+            ));
+            p.spawn(editor_widget::transform_editor());
+        },
+        element_created,
+    );
+}
+
+fn element_created() {
+    debug!("Element created!");
 }

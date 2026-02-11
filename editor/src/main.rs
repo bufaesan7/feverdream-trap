@@ -3,10 +3,13 @@
 // Disable console on Windows for non-dev builds.
 #![cfg_attr(not(feature = "dev"), windows_subsystem = "windows")]
 
+use bevy_text_edit::TextEditPluginAnyState;
+
 use crate::prelude::*;
 
 mod prelude;
 mod screens;
+mod widget;
 
 fn main() -> AppExit {
     let mut app = App::new();
@@ -24,6 +27,8 @@ fn main() -> AppExit {
             ..default()
         }),
     );
+
+    app.add_plugins(TextEditPluginAnyState::any());
 
     app.init_state::<Screen>();
 

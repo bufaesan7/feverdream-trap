@@ -33,6 +33,7 @@ bevy.workspace = true
 
 bevy-inspector-egui = { workspace = true, optional = true }
 bevy_skein = { workspace = true, optional = true }
+bevy_text_edit.workspace = true
 
 
 [package.metadata.bevy_cli.release]

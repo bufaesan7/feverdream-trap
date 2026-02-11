@@ -7,7 +7,7 @@ pub(super) fn plugin(app: &mut App) {
 #[cfg_attr(bevy_lint, allow(bevy::unit_in_bundle))]
 fn spawn_editor(mut commands: Commands) {
     commands.spawn((
-        widget::sidebar(
+        editor_widget::sidebar(
             (),
             children![
                 widget::label_sized("Chunk layout editor", 12.),

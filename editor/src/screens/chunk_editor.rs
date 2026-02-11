@@ -6,7 +6,7 @@ pub(super) fn plugin(app: &mut App) {
 
 fn spawn_editor(mut commands: Commands, chunks: Res<Assets<ChunkDescriptor>>) {
     commands.spawn((
-        widget::sidebar(
+        editor_widget::sidebar(
             children![widget::button_small("New chunk", new_chunk)],
             children![
                 widget::label_sized("Chunk editor", 12.),
