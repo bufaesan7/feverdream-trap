@@ -10,112 +10,43 @@ use crate::{camera_controller::CameraMarker, prelude::*};
 
 pub(crate) fn plugin(app: &mut App) {
     app.add_plugins(MeshPickingPlugin)
-        .add_systems(Update, focusable_highlight)
+        .add_systems(Update, interactable_in_range)
         .init_resource::<HighlightStorageBuffer>()
         .add_plugins(MaterialPlugin::<
             ExtendedMaterial<StandardMaterial, HighlightExtension>,
         >::default());
 }
 
+const INTERACTION_DISTANCE: f32 = 40.0;
+
 /// Indicates whether an entity can be interacted with
-/// Adds/removes picking over/out observers on the entity that add/remove [`Focusable`]
 #[derive(Debug, Component, Reflect)]
 #[reflect(Component)]
-#[component(on_add, on_remove)]
 #[require(MeshTag)]
-pub struct Interactable {
-    distance: f32,
-    over_observer: Entity,
-    out_observer: Entity,
-}
+pub struct Interactable;
 
-impl Interactable {
-    pub fn new(distance: f32) -> Self {
-        Self {
-            distance,
-            over_observer: Entity::PLACEHOLDER,
-            out_observer: Entity::PLACEHOLDER,
-        }
-    }
-
-    fn on_add(mut world: DeferredWorld, ctx: HookContext) {
-        // Add Observer
-        let over_observer = world
-            .commands()
-            .spawn(Observer::new(Self::on_over).with_entity(ctx.entity))
-            .id();
-        let out_observer = world
-            .commands()
-            .spawn(Observer::new(Self::on_out).with_entity(ctx.entity))
-            .id();
-
-        if let Some(mut interactable) = world.entity_mut(ctx.entity).get_mut::<Self>() {
-            interactable.over_observer = over_observer;
-            interactable.out_observer = out_observer;
-        }
-    }
-
-    fn on_remove(mut world: DeferredWorld, ctx: HookContext) {
-        // Remove observer
-        let observer = world
-            .entity(ctx.entity)
-            .get::<Self>()
-            .map(|interactable| (interactable.over_observer, interactable.out_observer));
-
-        if let Some(observer) = observer {
-            world.commands().entity(observer.0).try_despawn();
-            world.commands().entity(observer.1).try_despawn();
-        }
-    }
-
-    fn on_over(over: On<Pointer<Over>>, mut commands: Commands) {
-        commands.entity(over.entity).insert(Focusable);
-    }
-
-    fn on_out(over: On<Pointer<Out>>, mut commands: Commands) {
-        commands.entity(over.entity).try_remove::<Focusable>();
-    }
-}
-
-// This indicates that an interactable entity is focusable (because we are looking at it)
-#[derive(Debug, Component, Reflect)]
-#[reflect(Component)]
-#[component(on_remove)]
-struct Focusable;
-
-impl Focusable {
-    fn on_remove(mut world: DeferredWorld, ctx: HookContext) {
-        // Remove FocusTarget
-        world
-            .commands()
-            .entity(ctx.entity)
-            .try_remove::<FocusTarget>();
-    }
-}
-
-// Sets MeshTag based on distance
-fn focusable_highlight(
+fn interactable_in_range(
     mut commands: Commands,
-    query: Query<(Entity, &Interactable), With<Focusable>>,
-    camera: Single<Entity, With<CameraMarker>>,
-    transforms: Query<&GlobalTransform>,
+    spatial_query: SpatialQuery,
+    interactables: Query<&Interactable>,
+    camera: Single<&GlobalTransform, With<CameraMarker>>,
+    focus_targets: Query<Entity, With<FocusTarget>>,
 ) {
-    for (interactable_entity, interactable) in &query {
-        if let Ok([interactable_transform, camera_transform]) =
-            transforms.get_many([interactable_entity, *camera])
-        {
-            let distance = camera_transform
-                .translation()
-                .distance(interactable_transform.translation());
+    let transform = camera.compute_transform();
+    let hit = spatial_query.cast_ray_predicate(
+        transform.translation,
+        transform.forward(),
+        INTERACTION_DISTANCE,
+        true,
+        &SpatialQueryFilter::default(),
+        &|entity| interactables.contains(entity),
+    );
 
-            if distance < interactable.distance {
-                commands.entity(interactable_entity).insert(FocusTarget);
-            } else {
-                commands
-                    .entity(interactable_entity)
-                    .try_remove::<FocusTarget>();
-            }
-        }
+    for entity in focus_targets {
+        commands.entity(entity).try_remove::<FocusTarget>();
+    }
+    if let Some(first_hit) = hit {
+        commands.entity(first_hit.entity).insert(FocusTarget);
     }
 }
 

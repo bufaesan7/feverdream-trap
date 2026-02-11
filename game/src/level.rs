@@ -33,8 +33,14 @@ pub struct LevelComponent;
 /// Abstract [`Mesh3d`] and [`MeshMaterial3d`] insertion to avoid inserting them in the
 /// [`DynamicScene`] storage.
 pub enum LevelComponent3d {
-    Plane { size: Vec2 },
-    Cube { length: f32, color: Color },
+    Plane {
+        size: Vec2,
+    },
+    Cube {
+        length: f32,
+        color: Color,
+        rigid_body: RigidBody,
+    },
 }
 
 impl LevelComponent3d {
@@ -73,9 +79,14 @@ impl LevelComponent3d {
             LevelComponent3d::Cube { length, .. } => Collider::cuboid(length, length, length),
         };
 
+        let rigid_body = match mesh_type {
+            LevelComponent3d::Plane { .. } => RigidBody::Static,
+            LevelComponent3d::Cube { rigid_body, .. } => rigid_body,
+        };
+
         let mut commands = world.commands();
         commands.entity(hook.entity).insert((
-            RigidBody::Static,
+            rigid_body,
             collider,
             Mesh3d(mesh),
             MeshMaterial3d(material),
@@ -124,6 +135,7 @@ pub fn spawn_level(mut commands: Commands) {
                     LevelComponent3d::Cube {
                         length: LEVEL_SIZE,
                         color: Color::BLACK,
+                        rigid_body: RigidBody::Static,
                     },
                 ))
                 .id();
@@ -141,6 +153,7 @@ pub fn spawn_level(mut commands: Commands) {
                     LevelComponent3d::Cube {
                         length: LEVEL_SIZE,
                         color: Color::BLACK,
+                        rigid_body: RigidBody::Static,
                     },
                 ))
                 .id();
@@ -165,8 +178,20 @@ pub fn spawn_level(mut commands: Commands) {
         LevelComponent3d::Cube {
             length: 3.,
             color: bevy::color::palettes::css::BLUE.into(),
+            rigid_body: RigidBody::Dynamic,
         },
-        Interactable::new(50.0),
+        Interactable,
+    ));
+
+    commands.spawn((
+        Name::new("Cube"),
+        Transform::from_xyz(10., 0., -20.),
+        Visibility::Visible,
+        LevelComponent3d::Cube {
+            length: 3.,
+            color: bevy::color::palettes::css::RED.into(),
+            rigid_body: RigidBody::Dynamic,
+        },
     ));
 }
 
