@@ -1,9 +1,1 @@
-(
-    name: "OpenCorridorChunk",
-    elements: [
-        "chunks/elements/demo/floor",
-        "chunks/elements/demo/ceiling",
-        "chunks/elements/demo/wall_west",
-        "chunks/elements/demo/wall_east",
-    ],
-)
+(name:"demo/open_corridor",elements:["demo/floor","demo/ceiling","demo/wall_west","demo/wall_east"])

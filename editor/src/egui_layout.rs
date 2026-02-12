@@ -1,6 +1,3 @@
-#[cfg(not(target_arch = "wasm32"))]
-use std::path::PathBuf;
-
 use bevy::{
     camera::{Viewport, visibility::RenderLayers},
     window::PrimaryWindow,
@@ -9,6 +6,8 @@ use bevy_egui::{EguiContext, EguiContextSettings, EguiGlobalSettings, EguiPrimar
 use bevy_inspector_egui::{DefaultInspectorConfigPlugin, bevy_inspector::ui_for_assets};
 use egui::LayerId;
 use egui_dock::{DockArea, DockState, NodeIndex, Style};
+#[cfg(not(target_arch = "wasm32"))]
+use std::path::PathBuf;
 
 use crate::{
     elements::{AssetHandleStash, EguiActionBuffer},
@@ -236,40 +235,30 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                 ui.vertical(|ui| {
                     #[cfg(not(target_arch = "wasm32"))]
                     if ui.button("Save Assets").clicked() {
+                        info!("Saving assets");
                         // ------------------------------
                         // Chunk elements
                         // ------------------------------
                         let element_assets = self.world.resource::<Assets<ChunkElement>>();
-                        for (_, asset) in element_assets.iter() {
-                            let element_asset = ChunkElementAsset::from(asset);
-                            let asset_string = to_string(&element_asset).unwrap();
+                        for (_, element) in element_assets.iter() {
+                            let element_asset = ChunkElementAsset::from(element);
+                            let element_path = PathBuf::from("assets").join(element_asset.path());
+                            let serialized_asset = to_string(&element_asset).unwrap();
 
-                            let mut chunk_asset_path = PathBuf::from("assets");
-                            chunk_asset_path.push("chunks");
-                            chunk_asset_path.push(format!(
-                                "{}.{}",
-                                element_asset.name,
-                                ChunkElementAsset::EXTENSION
-                            ));
-                            std::fs::write(chunk_asset_path, asset_string).unwrap();
+                            info!("saving chunk element asset {}", element_path.display());
+                            std::fs::write(element_path, serialized_asset).unwrap();
                         }
                         // ------------------------------
                         // Chunk descriptors
                         // ------------------------------
                         let descriptor_assets = self.world.resource::<Assets<ChunkDescriptor>>();
-                        for (_, asset) in descriptor_assets.iter() {
-                            let descriptor_asset =
-                                ChunkDescriptorAsset::from((asset, element_assets));
-                            let asset_string = to_string(&descriptor_asset).unwrap();
+                        for (_, chunk) in descriptor_assets.iter() {
+                            let chunk_asset = ChunkDescriptorAsset::from((chunk, element_assets));
+                            let chunk_path = PathBuf::from("assets").join(chunk_asset.path());
+                            let serialized_asset = to_string(&chunk_asset).unwrap();
 
-                            let mut chunk_asset_path = PathBuf::from("assets");
-                            chunk_asset_path.push("chunks");
-                            chunk_asset_path.push(format!(
-                                "{}.{}",
-                                descriptor_asset.name,
-                                ChunkDescriptorAsset::EXTENSION
-                            ));
-                            std::fs::write(chunk_asset_path, asset_string).unwrap();
+                            info!("saving chunk asset {}", chunk_path.display());
+                            std::fs::write(chunk_path, serialized_asset).unwrap();
                         }
                         info!("Saved assets");
                     }

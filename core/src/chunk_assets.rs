@@ -68,6 +68,21 @@ impl ChunkElement {
     }
 }
 
+impl ChunkElementAsset {
+    pub const PATH: &str = "chunks/elements";
+
+    pub fn path(&self) -> PathBuf {
+        Self::path_from_name(&self.name)
+    }
+
+    pub fn path_from_name(name: &str) -> PathBuf {
+        let mut path = PathBuf::from(Self::PATH);
+        path.push(name.to_string() + "." + Self::EXTENSION);
+
+        path
+    }
+}
+
 impl From<&ChunkElement> for ChunkElementAsset {
     fn from(value: &ChunkElement) -> Self {
         Self {
@@ -135,19 +150,6 @@ impl ChunkDescriptor {
     }
 }
 
-impl From<(&ChunkDescriptor, &Assets<ChunkElement>)> for ChunkDescriptorAsset {
-    fn from((value, assets): (&ChunkDescriptor, &Assets<ChunkElement>)) -> Self {
-        Self {
-            name: value.name.clone(),
-            elements: value
-                .elements
-                .iter()
-                .filter_map(|handle| assets.get(&handle.0).map(|e| e.name.clone()))
-                .collect(),
-        }
-    }
-}
-
 impl Asset for ChunkDescriptor {}
 
 impl VisitAssetDependencies for ChunkDescriptor {
@@ -207,6 +209,34 @@ impl bevy_inspector_egui::inspector_egui_impls::InspectorPrimitive
     }
 }
 
+impl ChunkDescriptorAsset {
+    pub const PATH: &str = "chunks";
+
+    pub fn path(&self) -> PathBuf {
+        Self::path_from_name(&self.name)
+    }
+
+    pub fn path_from_name(name: &str) -> PathBuf {
+        let mut path = PathBuf::from(Self::PATH);
+        path.push(name.to_string() + "." + Self::EXTENSION);
+
+        path
+    }
+}
+
+impl From<(&ChunkDescriptor, &Assets<ChunkElement>)> for ChunkDescriptorAsset {
+    fn from((value, assets): (&ChunkDescriptor, &Assets<ChunkElement>)) -> Self {
+        Self {
+            name: value.name.clone(),
+            elements: value
+                .elements
+                .iter()
+                .filter_map(|handle| assets.get(&handle.0).map(|e| e.name.clone()))
+                .collect(),
+        }
+    }
+}
+
 impl RonAsset for ChunkDescriptorAsset {
     type Asset = ChunkDescriptor;
     const EXTENSION: &str = "chunk";
@@ -215,12 +245,9 @@ impl RonAsset for ChunkDescriptorAsset {
         let elements = self
             .elements
             .into_iter()
-            .map(|path| {
-                let mut p = PathBuf::from("chunks");
-                p.push(path + "." + ChunkElementAsset::EXTENSION);
-                Wrapper(context.load(p))
-            })
+            .map(|name| Wrapper(context.load(ChunkElementAsset::path_from_name(&name))))
             .collect();
+
         ChunkDescriptor {
             name: self.name,
             elements,
@@ -242,16 +269,17 @@ pub struct ChunkLayout {
 
 impl RonAsset for ChunkLayoutAsset {
     type Asset = ChunkLayout;
-    const EXTENSION: &str = ".layout";
+    const EXTENSION: &str = "layout";
 
     async fn load_dependencies(self, context: &mut bevy::asset::LoadContext<'_>) -> Self::Asset {
         let grid = self
             .grid
             .into_iter()
-            .map(|(pos, path)| {
-                let mut p = PathBuf::from("chunks");
-                p.push(path + "." + ChunkDescriptorAsset::EXTENSION);
-                (pos, context.load(p))
+            .map(|(pos, name)| {
+                (
+                    pos,
+                    context.load(ChunkDescriptorAsset::path_from_name(&name)),
+                )
             })
             .collect();
         ChunkLayout { grid }
@@ -267,7 +295,8 @@ impl FromWorld for ChunkLayoutStorage {
     fn from_world(world: &mut World) -> Self {
         let asset_server = world.resource::<AssetServer>();
         ChunkLayoutStorage {
-            handle: asset_server.load("chunks/chunk".to_string() + ChunkLayoutAsset::EXTENSION),
+            handle: asset_server
+                .load("chunks/chunk".to_string() + "." + ChunkLayoutAsset::EXTENSION),
         }
     }
 }
