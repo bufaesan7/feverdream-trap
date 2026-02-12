@@ -20,6 +20,7 @@ pub struct EguiActionBuffer {
 pub struct AssetHandleStash {
     pub elements: Vec<Handle<ChunkElement>>,
     pub descriptors: Vec<Handle<ChunkDescriptor>>,
+    pub layout: Handle<ChunkLayout>,
 }
 
 impl FromWorld for AssetHandleStash {
@@ -54,9 +55,13 @@ impl FromWorld for AssetHandleStash {
             descriptors.len()
         );
 
+        let mut layout_path = PathBuf::from("chunks");
+        layout_path.push("chunk.".to_string() + ChunkLayoutAsset::EXTENSION);
+
         Self {
             elements,
             descriptors,
+            layout: asset_server.load(layout_path),
         }
     }
 }

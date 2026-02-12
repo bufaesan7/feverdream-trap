@@ -177,97 +177,108 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                     // ------------------------------
                     // Chunk elements
                     // ------------------------------
-                    ui.heading("ChunkElements");
-                    ui_for_assets::<ChunkElement>(self.world, ui);
-                    ui.separator();
-                    let path = &mut self
-                        .world
-                        .resource_mut::<EguiActionBuffer>()
-                        .new_element_name;
-                    ui.horizontal(|ui| {
-                        ui.label("Name:");
-                        ui.text_edit_singleline(path);
-                    });
-                    if ui.button(format!("Create ChunkElement ({path})")).clicked() {
-                        if path.is_empty() {
-                            error!("Choose a more descriptive name!");
-                        } else {
-                            let path = path.clone();
-                            let handle = self
-                                .world
-                                .resource::<AssetServer>()
-                                .add(ChunkElement::new(path));
-                            self.world
-                                .resource_mut::<AssetHandleStash>()
-                                .elements
-                                .push(handle);
+                    ui.collapsing(egui::RichText::new("ChunkElements").size(18.), |ui| {
+                        ui_for_assets::<ChunkElement>(self.world, ui);
+                        ui.separator();
+                        let path = &mut self
+                            .world
+                            .resource_mut::<EguiActionBuffer>()
+                            .new_element_name;
+                        ui.horizontal(|ui| {
+                            ui.label("Name:");
+                            ui.text_edit_singleline(path);
+                        });
+                        if ui.button(format!("Create ChunkElement ({path})")).clicked() {
+                            if path.is_empty() {
+                                error!("Choose a more descriptive name!");
+                            } else {
+                                let path = path.clone();
+                                let handle = self
+                                    .world
+                                    .resource::<AssetServer>()
+                                    .add(ChunkElement::new(path));
+                                self.world
+                                    .resource_mut::<AssetHandleStash>()
+                                    .elements
+                                    .push(handle);
+                            }
                         }
-                    }
+                    });
                     // ------------------------------
                     // Chunk descriptors
                     // ------------------------------
                     ui.separator();
-                    ui.heading("ChunkDescriptors");
-                    ui_for_assets::<ChunkDescriptor>(self.world, ui);
-                    ui.separator();
+                    ui.collapsing(egui::RichText::new("ChunkDescriptors").size(18.), |ui| {
+                        ui_for_assets::<ChunkDescriptor>(self.world, ui);
+                        ui.separator();
 
-                    // Preview buttons for each descriptor
-                    ui.label("Preview descriptor:");
-                    {
-                        let descriptor_assets = self.world.resource::<Assets<ChunkDescriptor>>();
-                        let asset_server = self.world.resource::<AssetServer>();
-                        let current_preview = self
-                            .world
-                            .resource::<DescriptorPreview>()
-                            .descriptor
-                            .as_ref()
-                            .map(|h| h.id());
-                        let mut selected = None;
-                        for (id, descriptor) in descriptor_assets.iter() {
-                            let is_active = current_preview == Some(id);
-                            let label = if is_active {
-                                format!("[Active] {}", descriptor.name)
-                            } else {
-                                format!("Preview: {}", descriptor.name)
-                            };
-                            if ui.button(label).clicked() {
-                                selected = Some(
-                                    asset_server.get_id_handle::<ChunkDescriptor>(id).unwrap(),
-                                );
+                        // Preview buttons for each descriptor
+                        ui.label("Preview descriptor:");
+                        {
+                            let descriptor_assets =
+                                self.world.resource::<Assets<ChunkDescriptor>>();
+                            let asset_server = self.world.resource::<AssetServer>();
+                            let current_preview = self
+                                .world
+                                .resource::<DescriptorPreview>()
+                                .descriptor
+                                .as_ref()
+                                .map(|h| h.id());
+                            let mut selected = None;
+                            for (id, descriptor) in descriptor_assets.iter() {
+                                let is_active = current_preview == Some(id);
+                                let label = if is_active {
+                                    format!("[Active] {}", descriptor.name)
+                                } else {
+                                    format!("Preview: {}", descriptor.name)
+                                };
+                                if ui.button(label).clicked() {
+                                    selected = Some(
+                                        asset_server.get_id_handle::<ChunkDescriptor>(id).unwrap(),
+                                    );
+                                }
+                            }
+                            if let Some(handle) = selected {
+                                self.world.resource_mut::<DescriptorPreview>().descriptor =
+                                    Some(handle);
                             }
                         }
-                        if let Some(handle) = selected {
-                            self.world.resource_mut::<DescriptorPreview>().descriptor =
-                                Some(handle);
+                        ui.separator();
+                        let path = &mut self
+                            .world
+                            .resource_mut::<EguiActionBuffer>()
+                            .new_descriptor_name;
+                        ui.horizontal(|ui| {
+                            ui.label("Name:");
+                            ui.text_edit_singleline(path);
+                        });
+                        if ui
+                            .button(format!("Create ChunkDescriptor ({path})"))
+                            .clicked()
+                        {
+                            if path.is_empty() {
+                                error!("Choose a more descriptive name!");
+                            } else {
+                                let path = path.clone();
+                                let handle = self
+                                    .world
+                                    .resource::<AssetServer>()
+                                    .add(ChunkDescriptor::new(path));
+                                self.world
+                                    .resource_mut::<AssetHandleStash>()
+                                    .descriptors
+                                    .push(handle);
+                            }
                         }
-                    }
-                    ui.separator();
-                    let path = &mut self
-                        .world
-                        .resource_mut::<EguiActionBuffer>()
-                        .new_descriptor_name;
-                    ui.horizontal(|ui| {
-                        ui.label("Name:");
-                        ui.text_edit_singleline(path);
                     });
-                    if ui
-                        .button(format!("Create ChunkDescriptor ({path})"))
-                        .clicked()
-                    {
-                        if path.is_empty() {
-                            error!("Choose a more descriptive name!");
-                        } else {
-                            let path = path.clone();
-                            let handle = self
-                                .world
-                                .resource::<AssetServer>()
-                                .add(ChunkDescriptor::new(path));
-                            self.world
-                                .resource_mut::<AssetHandleStash>()
-                                .descriptors
-                                .push(handle);
-                        }
-                    }
+                    // ------------------------------
+                    // Chunk descriptors
+                    // ------------------------------
+                    ui.separator();
+                    ui.collapsing(egui::RichText::new("ChunkLayout").size(18.), |ui| {
+                        ui.heading("ChunkLayout");
+                        ui_for_assets::<ChunkLayout>(self.world, ui);
+                    });
                 });
             }
             EguiWindow::Options => {

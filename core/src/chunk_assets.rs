@@ -260,7 +260,8 @@ pub struct ChunkLayoutAsset {
     pub grid: HashMap<(i32, i32), String>,
 }
 
-#[derive(Asset, TypePath, Debug)]
+#[derive(Asset, Reflect, Debug)]
+#[reflect(Asset)]
 pub struct ChunkLayout {
     /// Maps chunk positions (in chunk space, world space is obtained by multiplying by
     /// [`CHUNK_SIZE`]) to [`ChunkDescriptor`]
