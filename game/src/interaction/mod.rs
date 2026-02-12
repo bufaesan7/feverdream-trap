@@ -37,11 +37,12 @@ fn recursive_replace_material(
     info!("Recursive to {:?}", entity);
 
     // Replace StandardMaterial with ExtendedMaterial
-    if let Some(standard_material) = world
-        .entity(entity)
-        .get::<MeshMaterial3d<StandardMaterial>>()
-        .cloned()
-    {
+    let Ok(entityref) = world.get_entity(entity) else {
+        error!("0");
+        return;
+    };
+
+    if let Some(standard_material) = entityref.get::<MeshMaterial3d<StandardMaterial>>().cloned() {
         let Some(standard_materials) = world.get_resource::<Assets<StandardMaterial>>() else {
             error!("1");
             return;
@@ -77,11 +78,18 @@ fn recursive_replace_material(
             .try_insert(MeshMaterial3d(extended_material));
     }
 
-    let Some(children) = world.entity(entity).get::<Children>() else {
+    let Ok(entityref) = world.get_entity(entity) else {
         error!("4");
         return;
     };
+
+    let Some(children) = entityref.get::<Children>() else {
+        error!("5");
+        return;
+    };
     let children: Vec<Entity> = children.iter().collect();
+
+    info!("Entity {:?} has children {:?}", entity, children);
 
     for child in children {
         recursive_replace_material(world, child, colors.clone());

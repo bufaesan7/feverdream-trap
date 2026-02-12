@@ -57,11 +57,17 @@ const DEFAULT_MESH_TAG: u32 = 0;
 const HIGHLIGHT_MESH_TAG: u32 = 1;
 
 fn recursive_set_meshtag(world: &mut DeferredWorld, entity: Entity, value: u32) {
-    if let Some(mut mesh_tag) = world.entity_mut(entity).get_mut::<MeshTag>() {
+    if let Ok(mut entityref) = world.get_entity_mut(entity)
+        && let Some(mut mesh_tag) = entityref.get_mut::<MeshTag>()
+    {
         mesh_tag.0 = value;
     }
 
-    let Some(children) = world.entity(entity).get::<Children>() else {
+    let Ok(entityref) = world.get_entity(entity) else {
+        return;
+    };
+
+    let Some(children) = entityref.get::<Children>() else {
         return;
     };
     let children: Vec<Entity> = children.iter().collect();
