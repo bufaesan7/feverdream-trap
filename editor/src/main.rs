@@ -5,9 +5,10 @@
 
 use crate::prelude::*;
 
-mod egui_layout;
-mod elements;
+mod asset_handling;
+mod editor;
 mod prelude;
+mod preview;
 
 fn main() -> AppExit {
     let mut app = App::new();
@@ -30,8 +31,9 @@ fn main() -> AppExit {
 
     app.add_plugins((
         feverdream_trap_core::utility_plugin,
-        egui_layout::plugin,
-        elements::plugin,
+        asset_handling::plugin,
+        editor::plugin,
+        preview::plugin,
     ));
 
     app.add_systems(OnEnter(Screen::Loading), spawn_loading_screen);

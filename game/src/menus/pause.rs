@@ -1,9 +1,8 @@
 //! The pause menu.
 
-use crate::{
-    camera_controller::{cursor_grab, cursor_ungrab},
-    prelude::*,
-};
+use feverdream_trap_core::prelude::cursor::{cursor_grab, cursor_ungrab};
+
+use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Menu::Pause), (spawn_pause_menu, cursor_ungrab));

@@ -10,33 +10,21 @@ use egui_dock::{DockArea, DockState, NodeIndex, Style};
 use std::path::PathBuf;
 
 use crate::{
-    elements::{AssetHandleStash, EguiActionBuffer},
+    asset_handling::{AssetHandleStash, EguiActionBuffer},
     prelude::*,
+    preview::DescriptorPreview,
 };
-
-#[derive(Resource, Default)]
-struct DescriptorPreview {
-    descriptor: Option<Handle<ChunkDescriptor>>,
-    level_entity: Option<Entity>,
-}
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(bevy_egui::EguiPlugin::default());
     app.add_plugins(DefaultInspectorConfigPlugin);
 
     app.insert_resource(UiState::new());
-    app.init_resource::<DescriptorPreview>();
 
     app.add_systems(OnEnter(Screen::Editor), setup);
     app.add_systems(
         EguiPrimaryContextPass,
         show_ui_system.run_if(in_state(Screen::Editor)),
-    );
-    app.add_systems(
-        Update,
-        (refresh_preview_on_asset_change, update_descriptor_preview)
-            .chain()
-            .run_if(in_state(Screen::Editor)),
     );
     app.add_systems(
         PostUpdate,
@@ -312,92 +300,4 @@ impl egui_dock::TabViewer for TabViewer<'_> {
     fn clear_background(&self, window: &Self::Tab) -> bool {
         !matches!(window, EguiWindow::GameView)
     }
-}
-
-fn refresh_preview_on_asset_change(
-    mut element_events: MessageReader<AssetEvent<ChunkElement>>,
-    mut descriptor_events: MessageReader<AssetEvent<ChunkDescriptor>>,
-    mut preview: ResMut<DescriptorPreview>,
-) {
-    let Some(preview_handle) = preview.descriptor.as_ref() else {
-        element_events.clear();
-        descriptor_events.clear();
-        return;
-    };
-
-    let mut needs_refresh = false;
-
-    for event in element_events.read() {
-        if matches!(event, AssetEvent::Modified { .. }) {
-            needs_refresh = true;
-        }
-    }
-
-    let preview_id = preview_handle.id();
-    for event in descriptor_events.read() {
-        if let AssetEvent::Modified { id } = event
-            && *id == preview_id
-        {
-            needs_refresh = true;
-        }
-    }
-
-    if needs_refresh {
-        preview.set_changed();
-    }
-}
-
-fn update_descriptor_preview(
-    mut commands: Commands,
-    mut preview: ResMut<DescriptorPreview>,
-    descriptor_assets: Res<Assets<ChunkDescriptor>>,
-    element_assets: Res<Assets<ChunkElement>>,
-) {
-    if !preview.is_changed() {
-        return;
-    }
-
-    // Despawn previous preview
-    if let Some(level_entity) = preview.level_entity.take() {
-        // Despawn the chunk via the DespawnChunk observer
-        commands.trigger(DespawnChunk(ChunkId(0)));
-        // Despawn the level entity itself
-        commands.entity(level_entity).despawn();
-    }
-
-    // Spawn new preview if a descriptor is selected
-    let Some(descriptor_handle) = preview.descriptor.as_ref() else {
-        return;
-    };
-
-    let Some(descriptor) = descriptor_assets.get(descriptor_handle) else {
-        return;
-    };
-
-    let elements: Vec<ChunkElement> = descriptor
-        .elements
-        .iter()
-        .filter_map(|wrapper| element_assets.get(&wrapper.0).cloned())
-        .collect();
-
-    if elements.is_empty() {
-        return;
-    }
-
-    let level_entity = commands
-        .spawn((
-            Name::new("Preview Level"),
-            Transform::default(),
-            Visibility::default(),
-        ))
-        .id();
-
-    commands.trigger(SpawnChunk {
-        level: level_entity,
-        id: ChunkId(0),
-        grid_position: Vec2::ZERO,
-        elements,
-    });
-
-    preview.level_entity = Some(level_entity);
 }

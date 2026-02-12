@@ -1,8 +1,6 @@
-use bevy::{
-    ecs::{lifecycle::HookContext, world::DeferredWorld},
-    window::{CursorGrabMode, CursorOptions},
-};
+use bevy::ecs::{lifecycle::HookContext, world::DeferredWorld};
 use bevy_ahoy::camera::CharacterControllerCameraOf;
+use feverdream_trap_core::prelude::cursor::{cursor_grab, cursor_ungrab};
 
 use crate::prelude::*;
 
@@ -71,14 +69,4 @@ impl CameraTargetCharacterController {
             .entity(hook.entity)
             .insert(CharacterControllerCameraOf::new(target));
     }
-}
-
-pub fn cursor_grab(mut cursor_options: Single<&mut CursorOptions>) {
-    cursor_options.visible = false;
-    cursor_options.grab_mode = CursorGrabMode::Locked;
-}
-
-pub fn cursor_ungrab(mut cursor_options: Single<&mut CursorOptions>) {
-    cursor_options.visible = true;
-    cursor_options.grab_mode = CursorGrabMode::None;
 }
