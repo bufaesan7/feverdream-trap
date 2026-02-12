@@ -92,7 +92,7 @@ impl LevelComponentGltf {
             world
                 .commands()
                 .entity(hook.entity)
-                .insert(SceneRoot(scene));
+                .insert((SceneRoot(scene), DebugInteraction));
         }
     }
 }

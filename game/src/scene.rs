@@ -4,6 +4,7 @@ use bevy::tasks::IoTaskPool;
 
 use crate::camera_controller::{CameraMarker, CameraTargetCharacterController, spawn_camera};
 use crate::character_controller::{Player, PlayerInput, spawn_player};
+use crate::interaction::Interactable;
 use crate::prelude::*;
 use bevy::ecs::system::RunSystemOnce;
 
@@ -65,6 +66,7 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             .allow_component::<CollisionEventsEnabled>()
             .allow_component::<CollisionLayers>()
             .allow_component::<Sensor>()
+            .allow_component::<RigidBody>()
             // Chunks
             .allow_component::<Chunk>()
             .allow_component::<ChunkId>()
@@ -74,6 +76,10 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             .allow_component::<Children>()
             .allow_component::<ChildOf>()
             .extract_entities(query.iter())
+            // Interactions
+            .allow_component::<Interactable>()
+            .allow_component::<DespawnInteraction>()
+            .allow_component::<SwapChunksInteraction>()
             .build()
     };
 

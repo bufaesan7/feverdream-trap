@@ -8,6 +8,7 @@ mod character_controller;
 mod chunk;
 #[cfg(feature = "dev")]
 mod dev_tools;
+mod interaction;
 mod menus;
 mod prelude;
 mod scene;
@@ -53,6 +54,7 @@ impl Plugin for AppPlugin {
             menus::plugin,
             screens::plugin,
             scene::plugin,
+            interaction::plugin,
         ));
 
         // Custom game plugins

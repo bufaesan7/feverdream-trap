@@ -4,6 +4,7 @@ pub use crate::asset_tracking::{LoadResource as _, ResourceHandles};
 pub use crate::audio::{music, sound_effect};
 pub use crate::chunk::*;
 pub use crate::chunk_assets::*;
+pub use crate::interactions::*;
 pub use crate::level::*;
 pub use crate::physics::*;
 pub use crate::theme::widget;
