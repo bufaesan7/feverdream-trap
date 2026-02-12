@@ -40,7 +40,6 @@ bevy-inspector-egui.version = "0.36"
 egui = "0.33"
 egui_dock = "0.18"
 bevy_skein.version = "0.5"
-bevy_text_edit = "0.8"
 
 # Useful rust utilities
 thiserror = "2"

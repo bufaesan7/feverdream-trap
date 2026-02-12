@@ -1,3 +1,4 @@
+#[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
 
 use bevy::{
@@ -233,6 +234,7 @@ impl egui_dock::TabViewer for TabViewer<'_> {
             }
             EguiWindow::Options => {
                 ui.vertical(|ui| {
+                    #[cfg(not(target_arch = "wasm32"))]
                     if ui.button("Save Assets").clicked() {
                         // ------------------------------
                         // Chunk elements

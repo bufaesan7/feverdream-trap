@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-#[cfg(feature = "dev")]
+#[cfg(feature = "dev_native")]
 use bevy_inspector_egui::inspector_egui_impls::InspectorEguiImpl;
 use serde::{Deserialize, Serialize};
 
@@ -20,7 +20,7 @@ pub(super) fn plugin(app: &mut App) {
         .register_asset_loader(RonAssetLoader::<ChunkLayoutAsset>::new())
         .load_resource::<ChunkLayoutStorage>();
 
-    #[cfg(feature = "dev")]
+    #[cfg(feature = "dev_native")]
     app.register_type_data::<Wrapper<Handle<ChunkElement>>, InspectorEguiImpl>();
 }
 
@@ -115,7 +115,8 @@ pub struct ChunkDescriptorAsset {
 
 #[derive(Reflect, Debug, Default, Clone, Deref)]
 #[reflect(Default)]
-/// New type wrapper to allow implementing [`InspectorPrimitive`]
+/// New type wrapper to allow implementing
+/// [`bevy_inspector_egui::inspector_egui_impls::InspectorPrimitive`]
 pub struct Wrapper<T: Default>(pub T);
 
 #[derive(Reflect, Debug)]
@@ -157,7 +158,7 @@ impl VisitAssetDependencies for ChunkDescriptor {
     }
 }
 
-#[cfg(feature = "dev")]
+#[cfg(feature = "dev_native")]
 impl bevy_inspector_egui::inspector_egui_impls::InspectorPrimitive
     for Wrapper<Handle<ChunkElement>>
 {
