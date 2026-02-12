@@ -3,7 +3,10 @@ use bevy::{
     window::PrimaryWindow,
 };
 use bevy_egui::{EguiContext, EguiContextSettings, EguiGlobalSettings, EguiPrimaryContextPass};
-use bevy_inspector_egui::{DefaultInspectorConfigPlugin, bevy_inspector::ui_for_assets};
+use bevy_inspector_egui::{
+    DefaultInspectorConfigPlugin,
+    bevy_inspector::{ui_for_assets, ui_for_resources},
+};
 use egui::LayerId;
 use egui_dock::{DockArea, DockState, NodeIndex, Style};
 #[cfg(not(target_arch = "wasm32"))]
@@ -55,6 +58,19 @@ fn setup(mut commands: Commands, mut egui_global_settings: ResMut<EguiGlobalSett
             ..default()
         },
     ));
+
+    // Light
+    commands.spawn((
+        Name::new("PointLight"),
+        Transform::from_translation(Vec3::splat(CHUNK_SIZE * 3.)),
+        PointLight {
+            intensity: 100_000_000.,
+            color: Color::WHITE,
+            shadows_enabled: true,
+            range: CHUNK_SIZE * 6.,
+            ..Default::default()
+        },
+    ));
 }
 
 fn show_ui_system(world: &mut World) {
@@ -71,7 +87,7 @@ fn show_ui_system(world: &mut World) {
     });
 }
 
-// make camera only render to view not obstructed by UI
+// Make camera only render to view not obstructed by UI
 fn set_camera_viewport(
     ui_state: Res<UiState>,
     window: Single<&Window, With<PrimaryWindow>>,
@@ -109,8 +125,11 @@ impl UiState {
     pub fn new() -> Self {
         let mut state = DockState::new(vec![EguiWindow::GameView]);
         let tree = state.main_surface_mut();
-        let [_game, sidebar_menu] =
-            tree.split_left(NodeIndex::root(), 0.3, vec![EguiWindow::SidebarMenu]);
+        let [_game, sidebar_menu] = tree.split_left(
+            NodeIndex::root(),
+            0.3,
+            vec![EguiWindow::SidebarMenu, EguiWindow::Resources],
+        );
         let [_sidebar_menu, _options] =
             tree.split_below(sidebar_menu, 0.9, vec![EguiWindow::Options]);
 
@@ -137,6 +156,7 @@ impl UiState {
 enum EguiWindow {
     GameView,
     SidebarMenu,
+    Resources,
     Options,
 }
 
@@ -285,6 +305,9 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                         self.world.write_message(AppExit::Success);
                     }
                 });
+            }
+            EguiWindow::Resources => {
+                ui_for_resources(self.world, ui);
             }
         }
 
