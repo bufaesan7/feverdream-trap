@@ -273,26 +273,16 @@ pub struct ChunkLayoutAsset {
 #[derive(Asset, TypePath, Debug)]
 pub struct ChunkLayout {
     /// Maps chunk positions (in chunk space, world space is obtained by multiplying by
-    /// [`CHUNK_SIZE`]) to [`ChunkDescriptor`]
-    pub grid: HashMap<(i32, i32), Handle<ChunkDescriptor>>,
+    /// [`CHUNK_SIZE`]) to descriptor names
+    pub grid: HashMap<(i32, i32), String>,
 }
 
 impl RonAsset for ChunkLayoutAsset {
     type Asset = ChunkLayout;
     const EXTENSION: &str = "layout";
 
-    async fn load_dependencies(self, context: &mut bevy::asset::LoadContext<'_>) -> Self::Asset {
-        let grid = self
-            .grid
-            .into_iter()
-            .map(|(pos, name)| {
-                (
-                    pos,
-                    context.load(ChunkDescriptorAsset::path_from_name(&name)),
-                )
-            })
-            .collect();
-        ChunkLayout { grid }
+    async fn load_dependencies(self, _context: &mut bevy::asset::LoadContext<'_>) -> Self::Asset {
+        ChunkLayout { grid: self.grid }
     }
 }
 
@@ -401,16 +391,7 @@ fn populate_chunk_element_cache(
             continue;
         };
 
-        let path = asset_server.get_path(handle.id()).map(|p| {
-            let s = p.path().to_string_lossy().to_string();
-            s.strip_suffix(&format!(".{}", ChunkDescriptorAsset::EXTENSION))
-                .unwrap_or(&s)
-                .to_string()
-        });
-
-        if let Some(path) = path {
-            cache.map.insert(path, elements);
-        }
+        cache.map.insert(descriptor.name.clone(), elements);
     }
 
     cache.ready = true;
