@@ -21,7 +21,8 @@ pub(crate) fn plugin(app: &mut App) {
         .add_systems(
             Update,
             interactable_in_range.run_if(in_state(Screen::Gameplay).and(in_state(Menu::None))),
-        );
+        )
+        .add_observer(replace_standard_material);
 }
 
 // SpatialQuery ray cast from camera for interactable entities
@@ -132,4 +133,36 @@ impl MaterialExtension for HighlightExtension {
 
 fn extended_material_required_components(world: &mut World) {
     world.register_required_components::<MeshMaterial3d<ExtendedMaterial<StandardMaterial, HighlightExtension>>, MeshTag>();
+}
+
+fn replace_standard_material(
+    trigger: On<Add, MeshMaterial3d<StandardMaterial>>,
+    mut commands: Commands,
+    mesh_materials: Query<&MeshMaterial3d<StandardMaterial>>,
+    standard_materials: Res<Assets<StandardMaterial>>,
+    mut extended_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, HighlightExtension>>>,
+    colors: Res<HighlightStorageBuffer>,
+) {
+    let Ok(mesh_material) = mesh_materials.get(trigger.entity) else {
+        return;
+    };
+
+    let Some(standard_material) = standard_materials.get(mesh_material) else {
+        return;
+    };
+
+    let extended_material = extended_materials.add(ExtendedMaterial {
+        base: standard_material.clone(),
+        extension: HighlightExtension {
+            colors: colors.0.clone(),
+        },
+    });
+
+    // Replace component
+    commands
+        .entity(trigger.entity)
+        .try_remove::<MeshMaterial3d<StandardMaterial>>();
+    commands
+        .entity(trigger.entity)
+        .try_insert(MeshMaterial3d(extended_material));
 }

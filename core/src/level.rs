@@ -92,7 +92,7 @@ impl LevelComponentGltf {
             world.commands().entity(hook.entity).insert((
                 SceneRoot(scene),
                 DebugInteraction,
-                Collider::cuboid(20.0, 20.0, 20.0),
+                Collider::cuboid(15.0, 15.0, 15.0),
             ));
         }
     }
