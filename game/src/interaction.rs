@@ -6,7 +6,12 @@ use bevy::{
     shader::ShaderRef,
 };
 
-use crate::{camera_controller::CameraMarker, character_controller::GameLayer, prelude::*};
+use crate::{
+    camera_controller::CameraMarker,
+    character_controller::GameLayer,
+    chunk::{ChunkId, SwapChunks},
+    prelude::*,
+};
 
 pub(crate) fn plugin(app: &mut App) {
     app.add_plugins(MeshPickingPlugin)
@@ -24,7 +29,7 @@ pub(crate) fn plugin(app: &mut App) {
 const INTERACTION_DISTANCE: f32 = 10.0;
 
 /// Indicates whether an entity can be interacted with
-#[derive(Debug, Component, Reflect)]
+#[derive(Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 #[require(MeshTag)]
 #[component(on_add)]
@@ -67,7 +72,7 @@ fn interactable_in_range(
     if let Some(first_hit) = hit
         && interactables.contains(first_hit.entity)
     {
-        commands.entity(first_hit.entity).insert(FocusTarget);
+        commands.entity(first_hit.entity).try_insert(FocusTarget);
     }
 }
 
@@ -143,9 +148,22 @@ impl From<Entity> for Interact {
     }
 }
 
+fn interact(
+    mut commands: Commands,
+    mouse: Res<ButtonInput<MouseButton>>,
+    focus_targets: Query<Entity, With<FocusTarget>>,
+) {
+    for entity in &focus_targets {
+        if mouse.just_pressed(MouseButton::Left) {
+            commands.entity(entity).trigger(Interact::from);
+        }
+    }
+}
+
 #[derive(Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 #[component(on_add)]
+#[require(Interactable)]
 pub struct DebugInteraction;
 
 impl DebugInteraction {
@@ -159,14 +177,47 @@ impl DebugInteraction {
     }
 }
 
-fn interact(
-    mut commands: Commands,
-    mouse: Res<ButtonInput<MouseButton>>,
-    focus_targets: Query<Entity, With<FocusTarget>>,
-) {
-    for entity in &focus_targets {
-        if mouse.just_pressed(MouseButton::Left) {
-            commands.entity(entity).trigger(Interact::from);
-        }
+#[derive(Debug, Default, Component, Reflect)]
+#[reflect(Component)]
+#[component(on_add)]
+#[require(Interactable)]
+pub struct DespawnInteraction;
+
+impl DespawnInteraction {
+    fn on_add(mut world: DeferredWorld, ctx: HookContext) {
+        world.commands().spawn(
+            Observer::new(|on_interact: On<Interact>, mut commands: Commands| {
+                let command = |entity: EntityWorldMut| {
+                    entity.despawn();
+                };
+                commands.entity(on_interact.entity).queue_silenced(command);
+            })
+            .with_entity(ctx.entity),
+        );
+    }
+}
+
+#[derive(Debug, Default, Component, Reflect)]
+#[reflect(Component)]
+#[component(on_add)]
+#[require(Interactable)]
+pub struct ChunkSwapInteraction(pub ChunkId, pub ChunkId);
+
+impl ChunkSwapInteraction {
+    fn on_add(mut world: DeferredWorld, ctx: HookContext) {
+        world.commands().spawn(
+            Observer::new(
+                |on_interact: On<Interact>,
+                 mut commands: Commands,
+                 chunk_swap_interaction: Query<&Self>| {
+                    if let Ok(ChunkSwapInteraction(chunk1, chunk2)) =
+                        chunk_swap_interaction.get(on_interact.entity)
+                    {
+                        commands.trigger(SwapChunks(*chunk1, *chunk2));
+                    }
+                },
+            )
+            .with_entity(ctx.entity),
+        );
     }
 }

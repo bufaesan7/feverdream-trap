@@ -6,7 +6,8 @@ use bevy::{
 
 use crate::{
     interaction::{
-        DebugInteraction, HighlightExtension, HighlightStorageBuffer, Interact, Interactable,
+        ChunkSwapInteraction, DebugInteraction, DespawnInteraction, HighlightExtension,
+        HighlightStorageBuffer, Interact, Interactable,
     },
     prelude::*,
 };
@@ -206,26 +207,23 @@ pub fn spawn_level(mut commands: Commands) {
                         rigid_body: RigidBody::Dynamic,
                     },
                     ChildOf(chunk),
+                    DebugInteraction,
+                    DespawnInteraction,
                 ));
             }
             if chunk_index == 8 {
                 commands.entity(chunk).insert(SwappableChunk);
-                commands
-                    .spawn((
-                        Name::new("Cube"),
-                        Transform::from_xyz(0., 1., 0.),
-                        Visibility::Visible,
-                        LevelComponent3d::Cube {
-                            length: 2.,
-                            color: chunk_color,
-                            rigid_body: RigidBody::Dynamic,
-                        },
-                        Interactable,
-                        ChildOf(chunk),
-                    ))
-                    .observe(|on_interact: On<Interact>| {
-                        info!("Interact with {:?}", on_interact.entity);
-                    }); // TODO: This does not work
+                commands.spawn((
+                    Name::new("Cube"),
+                    Transform::from_xyz(0., 1., 0.),
+                    Visibility::Visible,
+                    LevelComponent3d::Cube {
+                        length: 2.,
+                        color: chunk_color,
+                        rigid_body: RigidBody::Dynamic,
+                    },
+                    ChildOf(chunk),
+                ));
             }
             if chunk_index == 17 {
                 commands.entity(chunk).insert(SwappableChunk);
@@ -238,6 +236,8 @@ pub fn spawn_level(mut commands: Commands) {
                         color: chunk_color,
                     },
                     ChildOf(chunk),
+                    DebugInteraction,
+                    ChunkSwapInteraction(ChunkId(1), ChunkId(8)),
                 ));
             }
 
