@@ -208,6 +208,8 @@ pub fn spawn_level_from_layout(
             id: ChunkId(chunk_id),
             grid_position: Vec2::new(*x as f32, *z as f32),
             elements,
+            #[cfg(feature = "dev")]
+            show_wireframe: false,
         });
     }
 }

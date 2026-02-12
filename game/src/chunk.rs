@@ -115,6 +115,8 @@ fn on_replace_chunk_asset(
         id: ChunkId(chunk_id),
         grid_position: chunk_transform.translation.xz() / CHUNK_SIZE,
         elements,
+        #[cfg(feature = "dev")]
+        show_wireframe: false,
     });
 
     info!("Chunk {chunk_id} was replaced with {chunk_asset}");

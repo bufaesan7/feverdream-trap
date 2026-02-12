@@ -26,12 +26,14 @@ pub struct SpawnChunk {
     pub id: ChunkId,
     pub grid_position: Vec2,
     pub elements: Vec<ChunkElement>,
+    #[cfg(feature = "dev")]
+    pub show_wireframe: bool,
 }
 
 #[derive(Debug, Event)]
 pub struct DespawnChunk(pub ChunkId);
 
-/// TODO move to game once chunk_asset handel this two components embeding
+/// TODO move to game once chunk_asset handle this two components embedding
 #[derive(Component, Reflect)]
 #[require(Chunk)]
 #[reflect(Component)]
@@ -105,6 +107,16 @@ pub fn on_spawn_chunk(
                 });
             }
         };
+    }
+
+    #[cfg(feature = "dev")]
+    // Show chunk wireframe
+    if event.show_wireframe {
+        commands.spawn((
+            Name::new("Wireframe"),
+            Collider::cuboid(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE),
+            DebugRender::none().with_collider_color(Color::srgb(1., 0., 0.)),
+        ));
     }
 
     // TODO embed in chunk_asset

@@ -109,6 +109,8 @@ fn update_descriptor_preview(
         id: ChunkId(0),
         grid_position: Vec2::ZERO,
         elements,
+        #[cfg(feature = "dev")]
+        show_wireframe: true,
     });
 
     preview.level_entity = Some(level_entity);
