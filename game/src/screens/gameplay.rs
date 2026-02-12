@@ -19,10 +19,7 @@ pub(super) fn plugin(app: &mut App) {
             ),
         ),
     );
-    app.add_systems(
-        OnExit(Screen::Gameplay),
-        (despawn_level, close_menu, unpause),
-    );
+    app.add_systems(OnExit(Screen::Gameplay), (close_menu, unpause));
     app.add_systems(
         OnEnter(Menu::None),
         unpause.run_if(in_state(Screen::Gameplay)),
@@ -35,22 +32,6 @@ fn unpause(mut next_pause: ResMut<NextState<Pause>>) {
 
 fn pause(mut next_pause: ResMut<NextState<Pause>>) {
     next_pause.set(Pause(true));
-}
-
-/// level despawn cannot be done automatically with OnExit(Screen::Gameplay) anymmore
-/// because Screen is not part of Core
-fn despawn_level(
-    mut commands: Commands,
-    level_query: Query<Entity, With<Level>>,
-    level_components_query: Query<Entity, With<LevelComponent>>,
-) {
-    for entity in &level_components_query {
-        commands.entity(entity).despawn();
-    }
-
-    for entity in &level_query {
-        commands.entity(entity).despawn();
-    }
 }
 
 fn spawn_pause_overlay(mut commands: Commands) {

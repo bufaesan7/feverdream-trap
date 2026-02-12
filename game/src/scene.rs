@@ -9,6 +9,8 @@ use bevy::ecs::system::RunSystemOnce;
 
 pub(crate) fn plugin(app: &mut App) {
     app.load_resource::<GameSceneStorage>()
+        .add_observer(on_level_spawned)
+        .add_observer(on_level_component_spawned)
         .add_systems(OnEnter(Screen::Gameplay), spawn_scene)
         .add_systems(OnExit(Screen::Gameplay), save_scene);
 }
@@ -121,4 +123,20 @@ fn spawn_scene(mut commands: Commands, game_scene: Res<GameSceneStorage>) {
             let _ = world.run_system_once(spawn_player);
         });
     }
+}
+
+fn on_level_spawned(event: On<Add, Level>, mut commands: Commands) {
+    let entity = event.event_target();
+
+    commands
+        .entity(entity)
+        .insert(DespawnOnExit(Screen::Gameplay));
+}
+
+fn on_level_component_spawned(event: On<Add, LevelComponent>, mut commands: Commands) {
+    let entity = event.event_target();
+
+    commands
+        .entity(entity)
+        .insert(DespawnOnExit(Screen::Gameplay));
 }
