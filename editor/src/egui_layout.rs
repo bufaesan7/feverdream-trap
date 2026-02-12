@@ -347,7 +347,7 @@ fn refresh_preview_on_asset_change(
 fn update_descriptor_preview(
     mut commands: Commands,
     mut preview: ResMut<DescriptorPreview>,
-    asset_server: Res<AssetServer>,
+    chunk_descriptors: Res<Assets<ChunkDescriptor>>,
 ) {
     if !preview.is_changed() {
         return;
@@ -366,12 +366,10 @@ fn update_descriptor_preview(
         return;
     };
 
-    let Some(descriptor) = asset_server.get_path(descriptor_handle.id()).map(|p| {
-        let s = p.path().to_string_lossy().to_string();
-        s.strip_suffix(&format!(".{}", ChunkDescriptorAsset::EXTENSION))
-            .unwrap_or(&s)
-            .to_string()
-    }) else {
+    let Some(descriptor) = chunk_descriptors
+        .get(descriptor_handle)
+        .map(|d| d.name.clone())
+    else {
         return;
     };
 

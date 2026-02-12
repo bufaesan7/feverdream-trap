@@ -118,7 +118,7 @@ pub fn on_spawn_chunk(
             .entity(chunk_entity)
             .insert(ReplaceAssetSensorChunk(
                 ChunkId(9),
-                "chunks/demo/elevator".to_string(),
+                "demo/elevator".to_string(),
             ));
     }
 }
@@ -132,8 +132,8 @@ pub fn on_despawn_chunk(
 
     for (entity, ChunkId(id)) in &chunks {
         if chunk_id == *id {
+            info!("Despawning chunk {chunk_id}");
             commands.entity(entity).despawn();
-            info!("Chunk {chunk_id} has been despawned");
             return;
         }
     }
