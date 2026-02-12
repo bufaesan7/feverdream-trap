@@ -1,4 +1,4 @@
-use crate::chunk_assets::{ChunkElement, ChunkElementShape};
+use crate::chunk_assets::{ChunkElementCache, ChunkElementShape};
 use crate::level::*;
 use crate::physics::GameLayer;
 use crate::prelude::*;
@@ -25,7 +25,7 @@ pub struct SpawnChunk {
     pub level: Entity,
     pub id: ChunkId,
     pub grid_position: Vec2,
-    pub elements: Vec<ChunkElement>,
+    pub descriptor: String,
 }
 
 #[derive(Debug, Event)]
@@ -45,12 +45,17 @@ pub struct ReplaceAssetSensorChunk(pub ChunkId, pub String);
 pub fn on_spawn_chunk(
     event: On<SpawnChunk>,
     mut commands: Commands,
-    _gltf_assets: Res<Assets<Gltf>>,
+    cache: Res<ChunkElementCache>,
 ) {
     let level = event.level;
     let id = event.id;
     let grid_position = event.grid_position;
-    let elements = &event.elements;
+    let descriptor = &event.descriptor;
+
+    let Some(elements) = cache.map.get(descriptor) else {
+        warn!("Descriptor '{descriptor}' not found in cache");
+        return;
+    };
 
     let transform = Transform::from_xyz(
         grid_position.x * CHUNK_SIZE,
