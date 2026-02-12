@@ -1,0 +1,9 @@
+(
+    name: "OpenCorridorChunk",
+    elements: [
+        "chunks/elements/demo/floor",
+        "chunks/elements/demo/ceiling",
+        "chunks/elements/demo/wall_west",
+        "chunks/elements/demo/wall_east",
+    ],
+)

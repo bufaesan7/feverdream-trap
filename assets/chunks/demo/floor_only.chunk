@@ -1,0 +1,6 @@
+(
+    name: "FloorOnlyChunk",
+    elements: [
+        "chunks/elements/demo/floor",
+    ],
+)
