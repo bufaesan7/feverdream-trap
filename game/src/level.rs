@@ -6,8 +6,8 @@ use bevy::{
 
 use crate::{
     interaction::{
-        ChunkSwapInteraction, DebugInteraction, DespawnInteraction, HighlightExtension,
-        HighlightStorageBuffer, Interact, Interactable,
+        DespawnInteraction, HighlightExtension, HighlightStorageBuffer, Interactable,
+        SwapChunksInteraction,
     },
     prelude::*,
 };
@@ -207,7 +207,6 @@ pub fn spawn_level(mut commands: Commands) {
                         rigid_body: RigidBody::Dynamic,
                     },
                     ChildOf(chunk),
-                    DebugInteraction,
                     DespawnInteraction,
                 ));
             }
@@ -236,8 +235,7 @@ pub fn spawn_level(mut commands: Commands) {
                         color: chunk_color,
                     },
                     ChildOf(chunk),
-                    DebugInteraction,
-                    ChunkSwapInteraction(ChunkId(1), ChunkId(8)),
+                    SwapChunksInteraction(ChunkId(1), ChunkId(8)),
                 ));
             }
 
@@ -330,7 +328,6 @@ pub fn spawn_level(mut commands: Commands) {
             rigid_body: RigidBody::Dynamic,
         },
         Interactable,
-        DebugInteraction,
     ));
 }
 

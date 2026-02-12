@@ -37,13 +37,11 @@ pub struct Interactable;
 
 impl Interactable {
     fn on_add(mut world: DeferredWorld, ctx: HookContext) {
-        world
-            .commands()
-            .entity(ctx.entity)
-            .insert(CollisionLayers::new(
-                GameLayer::Interactable,
-                LayerMask::ALL,
-            ));
+        world.commands().entity(ctx.entity).insert((
+            CollisionLayers::new(GameLayer::Interactable, LayerMask::ALL),
+            #[cfg(feature = "dev")]
+            DebugInteraction,
+        ));
     }
 }
 
@@ -164,7 +162,7 @@ fn interact(
 #[reflect(Component)]
 #[component(on_add)]
 #[require(Interactable)]
-pub struct DebugInteraction;
+struct DebugInteraction;
 
 impl DebugInteraction {
     fn on_add(mut world: DeferredWorld, ctx: HookContext) {
@@ -201,16 +199,16 @@ impl DespawnInteraction {
 #[reflect(Component)]
 #[component(on_add)]
 #[require(Interactable)]
-pub struct ChunkSwapInteraction(pub ChunkId, pub ChunkId);
+pub struct SwapChunksInteraction(pub ChunkId, pub ChunkId);
 
-impl ChunkSwapInteraction {
+impl SwapChunksInteraction {
     fn on_add(mut world: DeferredWorld, ctx: HookContext) {
         world.commands().spawn(
             Observer::new(
                 |on_interact: On<Interact>,
                  mut commands: Commands,
                  chunk_swap_interaction: Query<&Self>| {
-                    if let Ok(ChunkSwapInteraction(chunk1, chunk2)) =
+                    if let Ok(SwapChunksInteraction(chunk1, chunk2)) =
                         chunk_swap_interaction.get(on_interact.entity)
                     {
                         commands.trigger(SwapChunks(*chunk1, *chunk2));
