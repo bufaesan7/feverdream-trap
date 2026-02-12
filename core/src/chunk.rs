@@ -42,7 +42,11 @@ pub struct SwapSensorChunk(pub ChunkId, pub ChunkId);
 #[reflect(Component)]
 pub struct ReplaceAssetSensorChunk(pub ChunkId, pub String);
 
-pub fn on_spawn_chunk(event: On<SpawnChunk>, mut commands: Commands) {
+pub fn on_spawn_chunk(
+    event: On<SpawnChunk>,
+    mut commands: Commands,
+    _gltf_assets: Res<Assets<Gltf>>,
+) {
     let level = event.level;
     let id = event.id;
     let grid_position = event.grid_position;
@@ -53,6 +57,9 @@ pub fn on_spawn_chunk(event: On<SpawnChunk>, mut commands: Commands) {
         0.0,
         grid_position.y * CHUNK_SIZE,
     );
+
+    info!("Spawning chunk {} at position {:?}", id.0, grid_position);
+
     let chunk_entity = commands
         .spawn((
             Name::new(format!("Chunk ({}, {})", grid_position.x, grid_position.y)),
@@ -72,23 +79,32 @@ pub fn on_spawn_chunk(event: On<SpawnChunk>, mut commands: Commands) {
     let color = Color::srgb(0.95, 0.95, 0.95);
 
     for element in elements {
-        let level_component = match &element.shape {
-            ChunkElementShape::Plane => LevelComponent3d::Plane {
-                size: Vec2::splat(0.5),
-                color,
-            },
-            ChunkElementShape::Cube => LevelComponent3d::Cube { length: 1., color },
-            ChunkElementShape::Sphere => LevelComponent3d::Sphere { radius: 1., color },
-            s => panic!("Shape is not supported yet {:?}", s),
-        };
-
-        commands.spawn((
+        let mut element_entity = commands.spawn((
             Name::new(element.name.clone()),
             element.transform,
             Visibility::Visible,
-            level_component,
             ChildOf(chunk_entity),
         ));
+
+        match &element.shape {
+            ChunkElementShape::Plane => {
+                element_entity.insert(LevelComponent3d::Plane {
+                    size: Vec2::splat(0.5),
+                    color,
+                });
+            }
+            ChunkElementShape::Cube => {
+                element_entity.insert(LevelComponent3d::Cube { length: 1., color });
+            }
+            ChunkElementShape::Sphere => {
+                element_entity.insert(LevelComponent3d::Sphere { radius: 1., color });
+            }
+            ChunkElementShape::Gltf { mesh_path, .. } => {
+                element_entity.insert(LevelComponentGltf {
+                    path: mesh_path.clone(),
+                });
+            }
+        };
     }
 
     // TODO embed in chunk_asset

@@ -23,6 +23,6 @@
         (2, 6): "demo/floor_only",
         (0, 7): "demo/floor_only",
         (1, 7): "demo/floor_only",
-        (2, 7): "demo/floor_only",
+        (2, 7): "demo/pills_sensor",
     },
 )
