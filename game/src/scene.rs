@@ -17,10 +17,10 @@ pub(crate) fn plugin(app: &mut App) {
 }
 
 pub const SCENE_FILE: &str = "game_state.scn.ron";
-#[cfg(not(target_os = "windows"))]
-pub const SCENE_FILE_PATH: &str = "assets/game_state.scn.ron";
-#[cfg(target_os = "windows")]
-pub const SCENE_FILE_PATH: &str = "assets\\game_state.scn.ron";
+
+pub fn scene_file_path() -> std::path::PathBuf {
+    std::path::Path::new("assets").join(SCENE_FILE)
+}
 
 #[derive(Asset, TypePath, Resource, Clone)]
 /// Either `handle` or `scene` are guaranteed to exist
@@ -33,7 +33,7 @@ pub struct GameSceneStorage {
 
 impl FromWorld for GameSceneStorage {
     fn from_world(world: &mut World) -> Self {
-        if std::fs::exists(SCENE_FILE_PATH).is_ok_and(|b| b) {
+        if std::fs::exists(scene_file_path()).is_ok_and(|b| b) {
             let asset_server = world.resource::<AssetServer>();
             Self {
                 handle: Some(asset_server.load(SCENE_FILE)),
@@ -100,7 +100,7 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
                 // Write the scene RON data to file
 
                 use std::{fs::File, io::Write as _};
-                File::create(SCENE_FILE_PATH)
+                File::create(scene_file_path())
                     .and_then(|mut file| file.write(serialized_scene.as_bytes()))
                     .expect("Error while writing scene to file");
             })
