@@ -1,6 +1,7 @@
 use bevy::ecs::{lifecycle::HookContext, world::DeferredWorld};
 use bevy_ahoy::prelude::*;
 use bevy_enhanced_input::prelude::*;
+use feverdream_trap_core::physics::GameLayer;
 
 use crate::{
     camera_controller::{CameraMarker, CameraTargetCharacterController},
@@ -45,16 +46,6 @@ pub struct Player;
 #[reflect(Component)]
 #[component(on_add)]
 pub struct PlayerInput;
-
-/// move to apropriate module
-#[derive(PhysicsLayer, Default)]
-pub enum GameLayer {
-    #[default]
-    Default,
-    Player,
-    Sensor,
-    Interactable,
-}
 
 impl PlayerInput {
     fn on_add(mut world: DeferredWorld, ctx: HookContext) {

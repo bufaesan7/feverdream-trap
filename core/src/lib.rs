@@ -2,7 +2,11 @@ mod asset_loader;
 mod asset_tracking;
 mod audio;
 pub mod chunk;
+pub mod chunk_assets;
+pub mod level;
+pub mod physics;
 pub mod prelude;
+pub mod material;
 mod theme;
 
 use crate::prelude::*;
@@ -11,9 +15,11 @@ use bevy::asset::AssetMetaCheck;
 pub fn utility_plugin(app: &mut App) {
     app.add_plugins((
         asset_tracking::plugin,
+        chunk_assets::plugin,
         chunk::plugin,
         audio::plugin,
         theme::plugin,
+        material::CoreMaterialPlugin,
     ));
 }
 

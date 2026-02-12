@@ -1,132 +1,135 @@
-use serde::Deserialize;
-
-use crate::{
-    asset_loader::{RonAsset, RonAssetLoader},
-    prelude::*,
-};
+use crate::chunk_assets::{ChunkElement, ChunkElementShape};
+use crate::level::*;
+use crate::physics::GameLayer;
+use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
-    app.init_asset::<ChunkElement>()
-        .init_asset::<ChunkDescriptor>()
-        .init_asset::<ChunkLayout>()
-        .register_asset_loader(RonAssetLoader::<ChunkElementAsset>::new())
-        .register_asset_loader(RonAssetLoader::<ChunkDescriptorAsset>::new())
-        .register_asset_loader(RonAssetLoader::<ChunkLayoutAsset>::new())
-        .load_resource::<ChunkLayoutStorage>();
+    app.add_observer(on_spawn_chunk)
+        .add_observer(on_despawn_chunk);
 }
 
-pub const CHUNK_SIZE: Vec2 = Vec2 { x: 16., y: 16. };
+pub const CHUNK_SIZE: f32 = 5.;
 
-#[derive(Debug, Deserialize)]
-pub enum ChunkElementShapeAsset {
-    Cube,
-    Sphere,
-    Gltf { mesh: String },
+#[derive(Default, Component, Reflect)]
+#[require(Transform, Visibility, Sensor, LevelComponent)]
+#[reflect(Component)]
+pub struct Chunk;
+
+#[derive(Default, Component, Reflect, Debug, Copy, Clone)]
+#[require(Chunk)]
+#[reflect(Component)]
+pub struct ChunkId(pub u32);
+
+#[derive(Debug, Event)]
+pub struct SpawnChunk {
+    pub level: Entity,
+    pub id: ChunkId,
+    pub grid_position: Vec2,
+    pub elements: Vec<ChunkElement>,
 }
 
-#[derive(Debug)]
-pub enum ChunkElementShape {
-    Cube,
-    Sphere,
-    Gltf { mesh: Handle<Gltf> },
-}
+#[derive(Debug, Event)]
+pub struct DespawnChunk(pub ChunkId);
 
-#[derive(Asset, TypePath, Debug, Deserialize)]
-pub struct ChunkElementAsset {
-    pub name: String,
-    pub transform: Transform,
-    pub shape: ChunkElementShapeAsset,
-}
+/// TODO move to game once chunk_asset handel this two components embeding
+#[derive(Component, Reflect)]
+#[require(Chunk)]
+#[reflect(Component)]
+pub struct SwapSensorChunk(pub ChunkId, pub ChunkId);
 
-#[derive(Asset, TypePath, Debug)]
-pub struct ChunkElement {
-    pub name: String,
-    pub transform: Transform,
-    pub shape: ChunkElementShape,
-}
+#[derive(Component, Reflect)]
+#[require(Chunk)]
+#[reflect(Component)]
+pub struct ReplaceAssetSensorChunk(pub ChunkId, pub String);
 
-impl RonAsset for ChunkElementAsset {
-    type Asset = ChunkElement;
-    const EXTENSION: &str = ".chunk.element";
+pub fn on_spawn_chunk(
+    event: On<SpawnChunk>,
+    mut commands: Commands,
+    _gltf_assets: Res<Assets<Gltf>>,
+) {
+    let level = event.level;
+    let id = event.id;
+    let grid_position = event.grid_position;
+    let elements = &event.elements;
 
-    async fn load_dependencies(self, context: &mut bevy::asset::LoadContext<'_>) -> Self::Asset {
-        let shape = match self.shape {
-            ChunkElementShapeAsset::Cube => ChunkElementShape::Cube,
-            ChunkElementShapeAsset::Sphere => ChunkElementShape::Sphere,
-            ChunkElementShapeAsset::Gltf { mesh } => ChunkElementShape::Gltf {
-                mesh: context.load(mesh),
-            },
+    let transform = Transform::from_xyz(
+        grid_position.x * CHUNK_SIZE,
+        0.0,
+        grid_position.y * CHUNK_SIZE,
+    );
+
+    info!("Spawning chunk {} at position {:?}", id.0, grid_position);
+
+    let chunk_entity = commands
+        .spawn((
+            Name::new(format!("Chunk ({}, {})", grid_position.x, grid_position.y)),
+            Visibility::default(),
+            Chunk,
+            id,
+            transform,
+            LevelCollider::Cube { length: CHUNK_SIZE },
+            RigidBody::Static,
+            Sensor,
+            CollisionEventsEnabled,
+            CollisionLayers::new([GameLayer::Sensor], [GameLayer::Player]),
+            ChildOf(level),
+        ))
+        .id();
+
+    let color = Color::srgb(0.95, 0.95, 0.95);
+
+    for element in elements {
+        let mut element_entity = commands.spawn((
+            Name::new(element.name.clone()),
+            element.transform,
+            Visibility::Visible,
+            ChildOf(chunk_entity),
+        ));
+
+        match &element.shape {
+            ChunkElementShape::Plane => {
+                element_entity.insert(LevelComponent3d::Plane {
+                    size: Vec2::splat(0.5),
+                    color,
+                });
+            }
+            ChunkElementShape::Cube => {
+                element_entity.insert(LevelComponent3d::Cube { length: 1., color });
+            }
+            ChunkElementShape::Sphere => {
+                element_entity.insert(LevelComponent3d::Sphere { radius: 1., color });
+            }
+            ChunkElementShape::Gltf { mesh_path, .. } => {
+                element_entity.insert(LevelComponentGltf {
+                    path: mesh_path.clone(),
+                });
+            }
         };
-        ChunkElement {
-            name: self.name,
-            transform: self.transform,
-            shape,
-        }
+    }
+
+    // TODO embed in chunk_asset
+    if id.0 == 23 {
+        commands
+            .entity(chunk_entity)
+            .insert(ReplaceAssetSensorChunk(
+                ChunkId(9),
+                "chunks/demo/floor_only".to_string(),
+            ));
     }
 }
 
-#[derive(Asset, TypePath, Debug, Deserialize)]
-pub struct ChunkDescriptorAsset {
-    pub name: String,
-    pub elements: Vec<String>,
-}
+pub fn on_despawn_chunk(
+    event: On<DespawnChunk>,
+    mut commands: Commands,
+    chunks: Query<(Entity, &ChunkId), With<Chunk>>,
+) {
+    let ChunkId(chunk_id) = event.0;
 
-#[derive(Asset, TypePath, Debug)]
-pub struct ChunkDescriptor {
-    #[dependency]
-    pub elements: Vec<Handle<ChunkElement>>,
-}
-
-impl RonAsset for ChunkDescriptorAsset {
-    type Asset = ChunkDescriptor;
-    const EXTENSION: &str = ".chunk";
-
-    async fn load_dependencies(self, context: &mut bevy::asset::LoadContext<'_>) -> Self::Asset {
-        let elements = self
-            .elements
-            .into_iter()
-            .map(|path| context.load(path + ChunkElementAsset::EXTENSION))
-            .collect();
-        ChunkDescriptor { elements }
-    }
-}
-
-#[derive(Asset, TypePath, Debug, Deserialize)]
-pub struct ChunkLayoutAsset {
-    pub grid: HashMap<(i32, i32), String>,
-}
-
-#[derive(Asset, TypePath, Debug)]
-pub struct ChunkLayout {
-    /// Maps chunk positions (in chunk space, world space is obtained by multiplying by
-    /// [`CHUNK_SIZE`]) to [`ChunkDescriptor`]
-    pub grid: HashMap<(i32, i32), Handle<ChunkDescriptor>>,
-}
-
-impl RonAsset for ChunkLayoutAsset {
-    type Asset = ChunkLayout;
-    const EXTENSION: &str = ".layout";
-
-    async fn load_dependencies(self, context: &mut bevy::asset::LoadContext<'_>) -> Self::Asset {
-        let grid = self
-            .grid
-            .into_iter()
-            .map(|(pos, path)| (pos, context.load(path + ChunkDescriptorAsset::EXTENSION)))
-            .collect();
-        ChunkLayout { grid }
-    }
-}
-
-#[derive(Resource, Asset, TypePath, Clone)]
-pub struct ChunkLayoutStorage {
-    pub handle: Handle<ChunkLayout>,
-}
-
-impl FromWorld for ChunkLayoutStorage {
-    fn from_world(world: &mut World) -> Self {
-        let asset_server = world.resource::<AssetServer>();
-        ChunkLayoutStorage {
-            handle: asset_server.load("chunks/chunk".to_string() + ChunkLayoutAsset::EXTENSION),
+    for (entity, ChunkId(id)) in &chunks {
+        if chunk_id == *id {
+            commands.entity(entity).despawn();
+            info!("Chunk {chunk_id} has been despawned");
+            return;
         }
     }
 }

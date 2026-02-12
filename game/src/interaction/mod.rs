@@ -8,7 +8,7 @@ use bevy::{
 
 #[cfg(feature = "dev")]
 use crate::interaction::interactions::DebugInteraction;
-use crate::{character_controller::GameLayer, interaction::focus::FocusTarget, prelude::*};
+use crate::{interaction::focus::FocusTarget, prelude::*};
 
 pub use focus::*;
 pub use interactions::*;

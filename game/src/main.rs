@@ -9,7 +9,6 @@ mod chunk;
 #[cfg(feature = "dev")]
 mod dev_tools;
 mod interaction;
-mod level;
 mod menus;
 mod prelude;
 mod scene;
@@ -50,6 +49,7 @@ impl Plugin for AppPlugin {
         // Add other plugins.
         app.add_plugins((
             feverdream_trap_core::utility_plugin,
+            feverdream_trap_core::material::CoreMaterialPlugin,
             #[cfg(feature = "dev")]
             dev_tools::plugin,
             menus::plugin,
