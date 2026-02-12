@@ -75,7 +75,7 @@ fn on_swap_chunks(
 fn on_replace_chunk_asset(
     event: On<ReplaceChunkAsset>,
     mut commands: Commands,
-    chunk_query: Query<(&ChunkId, Entity, &Transform, &ChildOf)>,
+    chunk_query: Query<(&ChunkId, &Transform, &ChildOf)>,
     chunk_descriptors: Res<Assets<ChunkDescriptor>>,
     chunk_elements: Res<Assets<ChunkElement>>,
     asset_server: Res<AssetServer>,
@@ -83,22 +83,20 @@ fn on_replace_chunk_asset(
     let ChunkId(chunk_id) = event.0;
     let chunk_asset = event.1.clone();
 
-    let Some((chunk_entity, chunk_transform, ChildOf(level))) =
+    let Some((chunk_transform, ChildOf(level))) =
         chunk_query
             .iter()
-            .find_map(|(ChunkId(id), entity, transform, child_of)| match *id {
-                n if n == chunk_id => Some((entity, transform, child_of)),
+            .find_map(|(ChunkId(id), transform, child_of)| match *id {
+                n if n == chunk_id => Some((transform, child_of)),
                 _ => None,
             })
     else {
         return;
     };
 
-    commands.entity(chunk_entity).despawn();
-    info!("Chunk {chunk_id} was replaced with {chunk_asset}");
-
     // todo use custom chunk_asset loader
-    let descriptor_handle: Handle<ChunkDescriptor> = asset_server.load(chunk_asset + ".chunk");
+    let descriptor_handle: Handle<ChunkDescriptor> =
+        asset_server.load(chunk_asset.clone() + ".chunk");
     let Some(chunk_descriptor) = chunk_descriptors.get(&descriptor_handle) else {
         return;
     };
@@ -109,12 +107,15 @@ fn on_replace_chunk_asset(
         .map(|element| chunk_elements.get(&element.0).unwrap().clone())
         .collect();
 
+    commands.trigger(DespawnChunk(ChunkId(chunk_id)));
     commands.trigger(SpawnChunk {
         level: *level,
         id: ChunkId(chunk_id),
         grid_position: chunk_transform.translation.xz() / CHUNK_SIZE,
         elements,
     });
+
+    info!("Chunk {chunk_id} was replaced with {chunk_asset}");
 }
 
 fn replace_chunk_asset_on_contact_with_sensor(

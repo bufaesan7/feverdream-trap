@@ -4,7 +4,8 @@ use crate::physics::GameLayer;
 use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_observer(on_spawn_chunk);
+    app.add_observer(on_spawn_chunk)
+        .add_observer(on_despawn_chunk);
 }
 
 pub const CHUNK_SIZE: f32 = 5.;
@@ -26,6 +27,9 @@ pub struct SpawnChunk {
     pub grid_position: Vec2,
     pub elements: Vec<ChunkElement>,
 }
+
+#[derive(Debug, Event)]
+pub struct DespawnChunk(pub ChunkId);
 
 /// TODO move to game once chunk_asset handel this two components embeding
 #[derive(Component, Reflect)]
@@ -95,5 +99,21 @@ pub fn on_spawn_chunk(event: On<SpawnChunk>, mut commands: Commands) {
                 ChunkId(9),
                 "chunks/demo/floor_only".to_string(),
             ));
+    }
+}
+
+pub fn on_despawn_chunk(
+    event: On<DespawnChunk>,
+    mut commands: Commands,
+    chunks: Query<(Entity, &ChunkId), With<Chunk>>,
+) {
+    let ChunkId(chunk_id) = event.0;
+
+    for (entity, ChunkId(id)) in &chunks {
+        if chunk_id == *id {
+            commands.entity(entity).despawn();
+            info!("Chunk {chunk_id} has been despawned");
+            return;
+        }
     }
 }

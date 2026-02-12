@@ -8,5 +8,6 @@ pub fn spawn_camera(mut commands: Commands) {
         Transform::default(),
         Visibility::Visible,
         CameraMarker,
+        LevelComponent,
     ));
 }
