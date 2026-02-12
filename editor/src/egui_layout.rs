@@ -9,10 +9,7 @@ use egui_dock::{DockArea, DockState, NodeIndex, Style};
 #[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
 
-use crate::{
-    elements::EguiActionBuffer,
-    prelude::*,
-};
+use crate::{elements::EguiActionBuffer, prelude::*};
 
 #[derive(Resource, Default)]
 struct DescriptorPreview {
@@ -350,8 +347,7 @@ fn refresh_preview_on_asset_change(
 fn update_descriptor_preview(
     mut commands: Commands,
     mut preview: ResMut<DescriptorPreview>,
-    descriptor_assets: Res<Assets<ChunkDescriptor>>,
-    element_assets: Res<Assets<ChunkElement>>,
+    asset_server: Res<AssetServer>,
 ) {
     if !preview.is_changed() {
         return;
@@ -370,19 +366,14 @@ fn update_descriptor_preview(
         return;
     };
 
-    let Some(descriptor) = descriptor_assets.get(descriptor_handle) else {
+    let Some(descriptor) = asset_server.get_path(descriptor_handle.id()).map(|p| {
+        let s = p.path().to_string_lossy().to_string();
+        s.strip_suffix(&format!(".{}", ChunkDescriptorAsset::EXTENSION))
+            .unwrap_or(&s)
+            .to_string()
+    }) else {
         return;
     };
-
-    let elements: Vec<ChunkElement> = descriptor
-        .elements
-        .iter()
-        .filter_map(|wrapper| element_assets.get(&wrapper.0).cloned())
-        .collect();
-
-    if elements.is_empty() {
-        return;
-    }
 
     let level_entity = commands
         .spawn((
@@ -396,7 +387,7 @@ fn update_descriptor_preview(
         level: level_entity,
         id: ChunkId(0),
         grid_position: Vec2::ZERO,
-        elements,
+        descriptor,
     });
 
     preview.level_entity = Some(level_entity);
