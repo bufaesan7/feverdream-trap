@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[cfg(feature = "dev_native")]
 use bevy_inspector_egui::inspector_egui_impls::InspectorEguiImpl;
@@ -320,7 +320,7 @@ pub struct ChunkAssetStash {
 impl FromWorld for ChunkAssetStash {
     fn from_world(world: &mut World) -> Self {
         let asset_server = world.resource::<AssetServer>();
-        let chunk_asset_path = PathBuf::from("assets/".to_string() + ChunkDescriptorAsset::PATH);
+        let chunk_asset_path = Path::new("assets").join(ChunkDescriptorAsset::PATH);
 
         let mut elements = vec![];
         let mut descriptors = vec![];
@@ -328,7 +328,7 @@ impl FromWorld for ChunkAssetStash {
         visit_dirs(&chunk_asset_path, &mut |entry| {
             let full_path = entry.path();
             let relative_path = full_path
-                .strip_prefix("assets/")
+                .strip_prefix("assets")
                 .unwrap_or(&full_path)
                 .to_path_buf();
 
@@ -353,7 +353,7 @@ impl FromWorld for ChunkAssetStash {
     }
 }
 
-fn visit_dirs(dir: &PathBuf, cb: &mut dyn FnMut(&std::fs::DirEntry)) {
+fn visit_dirs(dir: &Path, cb: &mut dyn FnMut(&std::fs::DirEntry)) {
     if let Ok(entries) = std::fs::read_dir(dir) {
         for entry in entries.flatten() {
             let path = entry.path();
