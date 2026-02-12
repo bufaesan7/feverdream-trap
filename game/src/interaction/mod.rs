@@ -4,13 +4,13 @@ mod interactions;
 use bevy::{
     ecs::{lifecycle::HookContext, world::DeferredWorld},
     mesh::MeshTag,
+    pbr::ExtendedMaterial,
 };
 
 #[cfg(feature = "dev")]
 use crate::interaction::interactions::DebugInteraction;
 use crate::{interaction::focus::FocusTarget, prelude::*};
 
-pub use focus::*;
 pub use interactions::*;
 
 const INTERACTION_DISTANCE: f32 = 10.0;
@@ -31,11 +31,54 @@ pub struct Interactable;
 
 impl Interactable {
     fn on_add(mut world: DeferredWorld, ctx: HookContext) {
+        // This is used for finding focus target; see focus
         world.commands().entity(ctx.entity).insert((
-            CollisionLayers::new(GameLayer::Interactable, LayerMask::ALL), // This is used for finding focus target; see focus
+            CollisionLayers::new(GameLayer::Interactable, LayerMask::ALL),
             #[cfg(feature = "dev")]
             DebugInteraction,
         ));
+
+        // Replace StandardMaterial with ExtendedMaterial
+        let Some(standard_material) = world
+            .entity(ctx.entity)
+            .get::<MeshMaterial3d<StandardMaterial>>()
+        else {
+            return;
+        };
+
+        let Some(standard_materials) = world.get_resource::<Assets<StandardMaterial>>() else {
+            return;
+        };
+
+        let Some(standard_material) = standard_materials.get(standard_material).cloned() else {
+            return;
+        };
+
+        let Some(colors) = world.get_resource::<HighlightStorageBuffer>() else {
+            return;
+        };
+        let colors = colors.0.clone();
+
+        let Some(mut extended_materials) = world
+            .get_resource_mut::<Assets<ExtendedMaterial<StandardMaterial, HighlightExtension>>>()
+        else {
+            return;
+        };
+
+        let extended_material = extended_materials.add(ExtendedMaterial {
+            base: standard_material,
+            extension: HighlightExtension { colors },
+        });
+
+        // Replace component
+        world
+            .commands()
+            .entity(ctx.entity)
+            .try_remove::<MeshMaterial3d<StandardMaterial>>();
+        world
+            .commands()
+            .entity(ctx.entity)
+            .try_insert(MeshMaterial3d(extended_material));
     }
 }
 

@@ -5,9 +5,9 @@ pub use crate::audio::{music, sound_effect};
 pub use crate::chunk::*;
 pub use crate::chunk_assets::*;
 pub use crate::level::*;
+pub use crate::material::*;
 pub use crate::physics::*;
 pub use crate::theme::widget;
-pub use crate::material::*;
 
 /// Bevy & ecosystem exports
 pub use avian3d::prelude::*;

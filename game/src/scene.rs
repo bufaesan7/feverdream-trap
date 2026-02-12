@@ -4,7 +4,7 @@ use bevy::tasks::IoTaskPool;
 
 use crate::camera_controller::{CameraMarker, CameraTargetCharacterController, spawn_camera};
 use crate::character_controller::{Player, PlayerInput, spawn_player};
-use crate::interaction::{Interactable, DespawnInteraction, SwapChunksInteraction};
+use crate::interaction::{DespawnInteraction, Interactable, SwapChunksInteraction};
 use crate::prelude::*;
 use bevy::ecs::system::RunSystemOnce;
 

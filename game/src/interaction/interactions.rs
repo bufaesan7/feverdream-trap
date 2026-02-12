@@ -1,7 +1,9 @@
 use bevy::ecs::{lifecycle::HookContext, world::DeferredWorld};
 
 use crate::{
-    chunk::SwapChunks, interaction::{Interact, Interactable}, prelude::*
+    chunk::SwapChunks,
+    interaction::{Interact, Interactable},
+    prelude::*,
 };
 
 #[derive(Debug, Default, Component, Reflect)]

@@ -1,9 +1,6 @@
 use bevy::{
     ecs::{lifecycle::HookContext, world::DeferredWorld},
     mesh::MeshTag,
-    pbr::{ExtendedMaterial, MaterialExtension},
-    render::{render_resource::AsBindGroup, storage::ShaderStorageBuffer},
-    shader::ShaderRef,
 };
 
 use crate::{

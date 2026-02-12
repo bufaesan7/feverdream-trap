@@ -4,9 +4,9 @@ mod audio;
 pub mod chunk;
 pub mod chunk_assets;
 pub mod level;
+pub mod material;
 pub mod physics;
 pub mod prelude;
-pub mod material;
 mod theme;
 
 use crate::prelude::*;

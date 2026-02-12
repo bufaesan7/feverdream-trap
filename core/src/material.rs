@@ -1,4 +1,8 @@
-use bevy::{pbr::{ExtendedMaterial, MaterialExtension}, render::{render_resource::AsBindGroup, storage::ShaderStorageBuffer}, shader::ShaderRef};
+use bevy::{
+    pbr::{ExtendedMaterial, MaterialExtension},
+    render::{render_resource::AsBindGroup, storage::ShaderStorageBuffer},
+    shader::ShaderRef,
+};
 
 use crate::prelude::*;
 
