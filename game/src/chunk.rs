@@ -94,20 +94,16 @@ fn on_replace_chunk_asset(
         return;
     };
 
-    // todo use custom chunk_asset loader
-    // the associated descriptor might not have been loaded yet
     let descriptor_handle: Handle<ChunkDescriptor> =
         asset_server.load(chunk_asset.clone() + ".chunk");
-
     let Some(chunk_descriptor) = chunk_descriptors.get(&descriptor_handle) else {
         return;
     };
 
-    let elements = chunk_descriptor
-        .elements
-        .iter()
-        .map(|element| chunk_elements.get(&element.0).unwrap().clone())
-        .collect();
+    let Some(elements) = chunk_descriptor.get_elements(&chunk_elements) else {
+        warn!("Some elements not loaded yet for chunk asset '{chunk_asset}'");
+        return;
+    };
 
     commands.trigger(DespawnChunk(ChunkId(chunk_id)));
     commands.trigger(SpawnChunk {
