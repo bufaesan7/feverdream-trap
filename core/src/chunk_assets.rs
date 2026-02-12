@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[cfg(feature = "dev_native")]
 use bevy_inspector_egui::inspector_egui_impls::InspectorEguiImpl;
@@ -18,7 +18,10 @@ pub(super) fn plugin(app: &mut App) {
         .register_asset_loader(RonAssetLoader::<ChunkElementAsset>::new())
         .register_asset_loader(RonAssetLoader::<ChunkDescriptorAsset>::new())
         .register_asset_loader(RonAssetLoader::<ChunkLayoutAsset>::new())
-        .load_resource::<ChunkLayoutStorage>();
+        .load_resource::<ChunkLayoutStorage>()
+        .init_resource::<ChunkAssetStash>()
+        .init_resource::<ChunkElementCache>()
+        .add_systems(PreUpdate, populate_chunk_element_cache);
 
     #[cfg(feature = "dev_native")]
     app.register_type_data::<Wrapper<Handle<ChunkElement>>, InspectorEguiImpl>();
@@ -148,6 +151,13 @@ impl ChunkDescriptor {
             elements: vec![],
         }
     }
+
+    pub fn get_elements(&self, chunk_elements: &Assets<ChunkElement>) -> Option<Vec<ChunkElement>> {
+        self.elements
+            .iter()
+            .map(|element| chunk_elements.get(&element.0).cloned())
+            .collect()
+    }
 }
 
 impl Asset for ChunkDescriptor {}
@@ -264,26 +274,16 @@ pub struct ChunkLayoutAsset {
 #[reflect(Asset)]
 pub struct ChunkLayout {
     /// Maps chunk positions (in chunk space, world space is obtained by multiplying by
-    /// [`CHUNK_SIZE`]) to [`ChunkDescriptor`]
-    pub grid: HashMap<(i32, i32), Handle<ChunkDescriptor>>,
+    /// [`CHUNK_SIZE`]) to descriptor names
+    pub grid: HashMap<(i32, i32), String>,
 }
 
 impl RonAsset for ChunkLayoutAsset {
     type Asset = ChunkLayout;
     const EXTENSION: &str = "layout";
 
-    async fn load_dependencies(self, context: &mut bevy::asset::LoadContext<'_>) -> Self::Asset {
-        let grid = self
-            .grid
-            .into_iter()
-            .map(|(pos, name)| {
-                (
-                    pos,
-                    context.load(ChunkDescriptorAsset::path_from_name(&name)),
-                )
-            })
-            .collect();
-        ChunkLayout { grid }
+    async fn load_dependencies(self, _context: &mut bevy::asset::LoadContext<'_>) -> Self::Asset {
+        ChunkLayout { grid: self.grid }
     }
 }
 
@@ -300,4 +300,109 @@ impl FromWorld for ChunkLayoutStorage {
                 .load("chunks/chunk".to_string() + "." + ChunkLayoutAsset::EXTENSION),
         }
     }
+}
+
+#[derive(Resource, Debug, Clone)]
+pub struct ChunkAssetStash {
+    pub elements: Vec<Handle<ChunkElement>>,
+    pub descriptors: Vec<Handle<ChunkDescriptor>>,
+    pub layout: Handle<ChunkLayout>,
+}
+
+impl FromWorld for ChunkAssetStash {
+    fn from_world(world: &mut World) -> Self {
+        let asset_server = world.resource::<AssetServer>();
+        let chunk_asset_path = Path::new("assets").join(ChunkDescriptorAsset::PATH);
+
+        let mut elements = vec![];
+        let mut descriptors = vec![];
+
+        visit_dirs(&chunk_asset_path, &mut |entry| {
+            let full_path = entry.path();
+            let relative_path = full_path
+                .strip_prefix("assets")
+                .unwrap_or(&full_path)
+                .to_path_buf();
+
+            let str_path = relative_path.to_str().unwrap();
+            if str_path.ends_with(ChunkElementAsset::EXTENSION) {
+                elements.push(asset_server.load(relative_path));
+            } else if str_path.ends_with(ChunkDescriptorAsset::EXTENSION) {
+                descriptors.push(asset_server.load(relative_path));
+            }
+        });
+
+        debug!(
+            "Loaded {} chunk elements and {} chunk descriptors",
+            elements.len(),
+            descriptors.len()
+        );
+
+        let mut layout_path = PathBuf::from("chunks");
+        layout_path.push("chunk.".to_string() + ChunkLayoutAsset::EXTENSION);
+
+        Self {
+            elements,
+            descriptors,
+            layout: asset_server.load(layout_path),
+        }
+    }
+}
+
+fn visit_dirs(dir: &Path, cb: &mut dyn FnMut(&std::fs::DirEntry)) {
+    if let Ok(entries) = std::fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                visit_dirs(&path, cb);
+            } else {
+                cb(&entry);
+            }
+        }
+    }
+}
+
+#[derive(Resource, Default)]
+pub struct ChunkElementCache {
+    pub map: HashMap<String, Vec<ChunkElement>>,
+    pub ready: bool,
+}
+
+fn populate_chunk_element_cache(
+    stash: Res<ChunkAssetStash>,
+    asset_server: Res<AssetServer>,
+    chunk_descriptors: Res<Assets<ChunkDescriptor>>,
+    chunk_elements: Res<Assets<ChunkElement>>,
+    mut cache: ResMut<ChunkElementCache>,
+) {
+    if cache.ready {
+        return;
+    }
+
+    let all_loaded = stash
+        .descriptors
+        .iter()
+        .all(|handle| asset_server.is_loaded_with_dependencies(handle));
+
+    if !all_loaded {
+        return;
+    }
+
+    for handle in &stash.descriptors {
+        let Some(descriptor) = chunk_descriptors.get(handle) else {
+            continue;
+        };
+
+        let Some(elements) = descriptor.get_elements(&chunk_elements) else {
+            continue;
+        };
+
+        cache.map.insert(descriptor.name.clone(), elements);
+    }
+
+    cache.ready = true;
+    info!(
+        "ChunkElementCache populated with {} entries",
+        cache.map.len()
+    );
 }

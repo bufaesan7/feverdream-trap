@@ -2,6 +2,7 @@ mod asset_loader;
 mod asset_tracking;
 pub mod chunk;
 pub mod chunk_assets;
+pub mod interactions;
 pub mod level;
 pub mod physics;
 pub mod prelude;

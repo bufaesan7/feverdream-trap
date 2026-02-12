@@ -12,11 +12,7 @@ use egui_dock::{DockArea, DockState, NodeIndex, Style};
 #[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
 
-use crate::{
-    asset_handling::{AssetHandleStash, EguiActionBuffer},
-    prelude::*,
-    preview::DescriptorPreview,
-};
+use crate::{asset_handling::EguiActionBuffer, prelude::*, preview::DescriptorPreview};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(bevy_egui::EguiPlugin::default());
@@ -198,7 +194,7 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                                     .resource::<AssetServer>()
                                     .add(ChunkElement::new(path));
                                 self.world
-                                    .resource_mut::<AssetHandleStash>()
+                                    .resource_mut::<ChunkAssetStash>()
                                     .elements
                                     .push(handle);
                             }
@@ -265,14 +261,14 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                                     .resource::<AssetServer>()
                                     .add(ChunkDescriptor::new(path));
                                 self.world
-                                    .resource_mut::<AssetHandleStash>()
+                                    .resource_mut::<ChunkAssetStash>()
                                     .descriptors
                                     .push(handle);
                             }
                         }
                     });
                     // ------------------------------
-                    // Chunk descriptors
+                    // Chunk layout
                     // ------------------------------
                     ui.separator();
                     ui.collapsing(egui::RichText::new("ChunkLayout").size(18.), |ui| {

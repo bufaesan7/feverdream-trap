@@ -1,5 +1,5 @@
 use crate::chunk::{ChunkId, SpawnChunk};
-use crate::chunk_assets::{ChunkDescriptor, ChunkElement, ChunkLayout};
+use crate::chunk_assets::ChunkLayout;
 use crate::prelude::*;
 use bevy::ecs::lifecycle::HookContext;
 use bevy::ecs::world::DeferredWorld;
@@ -92,7 +92,7 @@ impl LevelComponentGltf {
             world
                 .commands()
                 .entity(hook.entity)
-                .insert(SceneRoot(scene));
+                .insert((SceneRoot(scene), DebugInteraction));
         }
     }
 }
@@ -136,14 +136,7 @@ impl LevelComponent3d {
             LevelComponent3d::Sphere { radius, .. } => Collider::sphere(radius),
         };
 
-        let mut commands = world.commands();
-
-        info!(
-            "spawning component 3d components for entity {}",
-            hook.entity
-        );
-
-        commands.entity(hook.entity).insert((
+        world.commands().entity(hook.entity).insert((
             RigidBody::Static,
             collider,
             Mesh3d(mesh),
@@ -156,8 +149,6 @@ pub fn spawn_level_from_layout(
     mut commands: Commands,
     chunk_layout_storage: Res<ChunkLayoutStorage>,
     chunk_layouts: Res<Assets<ChunkLayout>>,
-    chunk_descriptors: Res<Assets<ChunkDescriptor>>,
-    chunk_elements: Res<Assets<ChunkElement>>,
 ) {
     let Some(layout) = chunk_layouts.get(&chunk_layout_storage.handle) else {
         warn!("Chunk layout not loaded yet");
@@ -190,24 +181,14 @@ pub fn spawn_level_from_layout(
         ))
         .id();
 
-    for ((x, z), descriptor_handle) in &layout.grid {
-        let Some(chunk_descriptor) = chunk_descriptors.get(descriptor_handle) else {
-            return;
-        };
-
+    for ((x, z), descriptor) in &layout.grid {
         let chunk_id = (*z + *x * grid_size_z) as u32;
-
-        let elements = chunk_descriptor
-            .elements
-            .iter()
-            .map(|element| chunk_elements.get(&element.0).unwrap().clone())
-            .collect();
 
         commands.trigger(SpawnChunk {
             level,
             id: ChunkId(chunk_id),
             grid_position: Vec2::new(*x as f32, *z as f32),
-            elements,
+            descriptor: descriptor.clone(),
             #[cfg(feature = "dev")]
             show_wireframe: false,
         });

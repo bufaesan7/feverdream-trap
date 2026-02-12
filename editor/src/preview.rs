@@ -108,7 +108,7 @@ fn update_descriptor_preview(
         level: level_entity,
         id: ChunkId(0),
         grid_position: Vec2::ZERO,
-        elements,
+        descriptor: descriptor.name.clone(),
         #[cfg(feature = "dev")]
         show_wireframe: true,
     });

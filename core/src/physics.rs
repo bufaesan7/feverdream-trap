@@ -5,4 +5,5 @@ pub enum GameLayer {
     Default,
     Player,
     Sensor,
+    Interactable,
 }

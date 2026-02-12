@@ -1,0 +1,13 @@
+use crate::prelude::*;
+
+#[derive(Debug, Default, Component, Reflect)]
+#[reflect(Component)]
+pub struct DebugInteraction;
+
+#[derive(Debug, Default, Component, Reflect)]
+#[reflect(Component)]
+pub struct DespawnInteraction;
+
+#[derive(Debug, Default, Component, Reflect)]
+#[reflect(Component)]
+pub struct SwapChunksInteraction(pub ChunkId, pub ChunkId);

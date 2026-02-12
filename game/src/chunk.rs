@@ -76,9 +76,6 @@ fn on_replace_chunk_asset(
     event: On<ReplaceChunkAsset>,
     mut commands: Commands,
     chunk_query: Query<(&ChunkId, &Transform, &ChildOf)>,
-    chunk_descriptors: Res<Assets<ChunkDescriptor>>,
-    chunk_elements: Res<Assets<ChunkElement>>,
-    asset_server: Res<AssetServer>,
 ) {
     let ChunkId(chunk_id) = event.0;
     let chunk_asset = event.1.clone();
@@ -94,27 +91,12 @@ fn on_replace_chunk_asset(
         return;
     };
 
-    // todo use custom chunk_asset loader
-    // the associated descriptor might not have been loaded yet
-    let descriptor_handle: Handle<ChunkDescriptor> =
-        asset_server.load(chunk_asset.clone() + ".chunk");
-
-    let Some(chunk_descriptor) = chunk_descriptors.get(&descriptor_handle) else {
-        return;
-    };
-
-    let elements = chunk_descriptor
-        .elements
-        .iter()
-        .map(|element| chunk_elements.get(&element.0).unwrap().clone())
-        .collect();
-
     commands.trigger(DespawnChunk(ChunkId(chunk_id)));
     commands.trigger(SpawnChunk {
         level: *level,
         id: ChunkId(chunk_id),
         grid_position: chunk_transform.translation.xz() / CHUNK_SIZE,
-        elements,
+        descriptor: chunk_asset.clone(),
         #[cfg(feature = "dev")]
         show_wireframe: false,
     });
