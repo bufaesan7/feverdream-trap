@@ -3,8 +3,8 @@ mod interactions;
 
 use bevy::{
     ecs::{lifecycle::HookContext, world::DeferredWorld},
-    mesh::MeshTag,
     pbr::ExtendedMaterial,
+    render::storage::ShaderStorageBuffer,
 };
 
 use crate::{
@@ -29,6 +29,65 @@ pub(crate) fn plugin(app: &mut App) {
         );
 }
 
+fn recursive_replace_material(
+    world: &mut DeferredWorld,
+    entity: Entity,
+    colors: Handle<ShaderStorageBuffer>,
+) {
+    info!("Recursive to {:?}", entity);
+
+    // Replace StandardMaterial with ExtendedMaterial
+    if let Some(standard_material) = world
+        .entity(entity)
+        .get::<MeshMaterial3d<StandardMaterial>>()
+        .cloned()
+    {
+        let Some(standard_materials) = world.get_resource::<Assets<StandardMaterial>>() else {
+            error!("1");
+            return;
+        };
+
+        let Some(standard_material) = standard_materials.get(standard_material).cloned() else {
+            error!("2");
+            return;
+        };
+
+        let Some(mut extended_materials) = world
+            .get_resource_mut::<Assets<ExtendedMaterial<StandardMaterial, HighlightExtension>>>()
+        else {
+            error!("3");
+            return;
+        };
+
+        let extended_material = extended_materials.add(ExtendedMaterial {
+            base: standard_material,
+            extension: HighlightExtension {
+                colors: colors.clone(),
+            },
+        });
+
+        // Replace component
+        world
+            .commands()
+            .entity(entity)
+            .try_remove::<MeshMaterial3d<StandardMaterial>>();
+        world
+            .commands()
+            .entity(entity)
+            .try_insert(MeshMaterial3d(extended_material));
+    }
+
+    let Some(children) = world.entity(entity).get::<Children>() else {
+        error!("4");
+        return;
+    };
+    let children: Vec<Entity> = children.iter().collect();
+
+    for child in children {
+        recursive_replace_material(world, child, colors.clone());
+    }
+}
+
 /// Indicates whether an entity can be interacted with
 #[derive(Debug, Default, Component, Reflect)]
 #[reflect(Component)]
@@ -37,6 +96,7 @@ pub struct Interactable;
 
 impl Interactable {
     fn on_add(mut world: DeferredWorld, ctx: HookContext) {
+        info!("On add interactable {:?}", ctx.entity);
         // This is used for finding focus target; see focus
         world.commands().entity(ctx.entity).insert((
             CollisionLayers::new(GameLayer::Interactable, LayerMask::ALL),
@@ -44,48 +104,13 @@ impl Interactable {
             DebugInteraction,
         ));
 
-        // This needs to descend children
-        // Replace StandardMaterial with ExtendedMaterial
-        let Some(standard_material) = world
-            .entity(ctx.entity)
-            .get::<MeshMaterial3d<StandardMaterial>>()
-        else {
-            return;
-        };
-
-        let Some(standard_materials) = world.get_resource::<Assets<StandardMaterial>>() else {
-            return;
-        };
-
-        let Some(standard_material) = standard_materials.get(standard_material).cloned() else {
-            return;
-        };
-
         let Some(colors) = world.get_resource::<HighlightStorageBuffer>() else {
             return;
         };
         let colors = colors.0.clone();
 
-        let Some(mut extended_materials) = world
-            .get_resource_mut::<Assets<ExtendedMaterial<StandardMaterial, HighlightExtension>>>()
-        else {
-            return;
-        };
-
-        let extended_material = extended_materials.add(ExtendedMaterial {
-            base: standard_material,
-            extension: HighlightExtension { colors },
-        });
-
-        // Replace component
-        world
-            .commands()
-            .entity(ctx.entity)
-            .try_remove::<MeshMaterial3d<StandardMaterial>>();
-        world
-            .commands()
-            .entity(ctx.entity)
-            .try_insert(MeshMaterial3d(extended_material));
+        // This needs to descend children
+        recursive_replace_material(&mut world, ctx.entity, colors);
     }
 }
 

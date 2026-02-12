@@ -56,6 +56,21 @@ fn interactable_in_range(
 const DEFAULT_MESH_TAG: u32 = 0;
 const HIGHLIGHT_MESH_TAG: u32 = 1;
 
+fn recursive_set_meshtag(world: &mut DeferredWorld, entity: Entity, value: u32) {
+    if let Some(mut mesh_tag) = world.entity_mut(entity).get_mut::<MeshTag>() {
+        mesh_tag.0 = value;
+    }
+
+    let Some(children) = world.entity(entity).get::<Children>() else {
+        return;
+    };
+    let children: Vec<Entity> = children.iter().collect();
+
+    for child in children {
+        recursive_set_meshtag(world, child, value);
+    }
+}
+
 /// This indicates that an interactable entity is in focus
 /// It is highlighted and can be interacted with
 #[derive(Debug, Component, Reflect)]
@@ -66,16 +81,12 @@ pub struct FocusTarget;
 impl FocusTarget {
     fn on_add(mut world: DeferredWorld, ctx: HookContext) {
         // Set MeshTag
-        if let Some(mut mesh_tag) = world.entity_mut(ctx.entity).get_mut::<MeshTag>() {
-            mesh_tag.0 = HIGHLIGHT_MESH_TAG;
-        }
+        recursive_set_meshtag(&mut world, ctx.entity, HIGHLIGHT_MESH_TAG);
     }
 
     fn on_remove(mut world: DeferredWorld, ctx: HookContext) {
         // Reset MeshTag
-        if let Some(mut mesh_tag) = world.entity_mut(ctx.entity).get_mut::<MeshTag>() {
-            mesh_tag.0 = DEFAULT_MESH_TAG;
-        }
+        recursive_set_meshtag(&mut world, ctx.entity, DEFAULT_MESH_TAG);
     }
 }
 
