@@ -95,8 +95,10 @@ fn on_replace_chunk_asset(
     };
 
     // todo use custom chunk_asset loader
+    // the associated descriptor might not have been loaded yet
     let descriptor_handle: Handle<ChunkDescriptor> =
         asset_server.load(chunk_asset.clone() + ".chunk");
+
     let Some(chunk_descriptor) = chunk_descriptors.get(&descriptor_handle) else {
         return;
     };

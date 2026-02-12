@@ -1,1 +1,1 @@
-(name:"demo/floating_pill",transform:(translation:(0.0,1.7,0.0),rotation:(0.0,0.0,0.47942555,0.87758255),scale:(0.1,0.1,0.1)),shape:Gltf(mesh_path:"pills.glb"))
+(name:"demo/floating_pill",transform:(translation:(0.0,1.7,0.0),rotation:(0.0,-0.0,0.47942555,0.87758255),scale:(0.05,0.05,0.05)),shape:Gltf(mesh_path:"pills.glb"))

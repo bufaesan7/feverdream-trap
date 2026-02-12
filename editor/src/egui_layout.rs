@@ -34,7 +34,9 @@ pub(super) fn plugin(app: &mut App) {
     );
     app.add_systems(
         Update,
-        update_descriptor_preview.run_if(in_state(Screen::Editor)),
+        (refresh_preview_on_asset_change, update_descriptor_preview)
+            .chain()
+            .run_if(in_state(Screen::Editor)),
     );
     app.add_systems(
         PostUpdate,
@@ -198,6 +200,7 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                     // ------------------------------
                     ui.separator();
                     ui.heading("ChunkDescriptors");
+                    ui_for_assets::<ChunkDescriptor>(self.world, ui);
                     ui.separator();
 
                     // Preview buttons for each descriptor
@@ -308,6 +311,39 @@ impl egui_dock::TabViewer for TabViewer<'_> {
 
     fn clear_background(&self, window: &Self::Tab) -> bool {
         !matches!(window, EguiWindow::GameView)
+    }
+}
+
+fn refresh_preview_on_asset_change(
+    mut element_events: MessageReader<AssetEvent<ChunkElement>>,
+    mut descriptor_events: MessageReader<AssetEvent<ChunkDescriptor>>,
+    mut preview: ResMut<DescriptorPreview>,
+) {
+    let Some(preview_handle) = preview.descriptor.as_ref() else {
+        element_events.clear();
+        descriptor_events.clear();
+        return;
+    };
+
+    let mut needs_refresh = false;
+
+    for event in element_events.read() {
+        if matches!(event, AssetEvent::Modified { .. }) {
+            needs_refresh = true;
+        }
+    }
+
+    let preview_id = preview_handle.id();
+    for event in descriptor_events.read() {
+        if let AssetEvent::Modified { id } = event
+            && *id == preview_id
+        {
+            needs_refresh = true;
+        }
+    }
+
+    if needs_refresh {
+        preview.set_changed();
     }
 }
 
