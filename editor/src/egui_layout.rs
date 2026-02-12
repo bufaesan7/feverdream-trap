@@ -14,16 +14,27 @@ use crate::{
     prelude::*,
 };
 
+#[derive(Resource, Default)]
+struct DescriptorPreview {
+    descriptor: Option<Handle<ChunkDescriptor>>,
+    level_entity: Option<Entity>,
+}
+
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(bevy_egui::EguiPlugin::default());
     app.add_plugins(DefaultInspectorConfigPlugin);
 
     app.insert_resource(UiState::new());
+    app.init_resource::<DescriptorPreview>();
 
     app.add_systems(OnEnter(Screen::Editor), setup);
     app.add_systems(
         EguiPrimaryContextPass,
         show_ui_system.run_if(in_state(Screen::Editor)),
+    );
+    app.add_systems(
+        Update,
+        update_descriptor_preview.run_if(in_state(Screen::Editor)),
     );
     app.add_systems(
         PostUpdate,
@@ -33,27 +44,13 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
-fn setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut egui_global_settings: ResMut<EguiGlobalSettings>,
-) {
+fn setup(mut commands: Commands, mut egui_global_settings: ResMut<EguiGlobalSettings>) {
     egui_global_settings.auto_create_primary_context = false;
 
     // camera
     commands.spawn((
         Camera3d::default(),
-        Transform::from_xyz(0.0, 0., 4.0).looking_at(Vec3::new(0.0, 0., 0.0), Vec3::Y),
-    ));
-
-    commands.spawn((
-        Mesh3d(meshes.add(Cuboid::new(1., 1., 1.))),
-        MeshMaterial3d(materials.add(StandardMaterial {
-            base_color: Color::srgb(0.63, 0.065, 0.05),
-            ..Default::default()
-        })),
-        Transform::default(),
+        Transform::from_xyz(-15.0, 10.0, -15.0).looking_at(Vec3::new(0.0, 0., 0.0), Vec3::Y),
     ));
 
     // egui camera
@@ -201,7 +198,38 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                     // ------------------------------
                     ui.separator();
                     ui.heading("ChunkDescriptors");
-                    ui_for_assets::<ChunkDescriptor>(self.world, ui);
+                    ui.separator();
+
+                    // Preview buttons for each descriptor
+                    ui.label("Preview descriptor:");
+                    {
+                        let descriptor_assets = self.world.resource::<Assets<ChunkDescriptor>>();
+                        let asset_server = self.world.resource::<AssetServer>();
+                        let current_preview = self
+                            .world
+                            .resource::<DescriptorPreview>()
+                            .descriptor
+                            .as_ref()
+                            .map(|h| h.id());
+                        let mut selected = None;
+                        for (id, descriptor) in descriptor_assets.iter() {
+                            let is_active = current_preview == Some(id);
+                            let label = if is_active {
+                                format!("[Active] {}", descriptor.name)
+                            } else {
+                                format!("Preview: {}", descriptor.name)
+                            };
+                            if ui.button(label).clicked() {
+                                selected = Some(
+                                    asset_server.get_id_handle::<ChunkDescriptor>(id).unwrap(),
+                                );
+                            }
+                        }
+                        if let Some(handle) = selected {
+                            self.world.resource_mut::<DescriptorPreview>().descriptor =
+                                Some(handle);
+                        }
+                    }
                     ui.separator();
                     let path = &mut self
                         .world
@@ -281,4 +309,59 @@ impl egui_dock::TabViewer for TabViewer<'_> {
     fn clear_background(&self, window: &Self::Tab) -> bool {
         !matches!(window, EguiWindow::GameView)
     }
+}
+
+fn update_descriptor_preview(
+    mut commands: Commands,
+    mut preview: ResMut<DescriptorPreview>,
+    descriptor_assets: Res<Assets<ChunkDescriptor>>,
+    element_assets: Res<Assets<ChunkElement>>,
+) {
+    if !preview.is_changed() {
+        return;
+    }
+
+    // Despawn previous preview
+    if let Some(level_entity) = preview.level_entity.take() {
+        // Despawn the chunk via the DespawnChunk observer
+        commands.trigger(DespawnChunk(ChunkId(0)));
+        // Despawn the level entity itself
+        commands.entity(level_entity).despawn();
+    }
+
+    // Spawn new preview if a descriptor is selected
+    let Some(descriptor_handle) = preview.descriptor.as_ref() else {
+        return;
+    };
+
+    let Some(descriptor) = descriptor_assets.get(descriptor_handle) else {
+        return;
+    };
+
+    let elements: Vec<ChunkElement> = descriptor
+        .elements
+        .iter()
+        .filter_map(|wrapper| element_assets.get(&wrapper.0).cloned())
+        .collect();
+
+    if elements.is_empty() {
+        return;
+    }
+
+    let level_entity = commands
+        .spawn((
+            Name::new("Preview Level"),
+            Transform::default(),
+            Visibility::default(),
+        ))
+        .id();
+
+    commands.trigger(SpawnChunk {
+        level: level_entity,
+        id: ChunkId(0),
+        grid_position: Vec2::ZERO,
+        elements,
+    });
+
+    preview.level_entity = Some(level_entity);
 }

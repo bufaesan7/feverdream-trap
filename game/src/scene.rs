@@ -53,6 +53,7 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             .allow_component::<LevelComponent>()
             .allow_component::<LevelCollider>()
             .allow_component::<LevelComponent3d>()
+            .allow_component::<LevelComponentGltf>()
             .allow_component::<Transform>()
             .allow_component::<Visibility>()
             .allow_component::<CameraMarker>()

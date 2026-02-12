@@ -17,6 +17,14 @@ pub struct LevelComponent;
 #[reflect(Component)]
 #[require(LevelComponent)]
 #[component(on_add)]
+pub struct LevelComponentGltf {
+    pub path: String,
+}
+
+#[derive(Component, Reflect, Debug, Clone)]
+#[reflect(Component)]
+#[require(LevelComponent)]
+#[component(on_add)]
 /// Abstract [`Mesh3d`] and [`MeshMaterial3d`] insertion to avoid inserting them in the
 /// [`DynamicScene`] storage.
 pub enum LevelComponent3d {
@@ -57,6 +65,38 @@ impl LevelCollider {
     }
 }
 
+impl LevelComponentGltf {
+    fn on_add<'a>(mut world: DeferredWorld<'a>, hook: HookContext) {
+        if !world.contains_resource::<Assets<Mesh>>()
+            || !world.contains_resource::<Assets<StandardMaterial>>()
+        {
+            // Skip this hook when we're constructing a [`DynamicScene`]
+            return;
+        }
+
+        let component = world
+            .get::<LevelComponentGltf>(hook.entity)
+            .unwrap()
+            .clone();
+        let gltf_handle: Handle<Gltf> = world.load_asset(component.path);
+
+        let scene = {
+            let gltf_assets = world.resource::<Assets<Gltf>>();
+            let Some(gltf) = gltf_assets.get(&gltf_handle) else {
+                return;
+            };
+            gltf.scenes.first().cloned()
+        };
+
+        if let Some(scene) = scene {
+            world
+                .commands()
+                .entity(hook.entity)
+                .insert(SceneRoot(scene));
+        }
+    }
+}
+
 impl LevelComponent3d {
     fn on_add<'a>(mut world: DeferredWorld<'a>, hook: HookContext) {
         if !world.contains_resource::<Assets<Mesh>>()
@@ -69,6 +109,7 @@ impl LevelComponent3d {
         let mesh_type = world.get::<LevelComponent3d>(hook.entity).unwrap().clone();
 
         let mut meshes: Mut<Assets<Mesh>> = world.resource_mut();
+
         let mesh = match mesh_type {
             LevelComponent3d::Plane { size, .. } => meshes.add(Plane3d::new(Vec3::Y, size)),
             LevelComponent3d::Cube { length, .. } => meshes.add(Cuboid::from_length(length)),
@@ -76,6 +117,7 @@ impl LevelComponent3d {
         };
 
         let mut materials: Mut<Assets<StandardMaterial>> = world.resource_mut();
+
         let material = match mesh_type {
             LevelComponent3d::Plane { color, .. } => {
                 materials.add(StandardMaterial::from_color(color))
