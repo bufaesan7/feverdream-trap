@@ -32,7 +32,6 @@ pub(crate) fn plugin(app: &mut App) {
 /// Indicates whether an entity can be interacted with
 #[derive(Debug, Default, Component, Reflect)]
 #[reflect(Component)]
-#[require(MeshTag)] // This is used for highlighting; see focus
 #[component(on_add)]
 pub struct Interactable;
 
@@ -45,6 +44,7 @@ impl Interactable {
             DebugInteraction,
         ));
 
+        // This needs to descend children
         // Replace StandardMaterial with ExtendedMaterial
         let Some(standard_material) = world
             .entity(ctx.entity)

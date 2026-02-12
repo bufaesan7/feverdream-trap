@@ -17,6 +17,7 @@ pub(crate) fn plugin(app: &mut App) {
         .add_plugins(MaterialPlugin::<
             ExtendedMaterial<StandardMaterial, HighlightExtension>,
         >::default())
+        .add_systems(Startup, extended_material_required_components)
         .add_systems(
             Update,
             interactable_in_range.run_if(in_state(Screen::Gameplay).and(in_state(Menu::None))),
@@ -110,4 +111,8 @@ impl MaterialExtension for HighlightExtension {
     fn deferred_fragment_shader() -> ShaderRef {
         SHADER_ASSET_PATH.into()
     }
+}
+
+fn extended_material_required_components(world: &mut World) {
+    world.register_required_components::<MeshMaterial3d<ExtendedMaterial<StandardMaterial, HighlightExtension>>, MeshTag>();
 }
