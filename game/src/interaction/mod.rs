@@ -7,19 +7,26 @@ use bevy::{
     pbr::ExtendedMaterial,
 };
 
-#[cfg(feature = "dev")]
-use crate::interaction::interactions::DebugInteraction;
-use crate::{interaction::focus::FocusTarget, prelude::*};
-
-pub use interactions::*;
+use crate::{
+    interaction::{
+        focus::{FocusTarget, HighlightExtension, HighlightStorageBuffer},
+        interactions::{register_component_hooks, register_required_components},
+    },
+    prelude::*,
+};
 
 const INTERACTION_DISTANCE: f32 = 10.0;
 
 pub(crate) fn plugin(app: &mut App) {
-    app.add_plugins(focus::plugin).add_systems(
-        Update,
-        interact.run_if(in_state(Screen::Gameplay).and(in_state(Menu::None))),
-    );
+    app.add_plugins(focus::plugin)
+        .add_systems(
+            Startup,
+            (register_required_components, register_component_hooks),
+        )
+        .add_systems(
+            Update,
+            interact.run_if(in_state(Screen::Gameplay).and(in_state(Menu::None))),
+        );
 }
 
 /// Indicates whether an entity can be interacted with

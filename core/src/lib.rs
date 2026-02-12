@@ -3,8 +3,8 @@ mod asset_tracking;
 mod audio;
 pub mod chunk;
 pub mod chunk_assets;
+pub mod interactions;
 pub mod level;
-pub mod material;
 pub mod physics;
 pub mod prelude;
 mod theme;
@@ -19,7 +19,6 @@ pub fn utility_plugin(app: &mut App) {
         chunk::plugin,
         audio::plugin,
         theme::plugin,
-        material::CoreMaterialPlugin,
     ));
 }
 
