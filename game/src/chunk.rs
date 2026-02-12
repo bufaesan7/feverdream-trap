@@ -106,7 +106,7 @@ fn on_replace_chunk_asset(
     let elements = chunk_descriptor
         .elements
         .iter()
-        .map(|element| chunk_elements.get(element).unwrap().clone())
+        .map(|element| chunk_elements.get(&element.0).unwrap().clone())
         .collect();
 
     commands.trigger(SpawnChunk {

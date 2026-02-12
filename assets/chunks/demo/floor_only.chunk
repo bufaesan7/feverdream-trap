@@ -1,6 +1,1 @@
-(
-    name: "FloorOnlyChunk",
-    elements: [
-        "chunks/elements/demo/floor",
-    ],
-)
+(name:"demo/floor_only",elements:["demo/floor"])

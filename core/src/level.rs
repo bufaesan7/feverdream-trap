@@ -158,7 +158,7 @@ pub fn spawn_level_from_layout(
         let elements = chunk_descriptor
             .elements
             .iter()
-            .map(|element| chunk_elements.get(element).unwrap().clone())
+            .map(|element| chunk_elements.get(&element.0).unwrap().clone())
             .collect();
 
         commands.trigger(SpawnChunk {
