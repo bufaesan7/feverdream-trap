@@ -10,7 +10,7 @@ use egui_dock::{DockArea, DockState, NodeIndex, Style};
 use std::path::PathBuf;
 
 use crate::{
-    elements::{AssetHandleStash, EguiActionBuffer},
+    elements::EguiActionBuffer,
     prelude::*,
 };
 
@@ -190,7 +190,7 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                                 .resource::<AssetServer>()
                                 .add(ChunkElement::new(path));
                             self.world
-                                .resource_mut::<AssetHandleStash>()
+                                .resource_mut::<ChunkAssetStash>()
                                 .elements
                                 .push(handle);
                         }
@@ -255,7 +255,7 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                                 .resource::<AssetServer>()
                                 .add(ChunkDescriptor::new(path));
                             self.world
-                                .resource_mut::<AssetHandleStash>()
+                                .resource_mut::<ChunkAssetStash>()
                                 .descriptors
                                 .push(handle);
                         }

@@ -113,7 +113,7 @@ pub fn on_spawn_chunk(
             .entity(chunk_entity)
             .insert(ReplaceAssetSensorChunk(
                 ChunkId(9),
-                "chunks/demo/floor_only".to_string(),
+                "chunks/demo/elevator".to_string(),
             ));
     }
 }
