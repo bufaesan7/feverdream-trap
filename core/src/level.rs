@@ -154,8 +154,8 @@ pub fn spawn_level_from_layout(
 
     // Compute grid bounds to support arbitrary layout coordinates (including negatives)
     let (min_z, max_z) = {
-        let mut min_z = i32::MAX;
-        let mut max_z = i32::MIN;
+        let mut min_z = i32::MAX / 2;
+        let mut max_z = i32::MIN / 2;
         for (&(_x, z), _) in &layout.grid {
             if z < min_z {
                 min_z = z;
@@ -185,9 +185,7 @@ pub fn spawn_level_from_layout(
             level,
             id: ChunkId(chunk_id),
             grid_position: Vec2::new(*x as f32, *z as f32),
-            descriptor: descriptor.0.clone(),
-            #[cfg(feature = "dev")]
-            show_wireframe: false,
+            descriptor: descriptor.clone(),
         });
     }
 }

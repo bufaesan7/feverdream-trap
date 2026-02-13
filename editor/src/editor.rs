@@ -12,7 +12,11 @@ use egui_dock::{DockArea, DockState, NodeIndex, Style};
 #[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
 
-use crate::{action_buffer::EguiActionBuffer, prelude::*, preview::EditorPreview};
+use crate::{
+    action_buffer::EguiActionBuffer,
+    prelude::*,
+    preview::{CameraAnkor, EditorPreview},
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(bevy_egui::EguiPlugin::default());
@@ -38,8 +42,15 @@ fn setup(mut commands: Commands, mut egui_global_settings: ResMut<EguiGlobalSett
 
     // camera
     commands.spawn((
-        Camera3d::default(),
-        Transform::from_xyz(-15.0, 10.0, -15.0).looking_at(Vec3::new(0.0, 0., 0.0), Vec3::Y),
+        Name::new("CameraAnkor"),
+        CameraAnkor,
+        Transform::default(),
+        Visibility::default(),
+        children![(
+            Name::new("Camera3d"),
+            Camera3d::default(),
+            Transform::from_xyz(-15.0, 10.0, -15.0).looking_at(Vec3::new(0.0, 0., 0.0), Vec3::Y),
+        )],
     ));
 
     // egui camera
@@ -271,48 +282,60 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                     ui.separator();
                     ui.collapsing(egui::RichText::new("ChunkLayout").size(18.), |ui| {
                         ui.heading("ChunkLayout");
-                        ui_for_assets::<ChunkLayout>(self.world, ui);
-
-                        ui.separator();
-                        ui.collapsing("Push layout element", |ui| {
+                        let mut layout = self
+                            .world
+                            .resource_mut::<EguiActionBuffer>()
+                            .layout_buffer
+                            .clone();
+                        for (iteration, ((x, y), descriptor)) in layout.iter_mut().enumerate() {
                             ui.horizontal(|ui| {
-                                let (x, y) = &mut self
-                                    .world
-                                    .resource_mut::<EguiActionBuffer>()
-                                    .new_layout_pos;
                                 ui.label("x:");
-                                ui.text_edit_singleline(x);
+                                ui.add_sized(
+                                    [2.0, ui.spacing().interact_size.y],
+                                    egui::TextEdit::singleline(x),
+                                );
                                 ui.label("y:");
-                                ui.text_edit_singleline(y);
+                                ui.add_sized(
+                                    [2.0, ui.spacing().interact_size.y],
+                                    egui::TextEdit::singleline(y),
+                                );
+                                let mut descriptor_assets =
+                                    self.world.resource_mut::<Assets<ChunkDescriptor>>();
+                                let strong_handles = descriptor_assets
+                                    .iter()
+                                    .map(|(id, _)| id)
+                                    .collect::<Vec<_>>()
+                                    .into_iter()
+                                    .map(|id| descriptor_assets.get_strong_handle(id).unwrap())
+                                    .collect::<Vec<_>>();
+                                let selected_name = descriptor_assets
+                                    .get(&*descriptor)
+                                    .map(|e| e.name.clone())
+                                    .unwrap_or_default();
+                                ui.push_id(iteration, |ui| {
+                                    egui::ComboBox::from_label("Pick handle")
+                                        .selected_text(selected_name)
+                                        .show_ui(ui, |ui| {
+                                            for (index, (_, asset)) in
+                                                descriptor_assets.iter_mut().enumerate()
+                                            {
+                                                ui.push_id(index, |ui| {
+                                                    ui.selectable_value(
+                                                        descriptor,
+                                                        strong_handles[index].clone(),
+                                                        &asset.name,
+                                                    );
+                                                });
+                                            }
+                                        });
+                                });
                             });
-                            if ui.button("Push").clicked() {
-                                let (x, y) =
-                                    &self.world.resource_mut::<EguiActionBuffer>().new_layout_pos;
-                                match (x.parse(), y.parse()) {
-                                    (Ok(x), Ok(y)) => {
-                                        self.world
-                                            .resource_mut::<EguiActionBuffer>()
-                                            .layout_push_counter += 1;
-                                        let push_count = self
-                                            .world
-                                            .resource::<EguiActionBuffer>()
-                                            .layout_push_counter;
-                                        let layout =
-                                            &mut self.world.resource_mut::<Assets<ChunkLayout>>();
-                                        let grid_len =
-                                            layout.iter().next().unwrap().1.grid.len() + push_count;
-                                        layout
-                                            .iter_mut()
-                                            .next()
-                                            .unwrap()
-                                            .1
-                                            .grid
-                                            .insert((x, y), Wrapper(Handle::default(), grid_len));
-                                    }
-                                    _ => error!("Failed to parse {x} or {y} as i32"),
-                                }
-                            }
-                        });
+                        }
+                        if ui.button("Add chunk to layout").clicked() {
+                            layout.push(Default::default());
+                        }
+                        self.world.resource_mut::<EguiActionBuffer>().layout_buffer = layout;
+
                         ui.separator();
                         if ui.button("Preview ChunkLayout").clicked() {
                             *self.world.resource_mut::<EditorPreview>() = EditorPreview::Layout;
@@ -322,7 +345,13 @@ impl egui_dock::TabViewer for TabViewer<'_> {
             }
             EguiWindow::Options => {
                 ui.vertical(|ui| {
-                    #[cfg(not(target_arch = "wasm32"))]
+                    #[cfg(feature = "dev_native")]
+                    if ui.button("Toggle Wireframes").clicked() {
+                        use std::sync::atomic::Ordering;
+                        let previous = CHUNK_WIREFRAMES_ENABLED.load(Ordering::Relaxed);
+                        CHUNK_WIREFRAMES_ENABLED.store(!previous, Ordering::Relaxed);
+                    }
+                    #[cfg(feature = "dev_native")]
                     if ui.button("Save Assets").clicked() {
                         info!("Saving assets");
                         // ------------------------------
