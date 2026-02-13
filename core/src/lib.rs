@@ -1,6 +1,5 @@
 mod asset_loader;
 mod asset_tracking;
-mod audio;
 pub mod chunk;
 pub mod chunk_assets;
 pub mod interactions;
@@ -8,6 +7,7 @@ pub mod level;
 pub mod physics;
 pub mod prelude;
 mod theme;
+pub(crate) mod utils;
 
 use crate::prelude::*;
 use bevy::asset::AssetMetaCheck;
@@ -17,7 +17,7 @@ pub fn utility_plugin(app: &mut App) {
         asset_tracking::plugin,
         chunk_assets::plugin,
         chunk::plugin,
-        audio::plugin,
+        utils::audio::plugin,
         theme::plugin,
     ));
 }

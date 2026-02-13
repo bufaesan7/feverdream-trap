@@ -147,13 +147,10 @@ impl LevelComponent3d {
 
 pub fn spawn_level_from_layout(
     mut commands: Commands,
-    chunk_layout_storage: Res<ChunkLayoutStorage>,
+    chunk_stash: Res<ChunkAssetStash>,
     chunk_layouts: Res<Assets<ChunkLayout>>,
 ) {
-    let Some(layout) = chunk_layouts.get(&chunk_layout_storage.handle) else {
-        warn!("Chunk layout not loaded yet");
-        return;
-    };
+    let layout = chunk_layouts.get(&chunk_stash.layout).unwrap();
 
     // Compute grid bounds to support arbitrary layout coordinates (including negatives)
     let (min_z, max_z) = {
@@ -188,7 +185,9 @@ pub fn spawn_level_from_layout(
             level,
             id: ChunkId(chunk_id),
             grid_position: Vec2::new(*x as f32, *z as f32),
-            descriptor: descriptor.clone(),
+            descriptor: descriptor.0.clone(),
+            #[cfg(feature = "dev")]
+            show_wireframe: false,
         });
     }
 }

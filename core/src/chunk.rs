@@ -1,4 +1,4 @@
-use crate::chunk_assets::{ChunkElementCache, ChunkElementShape};
+use crate::chunk_assets::ChunkElementShape;
 use crate::level::*;
 use crate::physics::GameLayer;
 use crate::prelude::*;
@@ -25,13 +25,15 @@ pub struct SpawnChunk {
     pub level: Entity,
     pub id: ChunkId,
     pub grid_position: Vec2,
-    pub descriptor: String,
+    pub descriptor: Handle<ChunkDescriptor>,
+    #[cfg(feature = "dev")]
+    pub show_wireframe: bool,
 }
 
 #[derive(Debug, Event)]
 pub struct DespawnChunk(pub ChunkId);
 
-/// TODO move to game once chunk_asset handel this two components embeding
+/// TODO move to game once chunk_asset handle this two components embedding
 #[derive(Component, Reflect)]
 #[require(Chunk)]
 #[reflect(Component)]
@@ -40,22 +42,25 @@ pub struct SwapSensorChunk(pub ChunkId, pub ChunkId);
 #[derive(Component, Reflect)]
 #[require(Chunk)]
 #[reflect(Component)]
-pub struct ReplaceAssetSensorChunk(pub ChunkId, pub String);
+pub struct ReplaceAssetSensorChunk(pub ChunkId, pub Handle<ChunkDescriptor>);
 
 pub fn on_spawn_chunk(
     event: On<SpawnChunk>,
     mut commands: Commands,
-    cache: Res<ChunkElementCache>,
+    descriptors: Res<Assets<ChunkDescriptor>>,
+    elements: Res<Assets<ChunkElement>>,
 ) {
     let level = event.level;
     let id = event.id;
     let grid_position = event.grid_position;
-    let descriptor = &event.descriptor;
 
-    let Some(elements) = cache.map.get(descriptor) else {
-        warn!("Descriptor '{descriptor}' not found in cache");
+    let Some(descriptor) = descriptors.get(&event.descriptor) else {
         return;
     };
+    let elements = descriptor
+        .elements
+        .iter()
+        .filter_map(|e| elements.get(&e.0));
 
     let transform = Transform::from_xyz(
         grid_position.x * CHUNK_SIZE,
@@ -63,23 +68,25 @@ pub fn on_spawn_chunk(
         grid_position.y * CHUNK_SIZE,
     );
 
-    info!("Spawning chunk {} at position {:?}", id.0, grid_position);
+    let mut chunk_cmds = commands.spawn((
+        Name::new(format!("Chunk ({}, {})", grid_position.x, grid_position.y)),
+        Visibility::default(),
+        Chunk,
+        id,
+        transform,
+        LevelCollider::Cube { length: CHUNK_SIZE },
+        RigidBody::Static,
+        Sensor,
+        CollisionEventsEnabled,
+        CollisionLayers::new([GameLayer::Sensor], [GameLayer::Player]),
+        ChildOf(level),
+    ));
+    #[cfg(feature = "dev")]
+    if event.show_wireframe {
+        chunk_cmds.insert(DebugRender::none().with_collider_color(Color::srgb(1., 0., 0.)));
+    }
 
-    let chunk_entity = commands
-        .spawn((
-            Name::new(format!("Chunk ({}, {})", grid_position.x, grid_position.y)),
-            Visibility::default(),
-            Chunk,
-            id,
-            transform,
-            LevelCollider::Cube { length: CHUNK_SIZE },
-            RigidBody::Static,
-            Sensor,
-            CollisionEventsEnabled,
-            CollisionLayers::new([GameLayer::Sensor], [GameLayer::Player]),
-            ChildOf(level),
-        ))
-        .id();
+    let chunk_entity = chunk_cmds.id();
 
     let color = Color::srgb(0.95, 0.95, 0.95);
 
@@ -111,16 +118,6 @@ pub fn on_spawn_chunk(
             }
         };
     }
-
-    // TODO embed in chunk_asset
-    if id.0 == 23 {
-        commands
-            .entity(chunk_entity)
-            .insert(ReplaceAssetSensorChunk(
-                ChunkId(9),
-                "demo/elevator".to_string(),
-            ));
-    }
 }
 
 pub fn on_despawn_chunk(
@@ -132,7 +129,6 @@ pub fn on_despawn_chunk(
 
     for (entity, ChunkId(id)) in &chunks {
         if chunk_id == *id {
-            info!("Despawning chunk {chunk_id}");
             commands.entity(entity).despawn();
             return;
         }

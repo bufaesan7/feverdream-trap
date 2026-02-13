@@ -5,9 +5,10 @@
 
 use crate::prelude::*;
 
-mod egui_layout;
-mod elements;
+mod action_buffer;
+mod editor;
 mod prelude;
+mod preview;
 
 fn main() -> AppExit {
     let mut app = App::new();
@@ -26,12 +27,18 @@ fn main() -> AppExit {
         }),
     );
 
+    app.add_plugins((PhysicsPlugins::default(), PhysicsDebugPlugin));
+    app.insert_gizmo_config(PhysicsGizmos::none(), GizmoConfig::default());
+
+    app.add_systems(Update, bevy::dev_tools::states::log_transitions::<Screen>);
+
     app.init_state::<Screen>();
 
     app.add_plugins((
         feverdream_trap_core::utility_plugin,
-        egui_layout::plugin,
-        elements::plugin,
+        action_buffer::plugin,
+        editor::plugin,
+        preview::plugin,
     ));
 
     app.add_systems(OnEnter(Screen::Loading), spawn_loading_screen);
