@@ -12,14 +12,15 @@ pub(crate) mod utils;
 use crate::prelude::*;
 use bevy::asset::AssetMetaCheck;
 
-pub fn utility_plugin(app: &mut App) {
+pub fn utility_plugin<S: States>(app: &mut App, state: Option<S>) {
     app.add_plugins((
         asset_tracking::plugin,
         chunk_assets::plugin,
         chunk::plugin,
         utils::audio::plugin,
-        theme::plugin,
     ));
+
+    theme::plugin(app, state);
 }
 
 pub fn asset_plugin() -> AssetPlugin {

@@ -46,9 +46,10 @@ impl Plugin for AppPlugin {
         // Ecosystem plugins
         app.add_plugins(PhysicsPlugins::default());
 
+        feverdream_trap_core::utility_plugin(app, Some(Menu::None));
+
         // Add other plugins.
         app.add_plugins((
-            feverdream_trap_core::utility_plugin,
             #[cfg(feature = "dev")]
             dev_tools::plugin,
             menus::plugin,

@@ -1,15 +1,30 @@
 use crate::prelude::*;
 
-pub(super) fn plugin(app: &mut App) {
+pub(super) fn plugin<S: States>(app: &mut App, state: Option<S>) {
     app.add_observer(apply_interaction_palette_on_click);
     app.add_observer(apply_interaction_palette_on_over);
     app.add_observer(apply_interaction_palette_on_out);
     app.add_observer(apply_interaction_palette_on_release);
 
     app.load_resource::<InteractionAssets>();
-    // TODO: Would be nice if these could be state scoped
-    //app.add_observer(play_sound_effect_on_click);
-    //app.add_observer(play_sound_effect_on_over);
+
+    if let Some(state) = state {
+        let cstate = state.clone();
+        let system = move |mut commands: Commands| {
+            commands.spawn((
+                Observer::new(play_sound_effect_on_click),
+                DespawnOnEnter(state.clone()),
+            ));
+            commands.spawn((
+                Observer::new(play_sound_effect_on_over),
+                DespawnOnEnter(state.clone()),
+            ));
+        };
+        app.add_systems(OnExit(cstate), system);
+    } else {
+        app.add_observer(play_sound_effect_on_click);
+        app.add_observer(play_sound_effect_on_over);
+    }
 }
 
 /// Palette for widget interactions. Add this to an entity that supports

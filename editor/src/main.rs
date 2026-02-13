@@ -34,12 +34,8 @@ fn main() -> AppExit {
 
     app.init_state::<Screen>();
 
-    app.add_plugins((
-        feverdream_trap_core::utility_plugin,
-        action_buffer::plugin,
-        editor::plugin,
-        preview::plugin,
-    ));
+    app.add_plugins((action_buffer::plugin, editor::plugin, preview::plugin));
+    feverdream_trap_core::utility_plugin::<Screen>(&mut app, None);
 
     app.add_systems(OnEnter(Screen::Loading), spawn_loading_screen);
     app.add_systems(Update, enter_menu_state.run_if(in_state(Screen::Loading)));

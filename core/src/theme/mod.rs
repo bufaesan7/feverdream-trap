@@ -14,6 +14,6 @@ pub mod prelude {
 
 use crate::prelude::*;
 
-pub(super) fn plugin(app: &mut App) {
-    app.add_plugins(interaction::plugin);
+pub(super) fn plugin<S: States>(app: &mut App, state: Option<S>) {
+    interaction::plugin(app, state);
 }
