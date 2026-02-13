@@ -26,8 +26,6 @@ pub struct SpawnChunk {
     pub id: ChunkId,
     pub grid_position: Vec2,
     pub descriptor: Handle<ChunkDescriptor>,
-    #[cfg(feature = "dev")]
-    pub show_wireframe: bool,
 }
 
 #[derive(Debug, Event)]
@@ -43,6 +41,10 @@ pub struct SwapSensorChunk(pub ChunkId, pub ChunkId);
 #[require(Chunk)]
 #[reflect(Component)]
 pub struct ReplaceAssetSensorChunk(pub ChunkId, pub Handle<ChunkDescriptor>);
+
+#[cfg(feature = "dev_native")]
+pub static CHUNK_WIREFRAMES_ENABLED: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
 
 pub fn on_spawn_chunk(
     event: On<SpawnChunk>,
@@ -81,8 +83,8 @@ pub fn on_spawn_chunk(
         CollisionLayers::new([GameLayer::Sensor], [GameLayer::Player]),
         ChildOf(level),
     ));
-    #[cfg(feature = "dev")]
-    if event.show_wireframe {
+    #[cfg(feature = "dev_native")]
+    if CHUNK_WIREFRAMES_ENABLED.load(std::sync::atomic::Ordering::Relaxed) {
         chunk_cmds.insert(DebugRender::none().with_collider_color(Color::srgb(1., 0., 0.)));
     }
 

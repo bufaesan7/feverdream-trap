@@ -330,7 +330,13 @@ impl egui_dock::TabViewer for TabViewer<'_> {
             }
             EguiWindow::Options => {
                 ui.vertical(|ui| {
-                    #[cfg(not(target_arch = "wasm32"))]
+                    #[cfg(feature = "dev_native")]
+                    if ui.button("Toggle Wireframes").clicked() {
+                        use std::sync::atomic::Ordering;
+                        let previous = CHUNK_WIREFRAMES_ENABLED.load(Ordering::Relaxed);
+                        CHUNK_WIREFRAMES_ENABLED.store(!previous, Ordering::Relaxed);
+                    }
+                    #[cfg(feature = "dev_native")]
                     if ui.button("Save Assets").clicked() {
                         info!("Saving assets");
                         // ------------------------------

@@ -71,8 +71,6 @@ fn update_descriptor_preview(
                 id: ChunkId(0),
                 grid_position: Vec2::ZERO,
                 descriptor: descriptor_handle.clone(),
-                #[cfg(feature = "dev")]
-                show_wireframe: true,
             });
         }
         EditorPreview::Layout => commands.run_system_cached(spawn_level_from_layout),
