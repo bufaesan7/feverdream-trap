@@ -6,8 +6,7 @@ use bevy_egui::{EguiContext, EguiContextSettings, EguiGlobalSettings, EguiPrimar
 use bevy_inspector_egui::{
     DefaultInspectorConfigPlugin,
     bevy_inspector::{ui_for_assets, ui_for_resources},
-    reflect_inspector::{Context, InspectorUi},
-    restricted_world_view::RestrictedWorldView,
+    reflect_inspector::ui_for_value,
 };
 use egui::LayerId;
 use egui_dock::{DockArea, DockState, NodeIndex, Style};
@@ -341,17 +340,9 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                                                         });
                                                     }
                                                 });
-                                        });
 
-                                        let mut context = Context {
-                                            world: Some(RestrictedWorldView::new(self.world)),
-                                            queue: None,
-                                        };
-                                        let mut inspector_ui = InspectorUi::new_no_short_circuit(
-                                            &type_registry,
-                                            &mut context,
-                                        );
-                                        inspector_ui.ui_for_reflect(components, ui);
+                                            ui_for_value(components, ui, &type_registry);
+                                        });
                                     });
                                 });
                             });
