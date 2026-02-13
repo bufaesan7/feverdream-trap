@@ -76,13 +76,16 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             // Relationships
             .allow_component::<Children>()
             .allow_component::<ChildOf>()
-            .extract_entities(query.iter())
             // Interactions
             .allow_component::<Interactable>()
             .allow_component::<DespawnInteraction>()
             .allow_component::<SwapChunksInteraction>()
             // Audio
             .allow_component::<MusicMarker>()
+            //
+            // Extract entities
+            //
+            .extract_entities(query.iter())
             .build()
     };
 
@@ -153,9 +156,7 @@ fn on_level_component_spawned(event: On<Add, LevelComponent>, mut commands: Comm
 }
 
 fn spawn_music(mut commands: Commands) {
-    commands
-        .spawn(MusicMarker::new(String::from(
-            "audio/music/Heavenly Loop.ogg",
-        )))
-        .insert(DespawnOnExit(Screen::Gameplay));
+    commands.spawn(MusicMarker::new(String::from(
+        "audio/music/Heavenly Loop.ogg",
+    )));
 }

@@ -4,6 +4,7 @@ use crate::prelude::*;
 
 #[derive(Debug, Component, Reflect)]
 #[reflect(Component)]
+#[require(LevelComponent)]
 #[component(on_add)]
 pub struct MusicMarker {
     asset_path: String,
