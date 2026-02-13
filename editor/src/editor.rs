@@ -6,6 +6,8 @@ use bevy_egui::{EguiContext, EguiContextSettings, EguiGlobalSettings, EguiPrimar
 use bevy_inspector_egui::{
     DefaultInspectorConfigPlugin,
     bevy_inspector::{ui_for_assets, ui_for_resources},
+    reflect_inspector::{Context, InspectorUi},
+    restricted_world_view::RestrictedWorldView,
 };
 use egui::LayerId;
 use egui_dock::{DockArea, DockState, NodeIndex, Style};
@@ -177,6 +179,9 @@ impl egui_dock::TabViewer for TabViewer<'_> {
     type Tab = EguiWindow;
 
     fn ui(&mut self, ui: &mut egui_dock::egui::Ui, window: &mut Self::Tab) {
+        let type_registry = self.world.resource::<AppTypeRegistry>().0.clone();
+        let type_registry = type_registry.read();
+
         match window {
             EguiWindow::GameView => *self.viewport_rect = ui.clip_rect(),
             EguiWindow::SidebarMenu => {
@@ -287,47 +292,67 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                             .resource_mut::<EguiActionBuffer>()
                             .layout_buffer
                             .clone();
-                        for (iteration, ((x, y), descriptor)) in layout.iter_mut().enumerate() {
+                        for (iteration, ((x, y), descriptor, components)) in
+                            layout.iter_mut().enumerate()
+                        {
                             ui.horizontal(|ui| {
-                                ui.label("x:");
-                                ui.add_sized(
-                                    [2.0, ui.spacing().interact_size.y],
-                                    egui::TextEdit::singleline(x),
-                                );
-                                ui.label("y:");
-                                ui.add_sized(
-                                    [2.0, ui.spacing().interact_size.y],
-                                    egui::TextEdit::singleline(y),
-                                );
-                                let mut descriptor_assets =
-                                    self.world.resource_mut::<Assets<ChunkDescriptor>>();
-                                let strong_handles = descriptor_assets
-                                    .iter()
-                                    .map(|(id, _)| id)
-                                    .collect::<Vec<_>>()
-                                    .into_iter()
-                                    .map(|id| descriptor_assets.get_strong_handle(id).unwrap())
-                                    .collect::<Vec<_>>();
-                                let selected_name = descriptor_assets
-                                    .get(&*descriptor)
-                                    .map(|e| e.name.clone())
-                                    .unwrap_or_default();
-                                ui.push_id(iteration, |ui| {
-                                    egui::ComboBox::from_label("Pick handle")
-                                        .selected_text(selected_name)
-                                        .show_ui(ui, |ui| {
-                                            for (index, (_, asset)) in
-                                                descriptor_assets.iter_mut().enumerate()
-                                            {
-                                                ui.push_id(index, |ui| {
-                                                    ui.selectable_value(
-                                                        descriptor,
-                                                        strong_handles[index].clone(),
-                                                        &asset.name,
-                                                    );
+                                ui.vertical(|ui| {
+                                    ui.horizontal(|ui| {
+                                        ui.label("x:");
+                                        ui.add_sized(
+                                            [2.0, ui.spacing().interact_size.y],
+                                            egui::TextEdit::singleline(x),
+                                        );
+                                        ui.label("y:");
+                                        ui.add_sized(
+                                            [2.0, ui.spacing().interact_size.y],
+                                            egui::TextEdit::singleline(y),
+                                        );
+                                    });
+                                    ui.horizontal(|ui| {
+                                        let mut descriptor_assets =
+                                            self.world.resource_mut::<Assets<ChunkDescriptor>>();
+                                        let strong_handles = descriptor_assets
+                                            .iter()
+                                            .map(|(id, _)| id)
+                                            .collect::<Vec<_>>()
+                                            .into_iter()
+                                            .map(|id| {
+                                                descriptor_assets.get_strong_handle(id).unwrap()
+                                            })
+                                            .collect::<Vec<_>>();
+                                        let selected_name = descriptor_assets
+                                            .get(&*descriptor)
+                                            .map(|e| e.name.clone())
+                                            .unwrap_or_default();
+                                        ui.push_id(iteration, |ui| {
+                                            egui::ComboBox::from_label("Pick handle")
+                                                .selected_text(selected_name)
+                                                .show_ui(ui, |ui| {
+                                                    for (index, (_, asset)) in
+                                                        descriptor_assets.iter_mut().enumerate()
+                                                    {
+                                                        ui.push_id(index, |ui| {
+                                                            ui.selectable_value(
+                                                                descriptor,
+                                                                strong_handles[index].clone(),
+                                                                &asset.name,
+                                                            );
+                                                        });
+                                                    }
                                                 });
-                                            }
                                         });
+
+                                        let mut context = Context {
+                                            world: Some(RestrictedWorldView::new(self.world)),
+                                            queue: None,
+                                        };
+                                        let mut inspector_ui = InspectorUi::new_no_short_circuit(
+                                            &type_registry,
+                                            &mut context,
+                                        );
+                                        inspector_ui.ui_for_reflect(components, ui);
+                                    });
                                 });
                             });
                         }

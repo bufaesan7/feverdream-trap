@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 #[cfg(feature = "dev_native")]
@@ -298,7 +297,7 @@ pub struct ChunkEntryAsset {
 
 #[derive(Asset, TypePath, Debug, Serialize, Deserialize)]
 pub struct ChunkLayoutAsset {
-    pub chunks: HashMap<u32, ChunkEntryAsset>,
+    pub chunks: Vec<ChunkEntryAsset>,
 }
 
 #[derive(Reflect, Debug, Clone)]
@@ -319,15 +318,10 @@ impl From<(&ChunkLayout, &Assets<ChunkDescriptor>)> for ChunkLayoutAsset {
         let chunks = value
             .chunks
             .iter()
-            .map(|entry| {
-                (
-                    id,
-                    ChunkEntryAsset {
-                        grid_pos: entry.grid_pos,
-                        descriptor: descriptors.get(&entry.descriptor.0).unwrap().name.clone(),
-                        components: entry.components.clone(),
-                    },
-                )
+            .map(|entry| ChunkEntryAsset {
+                grid_pos: entry.grid_pos,
+                descriptor: descriptors.get(&entry.descriptor).unwrap().name.clone(),
+                components: entry.components.clone(),
             })
             .collect();
         Self { chunks }
@@ -352,17 +346,14 @@ impl RonAsset for ChunkLayoutAsset {
         let chunks = self
             .chunks
             .into_iter()
-            .map(|(id, entry)| {
+            .map(|entry| {
                 let descriptor =
                     context.load(ChunkDescriptorAsset::path_from_name(&entry.descriptor));
-                (
-                    id,
-                    ChunkEntry {
-                        grid_pos: entry.grid_pos,
-                        descriptor,
-                        components: entry.components,
-                    },
-                )
+                ChunkEntry {
+                    grid_pos: entry.grid_pos,
+                    descriptor,
+                    components: entry.components,
+                }
             })
             .collect();
         ChunkLayout { chunks }
