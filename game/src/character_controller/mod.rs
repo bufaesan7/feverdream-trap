@@ -73,15 +73,24 @@ impl PlayerInput {
     }
 }
 
-pub fn spawn_player(mut commands: Commands, camera: Single<Entity, With<CameraMarker>>) {
+pub fn spawn_player(
+    mut commands: Commands,
+    spawn_point: Query<&SpawnMarker>,
+    camera: Single<Entity, With<CameraMarker>>,
+) {
+    // Retrieve the spawn marker transform
+    let spawn_transform = match spawn_point.single() {
+        Ok(SpawnMarker(point)) => *point,
+        Err(_) => {
+            warn!("spawn point not found");
+
+            Transform::from_xyz(0.0, 1.0, 0.0)
+        }
+    };
+
     // Spawn the player entity
     let player = commands
-        .spawn((
-            Name::new("Player"),
-            Transform::from_xyz(0.0, 1.0, 0.0),
-            Player,
-            PlayerInput,
-        ))
+        .spawn((Name::new("Player"), spawn_transform, Player, PlayerInput))
         .id();
 
     // Spawn the camera
