@@ -66,21 +66,25 @@ pub fn on_spawn_chunk(
         grid_position.y * CHUNK_SIZE,
     );
 
-    let chunk_entity = commands
-        .spawn((
-            Name::new(format!("Chunk ({}, {})", grid_position.x, grid_position.y)),
-            Visibility::default(),
-            Chunk,
-            id,
-            transform,
-            LevelCollider::Cube { length: CHUNK_SIZE },
-            RigidBody::Static,
-            Sensor,
-            CollisionEventsEnabled,
-            CollisionLayers::new([GameLayer::Sensor], [GameLayer::Player]),
-            ChildOf(level),
-        ))
-        .id();
+    let mut chunk_cmds = commands.spawn((
+        Name::new(format!("Chunk ({}, {})", grid_position.x, grid_position.y)),
+        Visibility::default(),
+        Chunk,
+        id,
+        transform,
+        LevelCollider::Cube { length: CHUNK_SIZE },
+        RigidBody::Static,
+        Sensor,
+        CollisionEventsEnabled,
+        CollisionLayers::new([GameLayer::Sensor], [GameLayer::Player]),
+        ChildOf(level),
+    ));
+    #[cfg(feature = "dev")]
+    if event.show_wireframe {
+        chunk_cmds.insert(DebugRender::none().with_collider_color(Color::srgb(1., 0., 0.)));
+    }
+
+    let chunk_entity = chunk_cmds.id();
 
     let color = Color::srgb(0.95, 0.95, 0.95);
 
@@ -111,16 +115,6 @@ pub fn on_spawn_chunk(
                 });
             }
         };
-    }
-
-    #[cfg(feature = "dev")]
-    // Show chunk wireframe
-    if event.show_wireframe {
-        commands.spawn((
-            Name::new("Wireframe"),
-            Collider::cuboid(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE),
-            DebugRender::none().with_collider_color(Color::srgb(1., 0., 0.)),
-        ));
     }
 }
 

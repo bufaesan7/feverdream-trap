@@ -21,7 +21,10 @@ pub(super) fn plugin(app: &mut App) {
         .load_resource::<ChunkAssetStash>();
 
     #[cfg(feature = "dev_native")]
-    app.register_type_data::<Wrapper<Handle<ChunkElement>>, InspectorEguiImpl>();
+    {
+        app.register_type_data::<Wrapper<Handle<ChunkElement>>, InspectorEguiImpl>();
+        app.register_type_data::<Wrapper<Handle<ChunkDescriptor>>, InspectorEguiImpl>();
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -69,13 +72,13 @@ impl ChunkElement {
 }
 
 impl ChunkElementAsset {
-    pub const PATH: [&str; 2] = ["chunks", "elements"];
+    const PATH: [&str; 2] = ["chunks", "elements"];
 
     pub fn path(&self) -> PathBuf {
         Self::path_from_name(&self.name)
     }
 
-    pub fn path_from_name(name: &str) -> PathBuf {
+    fn path_from_name(name: &str) -> PathBuf {
         let mut path = PathBuf::from_iter(Self::PATH);
         path.push(name.to_string() + "." + Self::EXTENSION);
 
@@ -128,11 +131,12 @@ pub struct ChunkDescriptorAsset {
     pub elements: Vec<String>,
 }
 
-#[derive(Reflect, Debug, Default, Clone, Deref)]
+#[derive(Reflect, Debug, Default, Clone)]
 #[reflect(Default)]
 /// New type wrapper to allow implementing
 /// [`bevy_inspector_egui::inspector_egui_impls::InspectorPrimitive`]
-pub struct Wrapper<T: Default>(pub T);
+/// `Self.1` is an ID needed by egui to distinguish picker widgets with the same value
+pub struct Wrapper<T: Default>(pub T, #[cfg(feature = "dev_native")] usize);
 
 #[derive(Reflect, Debug)]
 #[reflect(Asset)]
@@ -162,7 +166,7 @@ impl Asset for ChunkDescriptor {}
 impl VisitAssetDependencies for ChunkDescriptor {
     fn visit_dependencies(&self, visit: &mut impl FnMut(bevy::asset::UntypedAssetId)) {
         for e in &self.elements {
-            visit(e.id().untyped())
+            visit(e.0.id().untyped())
         }
     }
 }
@@ -187,7 +191,7 @@ impl bevy_inspector_egui::inspector_egui_impls::InspectorPrimitive
             .get(&self.0)
             .map(|e| e.name.clone())
             .unwrap_or_default();
-        ui.push_id(self.0.id(), |ui| {
+        ui.push_id(self.1, |ui| {
             let selected = &mut self.0;
             egui::ComboBox::from_label("Pick handle")
                 .selected_text(selected_name)
@@ -216,14 +220,63 @@ impl bevy_inspector_egui::inspector_egui_impls::InspectorPrimitive
     }
 }
 
+#[cfg(feature = "dev_native")]
+impl bevy_inspector_egui::inspector_egui_impls::InspectorPrimitive
+    for Wrapper<Handle<ChunkDescriptor>>
+{
+    fn ui(
+        &mut self,
+        ui: &mut bevy_egui::egui::Ui,
+        _options: &dyn std::any::Any,
+        _id: bevy_egui::egui::Id,
+        env: bevy_inspector_egui::reflect_inspector::InspectorUi<'_, '_>,
+    ) -> bool {
+        let world = env.context.world.as_mut().unwrap();
+        let (descriptor_assets, asset_server) =
+            world.get_two_resources_mut::<Assets<ChunkDescriptor>, AssetServer>();
+        let descriptor_assets = descriptor_assets.unwrap();
+        let asset_server = asset_server.unwrap();
+        let selected_name = descriptor_assets
+            .get(&self.0)
+            .map(|e| e.name.clone())
+            .unwrap_or_default();
+        ui.push_id(self.1, |ui| {
+            let selected = &mut self.0;
+            egui::ComboBox::from_label("Pick handle")
+                .selected_text(selected_name)
+                .show_ui(ui, |ui| {
+                    for (index, (id, asset)) in descriptor_assets.iter().enumerate() {
+                        ui.push_id(index, |ui| {
+                            ui.selectable_value(
+                                selected,
+                                asset_server.get_id_handle(id).unwrap(),
+                                &asset.name,
+                            );
+                        });
+                    }
+                });
+        });
+        false
+    }
+    fn ui_readonly(
+        &self,
+        ui: &mut bevy_egui::egui::Ui,
+        _options: &dyn std::any::Any,
+        _id: bevy_egui::egui::Id,
+        _env: bevy_inspector_egui::reflect_inspector::InspectorUi<'_, '_>,
+    ) {
+        ui.label("Hello ui_readonly");
+    }
+}
+
 impl ChunkDescriptorAsset {
-    pub const PATH: &str = "chunks";
+    const PATH: &str = "chunks";
 
     pub fn path(&self) -> PathBuf {
         Self::path_from_name(&self.name)
     }
 
-    pub fn path_from_name(name: &str) -> PathBuf {
+    fn path_from_name(name: &str) -> PathBuf {
         let mut path = PathBuf::from(Self::PATH);
         path.push(name.to_string() + "." + Self::EXTENSION);
 
@@ -249,6 +302,14 @@ impl RonAsset for ChunkDescriptorAsset {
     const EXTENSION: &str = "chunk";
 
     async fn load_dependencies(self, context: &mut bevy::asset::LoadContext<'_>) -> Self::Asset {
+        #[cfg(feature = "dev_native")]
+        let elements = self
+            .elements
+            .into_iter()
+            .enumerate()
+            .map(|(id, name)| Wrapper(context.load(ChunkElementAsset::path_from_name(&name)), id))
+            .collect();
+        #[cfg(not(feature = "dev_native"))]
         let elements = self
             .elements
             .into_iter()
@@ -272,7 +333,17 @@ pub struct ChunkLayoutAsset {
 pub struct ChunkLayout {
     /// Maps chunk positions (in chunk space, world space is obtained by multiplying by
     /// [`CHUNK_SIZE`]) to descriptor handles
-    pub grid: HashMap<(i32, i32), Handle<ChunkDescriptor>>,
+    pub grid: HashMap<(i32, i32), Wrapper<Handle<ChunkDescriptor>>>,
+}
+
+impl ChunkLayoutAsset {
+    const PATH: &str = "chunks";
+
+    fn path() -> PathBuf {
+        let mut path = PathBuf::from(Self::PATH);
+        path.push("chunk.".to_string() + Self::EXTENSION);
+        path
+    }
 }
 
 impl RonAsset for ChunkLayoutAsset {
@@ -280,13 +351,29 @@ impl RonAsset for ChunkLayoutAsset {
     const EXTENSION: &str = "layout";
 
     async fn load_dependencies(self, context: &mut bevy::asset::LoadContext<'_>) -> Self::Asset {
+        #[cfg(feature = "dev_native")]
+        let grid = self
+            .grid
+            .into_iter()
+            .enumerate()
+            .map(|(id, (pos, name))| {
+                (
+                    pos,
+                    Wrapper(
+                        context.load(ChunkDescriptorAsset::path_from_name(&name)),
+                        id,
+                    ),
+                )
+            })
+            .collect();
+        #[cfg(not(feature = "dev_native"))]
         let grid = self
             .grid
             .into_iter()
             .map(|(pos, name)| {
                 (
                     pos,
-                    context.load(ChunkDescriptorAsset::path_from_name(&name)),
+                    Wrapper(context.load(ChunkDescriptorAsset::path_from_name(&name))),
                 )
             })
             .collect();
@@ -333,13 +420,10 @@ impl FromWorld for ChunkAssetStash {
             descriptors.len()
         );
 
-        let mut layout_path = PathBuf::from("chunks");
-        layout_path.push("chunk.".to_string() + ChunkLayoutAsset::EXTENSION);
-
         Self {
             elements,
             descriptors,
-            layout: asset_server.load(layout_path),
+            layout: asset_server.load(ChunkLayoutAsset::path()),
         }
     }
 }

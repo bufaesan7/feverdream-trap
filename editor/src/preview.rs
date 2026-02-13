@@ -7,11 +7,11 @@ use feverdream_trap_core::prelude::cursor::{cursor_grab, cursor_ungrab};
 use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
-    app.init_resource::<DescriptorPreview>();
+    app.init_resource::<EditorPreview>();
     app.add_systems(
         Update,
         (
-            (refresh_preview_on_asset_change, update_descriptor_preview).chain(),
+            update_descriptor_preview.chain(),
             rotate_camera.run_if(input_pressed(MouseButton::Middle)),
             cursor_grab.run_if(input_just_pressed(MouseButton::Middle)),
             cursor_ungrab.run_if(input_just_released(MouseButton::Middle)),
@@ -21,99 +21,61 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 #[derive(Resource, Default)]
-pub struct DescriptorPreview {
-    pub descriptor: Option<Handle<ChunkDescriptor>>,
-    level_entity: Option<Entity>,
-}
-
-fn refresh_preview_on_asset_change(
-    mut element_events: MessageReader<AssetEvent<ChunkElement>>,
-    mut descriptor_events: MessageReader<AssetEvent<ChunkDescriptor>>,
-    mut preview: ResMut<DescriptorPreview>,
-) {
-    let Some(preview_handle) = preview.descriptor.as_ref() else {
-        element_events.clear();
-        descriptor_events.clear();
-        return;
-    };
-
-    let mut needs_refresh = false;
-
-    for event in element_events.read() {
-        if matches!(event, AssetEvent::Modified { .. }) {
-            needs_refresh = true;
-        }
-    }
-
-    let preview_id = preview_handle.id();
-    for event in descriptor_events.read() {
-        if let AssetEvent::Modified { id } = event
-            && *id == preview_id
-        {
-            needs_refresh = true;
-        }
-    }
-
-    if needs_refresh {
-        preview.set_changed();
-    }
+pub enum EditorPreview {
+    #[default]
+    Layout,
+    Descriptor(Handle<ChunkDescriptor>),
 }
 
 fn update_descriptor_preview(
     mut commands: Commands,
-    mut preview: ResMut<DescriptorPreview>,
+    level: Query<Entity, With<Level>>,
+    preview: Res<EditorPreview>,
     descriptor_assets: Res<Assets<ChunkDescriptor>>,
     element_assets: Res<Assets<ChunkElement>>,
 ) {
-    if !preview.is_changed() {
-        return;
-    }
-
     // Despawn previous preview
-    if let Some(level_entity) = preview.level_entity.take() {
-        // Despawn the chunk via the DespawnChunk observer
-        commands.trigger(DespawnChunk(ChunkId(0)));
-        // Despawn the level entity itself
+    if let Ok(level_entity) = level.single() {
+        // Despawn the previous level entity
         commands.entity(level_entity).despawn();
     }
 
-    // Spawn new preview if a descriptor is selected
-    let Some(descriptor_handle) = preview.descriptor.as_ref() else {
-        return;
-    };
+    match &*preview {
+        EditorPreview::Descriptor(descriptor_handle) => {
+            let level_entity = commands
+                .spawn((
+                    Name::new("Preview Level"),
+                    Level,
+                    Transform::default(),
+                    Visibility::default(),
+                ))
+                .id();
 
-    let Some(descriptor) = descriptor_assets.get(descriptor_handle) else {
-        return;
-    };
+            let Some(descriptor) = descriptor_assets.get(descriptor_handle) else {
+                return;
+            };
 
-    let elements: Vec<ChunkElement> = descriptor
-        .elements
-        .iter()
-        .filter_map(|wrapper| element_assets.get(&wrapper.0).cloned())
-        .collect();
+            let elements: Vec<ChunkElement> = descriptor
+                .elements
+                .iter()
+                .filter_map(|wrapper| element_assets.get(&wrapper.0).cloned())
+                .collect();
 
-    if elements.is_empty() {
-        return;
+            if elements.is_empty() {
+                return;
+            }
+
+            commands.trigger(SpawnChunk {
+                level: level_entity,
+                id: ChunkId(0),
+                grid_position: Vec2::ZERO,
+                descriptor: descriptor_handle.clone(),
+                #[cfg(feature = "dev")]
+                show_wireframe: true,
+            });
+        }
+        EditorPreview::Layout => commands.run_system_cached(spawn_level_from_layout),
     }
-
-    let level_entity = commands
-        .spawn((
-            Name::new("Preview Level"),
-            Transform::default(),
-            Visibility::default(),
-        ))
-        .id();
-
-    commands.trigger(SpawnChunk {
-        level: level_entity,
-        id: ChunkId(0),
-        grid_position: Vec2::ZERO,
-        descriptor: descriptor_handle.clone(),
-        #[cfg(feature = "dev")]
-        show_wireframe: true,
-    });
-
-    preview.level_entity = Some(level_entity);
 }
 
 /// <https://bevy.org/examples/camera/camera-orbit/>

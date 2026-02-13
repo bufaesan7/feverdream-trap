@@ -12,7 +12,7 @@ use egui_dock::{DockArea, DockState, NodeIndex, Style};
 #[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
 
-use crate::{asset_handling::EguiActionBuffer, prelude::*, preview::DescriptorPreview};
+use crate::{asset_handling::EguiActionBuffer, prelude::*, preview::EditorPreview};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(bevy_egui::EguiPlugin::default());
@@ -214,12 +214,10 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                             let descriptor_assets =
                                 self.world.resource::<Assets<ChunkDescriptor>>();
                             let asset_server = self.world.resource::<AssetServer>();
-                            let current_preview = self
-                                .world
-                                .resource::<DescriptorPreview>()
-                                .descriptor
-                                .as_ref()
-                                .map(|h| h.id());
+                            let current_preview = match &self.world.resource::<EditorPreview>() {
+                                EditorPreview::Descriptor(handle) => Some(handle.id()),
+                                _ => None,
+                            };
                             let mut selected = None;
                             for (id, descriptor) in descriptor_assets.iter() {
                                 let is_active = current_preview == Some(id);
@@ -235,8 +233,8 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                                 }
                             }
                             if let Some(handle) = selected {
-                                self.world.resource_mut::<DescriptorPreview>().descriptor =
-                                    Some(handle);
+                                *self.world.resource_mut::<EditorPreview>() =
+                                    EditorPreview::Descriptor(handle);
                             }
                         }
                         ui.separator();
@@ -274,6 +272,10 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                     ui.collapsing(egui::RichText::new("ChunkLayout").size(18.), |ui| {
                         ui.heading("ChunkLayout");
                         ui_for_assets::<ChunkLayout>(self.world, ui);
+
+                        if ui.button("Preview ChunkLayout").clicked() {
+                            *self.world.resource_mut::<EditorPreview>() = EditorPreview::Layout;
+                        }
                     });
                 });
             }
