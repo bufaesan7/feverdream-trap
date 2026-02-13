@@ -1,4 +1,7 @@
-use crate::chunk_assets::ChunkElementShape;
+use bevy::ecs::lifecycle::HookContext;
+use bevy::ecs::world::DeferredWorld;
+
+use crate::chunk_assets::{ChunkDescriptorAsset, ChunkElementShape, ChunkMarker};
 use crate::level::*;
 use crate::physics::GameLayer;
 use crate::prelude::*;
@@ -26,12 +29,12 @@ pub struct SpawnChunk {
     pub id: ChunkId,
     pub grid_position: Vec2,
     pub descriptor: Handle<ChunkDescriptor>,
+    pub components: Vec<ChunkMarker>,
 }
 
 #[derive(Debug, Event)]
 pub struct DespawnChunk(pub ChunkId);
 
-/// TODO move to game once chunk_asset handle this two components embedding
 #[derive(Component, Reflect)]
 #[require(Chunk)]
 #[reflect(Component)]
@@ -45,6 +48,75 @@ pub struct ReplaceAssetSensorChunk(pub ChunkId, pub Handle<ChunkDescriptor>);
 #[cfg(feature = "dev_native")]
 pub static CHUNK_WIREFRAMES_ENABLED: std::sync::atomic::AtomicBool =
     std::sync::atomic::AtomicBool::new(false);
+
+#[derive(Component, Debug, Clone, Reflect)]
+#[reflect(Component)]
+#[component(on_add)]
+pub struct ChunkMarkers(pub Vec<ChunkMarker>);
+
+#[derive(Component, Debug, Clone, Reflect)]
+#[reflect(Component)]
+pub struct SpawnMarker(pub Transform);
+
+impl ChunkMarkers {
+    fn on_add(mut world: DeferredWorld<'_>, hook: HookContext) {
+        let markers = world.get::<ChunkMarkers>(hook.entity).unwrap().0.clone();
+
+        for marker in markers {
+            match marker {
+                ChunkMarker::PlayerSpawn(t) => {
+                    #[cfg(not(feature = "dev_native"))]
+                    world.commands().entity(hook.entity).insert(SpawnMarker(t));
+                    #[cfg(feature = "dev_native")]
+                    {
+                        let mesh = world.resource_mut::<Assets<Mesh>>().add(Sphere::new(0.1));
+                        let material = world
+                            .resource_mut::<Assets<StandardMaterial>>()
+                            .add(StandardMaterial::from_color(Color::srgb(1., 0.1, 0.)));
+                        world
+                            .commands()
+                            .entity(hook.entity)
+                            .insert(SpawnMarker(t))
+                            .with_child((
+                                Name::new("Player spawn indicator"),
+                                Mesh3d(mesh),
+                                MeshMaterial3d(material),
+                                t,
+                            ));
+                    }
+                }
+                ChunkMarker::SwapSensor(a, b) => {
+                    world
+                        .commands()
+                        .entity(hook.entity)
+                        .insert(SwapSensorChunk(ChunkId(a), ChunkId(b)));
+                }
+                ChunkMarker::ReplaceAssetSensor(id, descriptor_name) => {
+                    let path = ChunkDescriptorAsset::path_from_name(&descriptor_name);
+                    let handle: Handle<ChunkDescriptor> =
+                        world.load_asset(path.to_string_lossy().into_owned());
+
+                    world
+                        .commands()
+                        .entity(hook.entity)
+                        .insert(ReplaceAssetSensorChunk(ChunkId(id), handle));
+                }
+                ChunkMarker::Light(translation) => {
+                    world.commands().entity(hook.entity).with_child((
+                        Name::new("Light"),
+                        PointLight {
+                            intensity: 1_000_000.,
+                            range: 50.,
+                            shadows_enabled: true,
+                            ..Default::default()
+                        },
+                        translation,
+                    ));
+                }
+            }
+        }
+    }
+}
 
 pub fn on_spawn_chunk(
     event: On<SpawnChunk>,
@@ -86,6 +158,10 @@ pub fn on_spawn_chunk(
     #[cfg(feature = "dev_native")]
     if CHUNK_WIREFRAMES_ENABLED.load(std::sync::atomic::Ordering::Relaxed) {
         chunk_cmds.insert(DebugRender::none().with_collider_color(Color::srgb(1., 0., 0.)));
+    }
+
+    if !event.components.is_empty() {
+        chunk_cmds.insert(ChunkMarkers(event.components.clone()));
     }
 
     let chunk_entity = chunk_cmds.id();
