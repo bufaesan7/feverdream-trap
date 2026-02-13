@@ -15,6 +15,7 @@ pub(super) fn plugin(app: &mut App) {
             rotate_camera.run_if(input_pressed(MouseButton::Middle)),
             cursor_grab.run_if(input_just_pressed(MouseButton::Middle)),
             cursor_ungrab.run_if(input_just_released(MouseButton::Middle)),
+            move_camera,
         )
             .run_if(in_state(Screen::Editor)),
     );
@@ -103,4 +104,42 @@ fn rotate_camera(
     // In our example it's a static target, but this could easily be customized.
     let target = Vec3::ZERO;
     camera.translation = target - camera.forward() * CHUNK_SIZE * 4.;
+}
+
+#[derive(Component)]
+/// The ankor point of the camera (the camera will rotate around this center)
+pub(super) struct CameraAnkor;
+
+fn move_camera(
+    time: Res<Time>,
+    input: Res<ButtonInput<KeyCode>>,
+    mut ankor: Single<&mut Transform, With<CameraAnkor>>,
+    camera: Single<&Transform, (With<Camera3d>, Without<CameraAnkor>)>,
+) {
+    let mut direction = Vec3::ZERO;
+    if input.pressed(KeyCode::KeyW) {
+        direction += Vec3::NEG_Z;
+    }
+    if input.pressed(KeyCode::KeyA) {
+        direction += Vec3::NEG_X;
+    }
+    if input.pressed(KeyCode::KeyS) {
+        direction += Vec3::Z;
+    }
+    if input.pressed(KeyCode::KeyD) {
+        direction += Vec3::X;
+    }
+    if input.pressed(KeyCode::Space) {
+        direction += Vec3::Y;
+    }
+    if input.pressed(KeyCode::ShiftLeft) {
+        direction += Vec3::NEG_Y;
+    }
+    let speed = 10.;
+    ankor.translation += Quat::from_rotation_arc(
+        Vec3::NEG_Z,
+        camera.forward().as_vec3().with_y(0.).normalize_or_zero(),
+    ) * direction
+        * time.delta_secs()
+        * speed;
 }
