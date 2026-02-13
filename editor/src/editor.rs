@@ -331,6 +331,9 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                                 });
                             });
                         }
+                        if ui.button("Add chunk to layout").clicked() {
+                            layout.push(Default::default());
+                        }
                         self.world.resource_mut::<EguiActionBuffer>().layout_buffer = layout;
 
                         ui.separator();
