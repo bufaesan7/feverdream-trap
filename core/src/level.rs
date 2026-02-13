@@ -89,10 +89,11 @@ impl LevelComponentGltf {
         };
 
         if let Some(scene) = scene {
-            world
-                .commands()
-                .entity(hook.entity)
-                .insert((SceneRoot(scene), DebugInteraction));
+            world.commands().entity(hook.entity).insert((
+                SceneRoot(scene),
+                DebugInteraction,
+                Collider::cuboid(15.0, 15.0, 15.0),
+            ));
         }
     }
 }
