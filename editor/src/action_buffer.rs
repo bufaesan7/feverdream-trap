@@ -1,7 +1,11 @@
 use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
-    app.init_resource::<EguiActionBuffer>();
+    app.add_systems(OnEnter(Screen::Editor), insert_egui_buffer);
+    app.add_systems(
+        PreUpdate,
+        sync_layout_buffer.run_if(in_state(Screen::Editor)),
+    );
 }
 
 #[derive(Default, Resource, Reflect, Debug)]
@@ -12,4 +16,30 @@ pub struct EguiActionBuffer {
     pub new_layout_pos: (String, String),
     /// Count the hashmap inserts to prevent egui salt conflicts
     pub layout_push_counter: usize,
+    pub layout_buffer: Vec<((String, String), Handle<ChunkDescriptor>)>,
+}
+
+fn insert_egui_buffer(mut commands: Commands, layout: Res<Assets<ChunkLayout>>) {
+    let layout = &layout.iter().next().unwrap().1.grid;
+    commands.insert_resource(EguiActionBuffer {
+        layout_buffer: layout
+            .iter()
+            .map(|((x, y), handle)| ((x.to_string(), y.to_string()), handle.clone()))
+            .collect(),
+        ..Default::default()
+    });
+}
+
+fn sync_layout_buffer(mut layout: ResMut<Assets<ChunkLayout>>, buffer: Res<EguiActionBuffer>) {
+    let layout_buffer = buffer
+        .layout_buffer
+        .iter()
+        .fold(vec![], |mut acc, ((x, y), handle)| {
+            let Ok(x) = x.parse() else { return acc };
+            let Ok(y) = y.parse() else { return acc };
+            acc.push(((x, y), handle.clone()));
+            acc
+        });
+
+    layout.iter_mut().next().unwrap().1.grid = layout_buffer.into_iter().collect();
 }

@@ -21,10 +21,7 @@ pub(super) fn plugin(app: &mut App) {
         .load_resource::<ChunkAssetStash>();
 
     #[cfg(feature = "dev_native")]
-    {
-        app.register_type_data::<Wrapper<Handle<ChunkElement>>, InspectorEguiImpl>();
-        app.register_type_data::<Wrapper<Handle<ChunkDescriptor>>, InspectorEguiImpl>();
-    }
+    app.register_type_data::<Wrapper<Handle<ChunkElement>>, InspectorEguiImpl>();
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -220,55 +217,6 @@ impl bevy_inspector_egui::inspector_egui_impls::InspectorPrimitive
     }
 }
 
-#[cfg(feature = "dev_native")]
-impl bevy_inspector_egui::inspector_egui_impls::InspectorPrimitive
-    for Wrapper<Handle<ChunkDescriptor>>
-{
-    fn ui(
-        &mut self,
-        ui: &mut bevy_egui::egui::Ui,
-        _options: &dyn std::any::Any,
-        _id: bevy_egui::egui::Id,
-        env: bevy_inspector_egui::reflect_inspector::InspectorUi<'_, '_>,
-    ) -> bool {
-        let world = env.context.world.as_mut().unwrap();
-        let (descriptor_assets, asset_server) =
-            world.get_two_resources_mut::<Assets<ChunkDescriptor>, AssetServer>();
-        let descriptor_assets = descriptor_assets.unwrap();
-        let asset_server = asset_server.unwrap();
-        let selected_name = descriptor_assets
-            .get(&self.0)
-            .map(|e| e.name.clone())
-            .unwrap_or_default();
-        ui.push_id(self.1, |ui| {
-            let selected = &mut self.0;
-            egui::ComboBox::from_label("Pick handle")
-                .selected_text(selected_name)
-                .show_ui(ui, |ui| {
-                    for (index, (id, asset)) in descriptor_assets.iter().enumerate() {
-                        ui.push_id(index, |ui| {
-                            ui.selectable_value(
-                                selected,
-                                asset_server.get_id_handle(id).unwrap(),
-                                &asset.name,
-                            );
-                        });
-                    }
-                });
-        });
-        false
-    }
-    fn ui_readonly(
-        &self,
-        ui: &mut bevy_egui::egui::Ui,
-        _options: &dyn std::any::Any,
-        _id: bevy_egui::egui::Id,
-        _env: bevy_inspector_egui::reflect_inspector::InspectorUi<'_, '_>,
-    ) {
-        ui.label("Hello ui_readonly");
-    }
-}
-
 impl ChunkDescriptorAsset {
     const PATH: &str = "chunks";
 
@@ -333,7 +281,7 @@ pub struct ChunkLayoutAsset {
 pub struct ChunkLayout {
     /// Maps chunk positions (in chunk space, world space is obtained by multiplying by
     /// [`CHUNK_SIZE`]) to descriptor handles
-    pub grid: HashMap<(i32, i32), Wrapper<Handle<ChunkDescriptor>>>,
+    pub grid: HashMap<(i32, i32), Handle<ChunkDescriptor>>,
 }
 
 impl From<(&ChunkLayout, &Assets<ChunkDescriptor>)> for ChunkLayoutAsset {
@@ -341,7 +289,7 @@ impl From<(&ChunkLayout, &Assets<ChunkDescriptor>)> for ChunkLayoutAsset {
         let grid = value
             .grid
             .iter()
-            .map(|(pos, wrapper)| (*pos, descriptors.get(&wrapper.0).unwrap().name.clone()))
+            .map(|(pos, handle)| (*pos, descriptors.get(handle).unwrap().name.clone()))
             .collect();
         Self { grid }
     }
@@ -362,29 +310,13 @@ impl RonAsset for ChunkLayoutAsset {
     const EXTENSION: &str = "layout";
 
     async fn load_dependencies(self, context: &mut bevy::asset::LoadContext<'_>) -> Self::Asset {
-        #[cfg(feature = "dev_native")]
-        let grid = self
-            .grid
-            .into_iter()
-            .enumerate()
-            .map(|(id, (pos, name))| {
-                (
-                    pos,
-                    Wrapper(
-                        context.load(ChunkDescriptorAsset::path_from_name(&name)),
-                        id,
-                    ),
-                )
-            })
-            .collect();
-        #[cfg(not(feature = "dev_native"))]
         let grid = self
             .grid
             .into_iter()
             .map(|(pos, name)| {
                 (
                     pos,
-                    Wrapper(context.load(ChunkDescriptorAsset::path_from_name(&name))),
+                    context.load(ChunkDescriptorAsset::path_from_name(&name)),
                 )
             })
             .collect();
