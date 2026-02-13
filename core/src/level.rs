@@ -152,23 +152,6 @@ pub fn spawn_level_from_layout(
 ) {
     let layout = chunk_layouts.get(&chunk_stash.layout).unwrap();
 
-    // Compute grid bounds to support arbitrary layout coordinates (including negatives)
-    let (min_z, max_z) = {
-        let mut min_z = i32::MAX / 2;
-        let mut max_z = i32::MIN / 2;
-        for (&(_x, z), _) in &layout.grid {
-            if z < min_z {
-                min_z = z;
-            }
-            if z > max_z {
-                max_z = z;
-            }
-        }
-        (min_z, max_z)
-    };
-
-    let grid_size_z = max_z - min_z + 1;
-
     let level = commands
         .spawn((
             Name::new("Level"),
@@ -178,14 +161,13 @@ pub fn spawn_level_from_layout(
         ))
         .id();
 
-    for ((x, z), descriptor) in &layout.grid {
-        let chunk_id = (*z + *x * grid_size_z) as u32;
-
+    for (&chunk_id, entry) in &layout.chunks {
         commands.trigger(SpawnChunk {
             level,
             id: ChunkId(chunk_id),
-            grid_position: Vec2::new(*x as f32, *z as f32),
-            descriptor: descriptor.clone(),
+            grid_position: Vec2::new(entry.grid_pos.0 as f32, entry.grid_pos.1 as f32),
+            descriptor: entry.descriptor.clone(),
+            components: entry.components.clone(),
         });
     }
 }

@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 #[cfg(feature = "dev_native")]
@@ -12,7 +13,8 @@ use crate::{
 use bevy::asset::{ReflectAsset, VisitAssetDependencies};
 
 pub(super) fn plugin(app: &mut App) {
-    app.init_asset::<ChunkElement>()
+    app.register_type::<ChunkMarker>()
+        .init_asset::<ChunkElement>()
         .init_asset::<ChunkDescriptor>()
         .init_asset::<ChunkLayout>()
         .register_asset_loader(RonAssetLoader::<ChunkElementAsset>::new())
@@ -224,7 +226,7 @@ impl ChunkDescriptorAsset {
         Self::path_from_name(&self.name)
     }
 
-    fn path_from_name(name: &str) -> PathBuf {
+    pub fn path_from_name(name: &str) -> PathBuf {
         let mut path = PathBuf::from(Self::PATH);
         path.push(name.to_string() + "." + Self::EXTENSION);
 
@@ -271,27 +273,64 @@ impl RonAsset for ChunkDescriptorAsset {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Reflect)]
+#[reflect(Default)]
+pub enum ChunkMarker {
+    PlayerSpawn(Transform),
+    Light(Transform),
+    SwapSensor(u32, u32),
+    ReplaceAssetSensor(u32, String),
+}
+
+impl Default for ChunkMarker {
+    fn default() -> Self {
+        ChunkMarker::PlayerSpawn(Transform::default())
+    }
+}
+
+#[derive(Asset, TypePath, Debug, Serialize, Deserialize)]
+pub struct ChunkEntryAsset {
+    pub grid_pos: (i32, i32),
+    pub descriptor: String,
+    #[serde(default)]
+    pub components: Vec<ChunkMarker>,
+}
+
 #[derive(Asset, TypePath, Debug, Serialize, Deserialize)]
 pub struct ChunkLayoutAsset {
-    pub grid: HashMap<(i32, i32), String>,
+    pub chunks: HashMap<u32, ChunkEntryAsset>,
+}
+
+#[derive(Reflect, Debug, Clone)]
+pub struct ChunkEntry {
+    pub grid_pos: (i32, i32),
+    pub descriptor: Handle<ChunkDescriptor>,
+    pub components: Vec<ChunkMarker>,
 }
 
 #[derive(Asset, Reflect, Debug)]
 #[reflect(Asset)]
 pub struct ChunkLayout {
-    /// Maps chunk positions (in chunk space, world space is obtained by multiplying by
-    /// [`CHUNK_SIZE`]) to descriptor handles
-    pub grid: HashMap<(i32, i32), Handle<ChunkDescriptor>>,
+    pub chunks: Vec<ChunkEntry>,
 }
 
 impl From<(&ChunkLayout, &Assets<ChunkDescriptor>)> for ChunkLayoutAsset {
     fn from((value, descriptors): (&ChunkLayout, &Assets<ChunkDescriptor>)) -> Self {
-        let grid = value
-            .grid
+        let chunks = value
+            .chunks
             .iter()
-            .map(|(pos, handle)| (*pos, descriptors.get(handle).unwrap().name.clone()))
+            .map(|entry| {
+                (
+                    id,
+                    ChunkEntryAsset {
+                        grid_pos: entry.grid_pos,
+                        descriptor: descriptors.get(&entry.descriptor.0).unwrap().name.clone(),
+                        components: entry.components.clone(),
+                    },
+                )
+            })
             .collect();
-        Self { grid }
+        Self { chunks }
     }
 }
 
@@ -310,17 +349,23 @@ impl RonAsset for ChunkLayoutAsset {
     const EXTENSION: &str = "layout";
 
     async fn load_dependencies(self, context: &mut bevy::asset::LoadContext<'_>) -> Self::Asset {
-        let grid = self
-            .grid
+        let chunks = self
+            .chunks
             .into_iter()
-            .map(|(pos, name)| {
+            .map(|(id, entry)| {
+                let descriptor =
+                    context.load(ChunkDescriptorAsset::path_from_name(&entry.descriptor));
                 (
-                    pos,
-                    context.load(ChunkDescriptorAsset::path_from_name(&name)),
+                    id,
+                    ChunkEntry {
+                        grid_pos: entry.grid_pos,
+                        descriptor,
+                        components: entry.components,
+                    },
                 )
             })
             .collect();
-        ChunkLayout { grid }
+        ChunkLayout { chunks }
     }
 }
 
