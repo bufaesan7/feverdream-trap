@@ -7,8 +7,9 @@ pub(super) fn plugin(app: &mut App) {
     app.add_observer(apply_interaction_palette_on_release);
 
     app.load_resource::<InteractionAssets>();
-    app.add_observer(play_sound_effect_on_click);
-    app.add_observer(play_sound_effect_on_over);
+    // TODO: Would be nice if these could be state scoped
+    //app.add_observer(play_sound_effect_on_click);
+    //app.add_observer(play_sound_effect_on_over);
 }
 
 /// Palette for widget interactions. Add this to an entity that supports
