@@ -22,11 +22,9 @@ impl MusicMarker {
         let path = marker.asset_path.clone();
         let handle = asset_server.load(&path);
 
-        world.commands().entity(ctx.entity).insert(
-            (
-                Name::new(path),
-                music(handle)
-            )
-        );
+        world
+            .commands()
+            .entity(ctx.entity)
+            .insert((Name::new(path), music(handle)));
     }
 }
