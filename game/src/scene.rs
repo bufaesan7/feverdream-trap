@@ -6,6 +6,7 @@ use crate::camera_controller::{CameraMarker, CameraTargetCharacterController, sp
 use crate::character_controller::{Player, PlayerInput, spawn_player};
 use crate::interaction::Interactable;
 use crate::prelude::*;
+use crate::utils::audio::MusicMarker;
 use bevy::ecs::system::RunSystemOnce;
 
 pub(crate) fn plugin(app: &mut App) {
@@ -75,11 +76,16 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             // Relationships
             .allow_component::<Children>()
             .allow_component::<ChildOf>()
-            .extract_entities(query.iter())
             // Interactions
             .allow_component::<Interactable>()
             .allow_component::<DespawnInteraction>()
             .allow_component::<SwapChunksInteraction>()
+            // Audio
+            .allow_component::<MusicMarker>()
+            //
+            // Extract entities
+            //
+            .extract_entities(query.iter())
             .build()
     };
 
@@ -128,6 +134,7 @@ fn spawn_scene(mut commands: Commands, game_scene: Res<GameSceneStorage>) {
             let _ = world.run_system_once(spawn_level_from_layout);
             let _ = world.run_system_once(spawn_camera);
             let _ = world.run_system_once(spawn_player);
+            let _ = world.run_system_once(spawn_music);
         });
     }
 }
@@ -146,4 +153,10 @@ fn on_level_component_spawned(event: On<Add, LevelComponent>, mut commands: Comm
     commands
         .entity(entity)
         .insert(DespawnOnExit(Screen::Gameplay));
+}
+
+fn spawn_music(mut commands: Commands) {
+    commands.spawn(MusicMarker::new(String::from(
+        "audio/music/Heavenly Loop.ogg",
+    )));
 }
