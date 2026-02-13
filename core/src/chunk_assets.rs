@@ -136,7 +136,7 @@ pub struct ChunkDescriptorAsset {
 /// New type wrapper to allow implementing
 /// [`bevy_inspector_egui::inspector_egui_impls::InspectorPrimitive`]
 /// `Self.1` is an ID needed by egui to distinguish picker widgets with the same value
-pub struct Wrapper<T: Default>(pub T, #[cfg(feature = "dev_native")] usize);
+pub struct Wrapper<T: Default>(pub T, #[cfg(feature = "dev_native")] pub usize);
 
 #[derive(Reflect, Debug)]
 #[reflect(Asset)]
@@ -191,7 +191,7 @@ impl bevy_inspector_egui::inspector_egui_impls::InspectorPrimitive
             .get(&self.0)
             .map(|e| e.name.clone())
             .unwrap_or_default();
-        ui.push_id(self.1, |ui| {
+        ui.push_id(self.0.id(), |ui| {
             let selected = &mut self.0;
             egui::ComboBox::from_label("Pick handle")
                 .selected_text(selected_name)
@@ -323,7 +323,7 @@ impl RonAsset for ChunkDescriptorAsset {
     }
 }
 
-#[derive(Asset, TypePath, Debug, Deserialize)]
+#[derive(Asset, TypePath, Debug, Serialize, Deserialize)]
 pub struct ChunkLayoutAsset {
     pub grid: HashMap<(i32, i32), String>,
 }
@@ -336,10 +336,21 @@ pub struct ChunkLayout {
     pub grid: HashMap<(i32, i32), Wrapper<Handle<ChunkDescriptor>>>,
 }
 
+impl From<(&ChunkLayout, &Assets<ChunkDescriptor>)> for ChunkLayoutAsset {
+    fn from((value, descriptors): (&ChunkLayout, &Assets<ChunkDescriptor>)) -> Self {
+        let grid = value
+            .grid
+            .iter()
+            .map(|(pos, wrapper)| (*pos, descriptors.get(&wrapper.0).unwrap().name.clone()))
+            .collect();
+        Self { grid }
+    }
+}
+
 impl ChunkLayoutAsset {
     const PATH: &str = "chunks";
 
-    fn path() -> PathBuf {
+    pub fn path() -> PathBuf {
         let mut path = PathBuf::from(Self::PATH);
         path.push("chunk.".to_string() + Self::EXTENSION);
         path

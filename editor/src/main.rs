@@ -5,7 +5,7 @@
 
 use crate::prelude::*;
 
-mod asset_handling;
+mod action_buffer;
 mod editor;
 mod prelude;
 mod preview;
@@ -36,7 +36,7 @@ fn main() -> AppExit {
 
     app.add_plugins((
         feverdream_trap_core::utility_plugin,
-        asset_handling::plugin,
+        action_buffer::plugin,
         editor::plugin,
         preview::plugin,
     ));

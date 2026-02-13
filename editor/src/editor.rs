@@ -12,7 +12,7 @@ use egui_dock::{DockArea, DockState, NodeIndex, Style};
 #[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
 
-use crate::{asset_handling::EguiActionBuffer, prelude::*, preview::EditorPreview};
+use crate::{action_buffer::EguiActionBuffer, prelude::*, preview::EditorPreview};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(bevy_egui::EguiPlugin::default());
@@ -273,6 +273,47 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                         ui.heading("ChunkLayout");
                         ui_for_assets::<ChunkLayout>(self.world, ui);
 
+                        ui.separator();
+                        ui.collapsing("Push layout element", |ui| {
+                            ui.horizontal(|ui| {
+                                let (x, y) = &mut self
+                                    .world
+                                    .resource_mut::<EguiActionBuffer>()
+                                    .new_layout_pos;
+                                ui.label("x:");
+                                ui.text_edit_singleline(x);
+                                ui.label("y:");
+                                ui.text_edit_singleline(y);
+                            });
+                            if ui.button("Push").clicked() {
+                                let (x, y) =
+                                    &self.world.resource_mut::<EguiActionBuffer>().new_layout_pos;
+                                match (x.parse(), y.parse()) {
+                                    (Ok(x), Ok(y)) => {
+                                        self.world
+                                            .resource_mut::<EguiActionBuffer>()
+                                            .layout_push_counter += 1;
+                                        let push_count = self
+                                            .world
+                                            .resource::<EguiActionBuffer>()
+                                            .layout_push_counter;
+                                        let layout =
+                                            &mut self.world.resource_mut::<Assets<ChunkLayout>>();
+                                        let grid_len =
+                                            layout.iter().next().unwrap().1.grid.len() + push_count;
+                                        layout
+                                            .iter_mut()
+                                            .next()
+                                            .unwrap()
+                                            .1
+                                            .grid
+                                            .insert((x, y), Wrapper(Handle::default(), grid_len));
+                                    }
+                                    _ => error!("Failed to parse {x} or {y} as i32"),
+                                }
+                            }
+                        });
+                        ui.separator();
                         if ui.button("Preview ChunkLayout").clicked() {
                             *self.world.resource_mut::<EditorPreview>() = EditorPreview::Layout;
                         }
@@ -308,6 +349,23 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                             info!("saving chunk asset {}", chunk_path.display());
                             std::fs::write(chunk_path, serialized_asset).unwrap();
                         }
+                        // ------------------------------
+                        // Chunk layout
+                        // ------------------------------
+                        let layout = self
+                            .world
+                            .resource::<Assets<ChunkLayout>>()
+                            .iter()
+                            .next()
+                            .unwrap()
+                            .1;
+                        let layout_asset = ChunkLayoutAsset::from((layout, self.world.resource()));
+                        let layout_path = PathBuf::from("assets").join(ChunkLayoutAsset::path());
+                        let serialized_asset = to_string(&layout_asset).unwrap();
+
+                        info!("saving layout asset {}", layout_path.display());
+                        std::fs::write(layout_path, serialized_asset).unwrap();
+
                         info!("Saved assets");
                     }
                     if ui.button("Close editor without saving").clicked() {

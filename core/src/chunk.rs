@@ -54,7 +54,9 @@ pub fn on_spawn_chunk(
     let id = event.id;
     let grid_position = event.grid_position;
 
-    let descriptor = descriptors.get(&event.descriptor).unwrap();
+    let Some(descriptor) = descriptors.get(&event.descriptor) else {
+        return;
+    };
     let elements = descriptor
         .elements
         .iter()

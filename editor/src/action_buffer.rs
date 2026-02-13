@@ -9,4 +9,7 @@ pub(super) fn plugin(app: &mut App) {
 pub struct EguiActionBuffer {
     pub new_element_name: String,
     pub new_descriptor_name: String,
+    pub new_layout_pos: (String, String),
+    /// Count the hashmap inserts to prevent egui salt conflicts
+    pub layout_push_counter: usize,
 }
