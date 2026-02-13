@@ -83,7 +83,18 @@ impl ChunkMarkers {
                         .entity(hook.entity)
                         .insert(ReplaceAssetSensorChunk(ChunkId(id), handle));
                 }
-                _ => {}
+                ChunkMarker::Light(translation) => {
+                    world.commands().entity(hook.entity).with_child((
+                        Name::new("Light"),
+                        PointLight {
+                            intensity: 1_000_000.,
+                            range: 50.,
+                            shadows_enabled: true,
+                            ..Default::default()
+                        },
+                        translation,
+                    ));
+                }
             }
         }
     }
