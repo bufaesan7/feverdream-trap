@@ -13,6 +13,7 @@ mod menus;
 mod prelude;
 mod scene;
 mod screens;
+mod utils;
 
 use avian3d::PhysicsPlugins;
 

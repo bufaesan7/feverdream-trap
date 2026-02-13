@@ -1,12 +1,12 @@
 use bevy::scene::SceneInstanceReady;
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::tasks::IoTaskPool;
-use feverdream_trap_core::prelude::audio::{Music, SoundEffect};
 
 use crate::camera_controller::{CameraMarker, CameraTargetCharacterController, spawn_camera};
 use crate::character_controller::{Player, PlayerInput, spawn_player};
 use crate::interaction::Interactable;
 use crate::prelude::*;
+use crate::utils::audio::MusicMarker;
 use bevy::ecs::system::RunSystemOnce;
 
 pub(crate) fn plugin(app: &mut App) {
@@ -81,11 +81,8 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             .allow_component::<Interactable>()
             .allow_component::<DespawnInteraction>()
             .allow_component::<SwapChunksInteraction>()
-            // Audio; TODO: AudioPlayer does not make it because of the handle?
-            .allow_component::<AudioPlayer>()
-            .allow_component::<PlaybackSettings>()
-            .allow_component::<Music>()
-            .allow_component::<SoundEffect>()
+            // Audio
+            .allow_component::<MusicMarker>()
             .build()
     };
 
@@ -155,8 +152,10 @@ fn on_level_component_spawned(event: On<Add, LevelComponent>, mut commands: Comm
         .insert(DespawnOnExit(Screen::Gameplay));
 }
 
-fn spawn_music(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn spawn_music(mut commands: Commands) {
     commands
-        .spawn(music(asset_server.load("audio/music/Heavenly Loop.ogg")))
+        .spawn(MusicMarker::new(String::from(
+            "audio/music/Heavenly Loop.ogg",
+        )))
         .insert(DespawnOnExit(Screen::Gameplay));
 }
