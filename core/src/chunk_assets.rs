@@ -18,10 +18,7 @@ pub(super) fn plugin(app: &mut App) {
         .register_asset_loader(RonAssetLoader::<ChunkElementAsset>::new())
         .register_asset_loader(RonAssetLoader::<ChunkDescriptorAsset>::new())
         .register_asset_loader(RonAssetLoader::<ChunkLayoutAsset>::new())
-        .load_resource::<ChunkLayoutStorage>()
-        .init_resource::<ChunkAssetStash>()
-        .init_resource::<ChunkElementCache>()
-        .add_systems(PreUpdate, populate_chunk_element_cache);
+        .load_resource::<ChunkAssetStash>();
 
     #[cfg(feature = "dev_native")]
     app.register_type_data::<Wrapper<Handle<ChunkElement>>, InspectorEguiImpl>();
@@ -72,14 +69,14 @@ impl ChunkElement {
 }
 
 impl ChunkElementAsset {
-    pub const PATH: &str = "chunks/elements";
+    pub const PATH: [&str; 2] = ["chunks", "elements"];
 
     pub fn path(&self) -> PathBuf {
         Self::path_from_name(&self.name)
     }
 
     pub fn path_from_name(name: &str) -> PathBuf {
-        let mut path = PathBuf::from(Self::PATH);
+        let mut path = PathBuf::from_iter(Self::PATH);
         path.push(name.to_string() + "." + Self::EXTENSION);
 
         path
@@ -274,38 +271,36 @@ pub struct ChunkLayoutAsset {
 #[reflect(Asset)]
 pub struct ChunkLayout {
     /// Maps chunk positions (in chunk space, world space is obtained by multiplying by
-    /// [`CHUNK_SIZE`]) to descriptor names
-    pub grid: HashMap<(i32, i32), String>,
+    /// [`CHUNK_SIZE`]) to descriptor handles
+    pub grid: HashMap<(i32, i32), Handle<ChunkDescriptor>>,
 }
 
 impl RonAsset for ChunkLayoutAsset {
     type Asset = ChunkLayout;
     const EXTENSION: &str = "layout";
 
-    async fn load_dependencies(self, _context: &mut bevy::asset::LoadContext<'_>) -> Self::Asset {
-        ChunkLayout { grid: self.grid }
+    async fn load_dependencies(self, context: &mut bevy::asset::LoadContext<'_>) -> Self::Asset {
+        let grid = self
+            .grid
+            .into_iter()
+            .map(|(pos, name)| {
+                (
+                    pos,
+                    context.load(ChunkDescriptorAsset::path_from_name(&name)),
+                )
+            })
+            .collect();
+        ChunkLayout { grid }
     }
 }
 
-#[derive(Resource, Asset, TypePath, Clone)]
-pub struct ChunkLayoutStorage {
-    pub handle: Handle<ChunkLayout>,
-}
-
-impl FromWorld for ChunkLayoutStorage {
-    fn from_world(world: &mut World) -> Self {
-        let asset_server = world.resource::<AssetServer>();
-        ChunkLayoutStorage {
-            handle: asset_server
-                .load("chunks/chunk".to_string() + "." + ChunkLayoutAsset::EXTENSION),
-        }
-    }
-}
-
-#[derive(Resource, Debug, Clone)]
+#[derive(Asset, TypePath, Resource, Debug, Clone)]
 pub struct ChunkAssetStash {
+    #[dependency]
     pub elements: Vec<Handle<ChunkElement>>,
+    #[dependency]
     pub descriptors: Vec<Handle<ChunkDescriptor>>,
+    #[dependency]
     pub layout: Handle<ChunkLayout>,
 }
 
@@ -360,49 +355,4 @@ fn visit_dirs(dir: &Path, cb: &mut dyn FnMut(&std::fs::DirEntry)) {
             }
         }
     }
-}
-
-#[derive(Resource, Default)]
-pub struct ChunkElementCache {
-    pub map: HashMap<String, Vec<ChunkElement>>,
-    pub ready: bool,
-}
-
-fn populate_chunk_element_cache(
-    stash: Res<ChunkAssetStash>,
-    asset_server: Res<AssetServer>,
-    chunk_descriptors: Res<Assets<ChunkDescriptor>>,
-    chunk_elements: Res<Assets<ChunkElement>>,
-    mut cache: ResMut<ChunkElementCache>,
-) {
-    if cache.ready {
-        return;
-    }
-
-    let all_loaded = stash
-        .descriptors
-        .iter()
-        .all(|handle| asset_server.is_loaded_with_dependencies(handle));
-
-    if !all_loaded {
-        return;
-    }
-
-    for handle in &stash.descriptors {
-        let Some(descriptor) = chunk_descriptors.get(handle) else {
-            continue;
-        };
-
-        let Some(elements) = descriptor.get_elements(&chunk_elements) else {
-            continue;
-        };
-
-        cache.map.insert(descriptor.name.clone(), elements);
-    }
-
-    cache.ready = true;
-    info!(
-        "ChunkElementCache populated with {} entries",
-        cache.map.len()
-    );
 }

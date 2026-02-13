@@ -1,4 +1,4 @@
-use crate::chunk_assets::{ChunkElementCache, ChunkElementShape};
+use crate::chunk_assets::ChunkElementShape;
 use crate::level::*;
 use crate::physics::GameLayer;
 use crate::prelude::*;
@@ -25,7 +25,7 @@ pub struct SpawnChunk {
     pub level: Entity,
     pub id: ChunkId,
     pub grid_position: Vec2,
-    pub descriptor: String,
+    pub descriptor: Handle<ChunkDescriptor>,
     #[cfg(feature = "dev")]
     pub show_wireframe: bool,
 }
@@ -42,30 +42,29 @@ pub struct SwapSensorChunk(pub ChunkId, pub ChunkId);
 #[derive(Component, Reflect)]
 #[require(Chunk)]
 #[reflect(Component)]
-pub struct ReplaceAssetSensorChunk(pub ChunkId, pub String);
+pub struct ReplaceAssetSensorChunk(pub ChunkId, pub Handle<ChunkDescriptor>);
 
 pub fn on_spawn_chunk(
     event: On<SpawnChunk>,
     mut commands: Commands,
-    cache: Res<ChunkElementCache>,
+    descriptors: Res<Assets<ChunkDescriptor>>,
+    elements: Res<Assets<ChunkElement>>,
 ) {
     let level = event.level;
     let id = event.id;
     let grid_position = event.grid_position;
-    let descriptor = &event.descriptor;
 
-    let Some(elements) = cache.map.get(descriptor) else {
-        warn!("Descriptor '{descriptor}' not found in cache");
-        return;
-    };
+    let descriptor = descriptors.get(&event.descriptor).unwrap();
+    let elements = descriptor
+        .elements
+        .iter()
+        .filter_map(|e| elements.get(&e.0));
 
     let transform = Transform::from_xyz(
         grid_position.x * CHUNK_SIZE,
         0.0,
         grid_position.y * CHUNK_SIZE,
     );
-
-    info!("Spawning chunk {} at position {:?}", id.0, grid_position);
 
     let chunk_entity = commands
         .spawn((
@@ -123,16 +122,6 @@ pub fn on_spawn_chunk(
             DebugRender::none().with_collider_color(Color::srgb(1., 0., 0.)),
         ));
     }
-
-    // TODO embed in chunk_asset
-    if id.0 == 23 {
-        commands
-            .entity(chunk_entity)
-            .insert(ReplaceAssetSensorChunk(
-                ChunkId(9),
-                "demo/elevator".to_string(),
-            ));
-    }
 }
 
 pub fn on_despawn_chunk(
@@ -144,7 +133,6 @@ pub fn on_despawn_chunk(
 
     for (entity, ChunkId(id)) in &chunks {
         if chunk_id == *id {
-            info!("Despawning chunk {chunk_id}");
             commands.entity(entity).despawn();
             return;
         }

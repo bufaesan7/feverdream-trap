@@ -20,7 +20,7 @@ impl Plugin for ChunkPlugin {
 #[derive(Debug, Event)]
 pub struct SwapChunks(pub ChunkId, pub ChunkId);
 #[derive(Debug, Event)]
-pub struct ReplaceChunkAsset(pub ChunkId, pub String);
+pub struct ReplaceChunkAsset(pub ChunkId, pub Handle<ChunkDescriptor>);
 
 /// the Chunk the player is currently in
 #[derive(Resource, Default)]
@@ -101,7 +101,7 @@ fn on_replace_chunk_asset(
         show_wireframe: false,
     });
 
-    info!("Chunk {chunk_id} was replaced with {chunk_asset}");
+    info!("Chunk {chunk_id} was replaced with {chunk_asset:?}");
 }
 
 fn replace_chunk_asset_on_contact_with_sensor(

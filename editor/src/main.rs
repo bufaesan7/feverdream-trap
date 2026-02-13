@@ -30,6 +30,8 @@ fn main() -> AppExit {
     app.add_plugins((PhysicsPlugins::default(), PhysicsDebugPlugin));
     app.insert_gizmo_config(PhysicsGizmos::none(), GizmoConfig::default());
 
+    app.add_systems(Update, bevy::dev_tools::states::log_transitions::<Screen>);
+
     app.init_state::<Screen>();
 
     app.add_plugins((
