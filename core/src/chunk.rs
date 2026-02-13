@@ -65,7 +65,25 @@ impl ChunkMarkers {
         for marker in markers {
             match marker {
                 ChunkMarker::PlayerSpawn(t) => {
+                    #[cfg(not(feature = "dev_native"))]
                     world.commands().entity(hook.entity).insert(SpawnMarker(t));
+                    #[cfg(feature = "dev_native")]
+                    {
+                        let mesh = world.resource_mut::<Assets<Mesh>>().add(Sphere::new(0.1));
+                        let material = world
+                            .resource_mut::<Assets<StandardMaterial>>()
+                            .add(StandardMaterial::from_color(Color::srgb(1., 0.1, 0.)));
+                        world
+                            .commands()
+                            .entity(hook.entity)
+                            .insert(SpawnMarker(t))
+                            .with_child((
+                                Name::new("Player spawn indicator"),
+                                Mesh3d(mesh),
+                                MeshMaterial3d(material),
+                                t,
+                            ));
+                    }
                 }
                 ChunkMarker::SwapSensor(a, b) => {
                     world
