@@ -11,8 +11,11 @@ pub(crate) mod utils;
 
 use crate::prelude::*;
 use bevy::asset::AssetMetaCheck;
+use bevy_skein::SkeinPlugin;
 
 pub fn utility_plugin(app: &mut App) {
+    app.add_plugins(SkeinPlugin::default());
+
     app.add_plugins((
         asset_tracking::plugin,
         chunk_assets::plugin,
