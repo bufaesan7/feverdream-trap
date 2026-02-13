@@ -1,1 +1,1 @@
-(name:"demo/room_elevator",elements:["demo/floor","elevator"])
+(name:"demo/room_elevator",elements:["demo/floor"])
