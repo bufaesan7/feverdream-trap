@@ -1,1 +1,1 @@
-(chunks:[(grid_pos:(0,0),descriptor:"demo/room_center",components:[PlayerSpawn((translation:(0.0,1.0,0.0),rotation:(0.0,0.0,0.0,1.0),scale:(1.0,1.0,1.0)))]),(grid_pos:(-1,1),descriptor:"demo/room_corner_sw",components:[Light((translation:(0.0,0.0,0.0),rotation:(0.0,0.0,0.0,1.0),scale:(1.0,1.0,1.0)))]),(grid_pos:(1,1),descriptor:"demo/room_corner_se",components:[]),(grid_pos:(-1,-1),descriptor:"demo/room_corner_nw",components:[]),(grid_pos:(1,-1),descriptor:"demo/room_corner_ne",components:[])])
+(chunks:[])
