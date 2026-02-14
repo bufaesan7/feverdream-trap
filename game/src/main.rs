@@ -3,23 +3,23 @@
 // Disable console on Windows for non-dev builds.
 #![cfg_attr(not(feature = "dev"), windows_subsystem = "windows")]
 
-mod asset_tracking;
-mod audio;
 mod camera_controller;
 mod character_controller;
+mod chunk;
 #[cfg(feature = "dev")]
 mod dev_tools;
-mod level;
+mod interaction;
 mod menus;
 mod prelude;
+mod scene;
 mod screens;
-mod theme;
+mod utils;
 
 use avian3d::PhysicsPlugins;
 
 use crate::{
     camera_controller::CameraControllerPlugin, character_controller::CharacterControllerPlugin,
-    prelude::*,
+    chunk::ChunkPlugin, prelude::*,
 };
 
 fn main() -> AppExit {
@@ -35,6 +35,7 @@ impl Plugin for AppPlugin {
             DefaultPlugins.set(asset_plugin()).set(WindowPlugin {
                 primary_window: Window {
                     title: "Feverdream Trap".to_string(),
+                    name: Some("feverdream_trap".to_string()),
                     fit_canvas_to_parent: true,
                     ..default()
                 }
@@ -46,19 +47,24 @@ impl Plugin for AppPlugin {
         // Ecosystem plugins
         app.add_plugins(PhysicsPlugins::default());
 
+        feverdream_trap_core::utility_plugin(app, Some(Menu::None));
+
         // Add other plugins.
         app.add_plugins((
-            asset_tracking::plugin,
-            audio::plugin,
             #[cfg(feature = "dev")]
             dev_tools::plugin,
             menus::plugin,
             screens::plugin,
-            theme::plugin,
+            scene::plugin,
+            interaction::plugin,
         ));
 
         // Custom game plugins
-        app.add_plugins((CameraControllerPlugin, CharacterControllerPlugin));
+        app.add_plugins((
+            CameraControllerPlugin,
+            CharacterControllerPlugin,
+            ChunkPlugin,
+        ));
 
         // Order new `AppSystems` variants by adding them here:
         app.configure_sets(

@@ -1,14 +1,8 @@
 //! The screen state for the main gameplay.
 
 use crate::prelude::*;
-use crate::{
-    camera_controller::{cursor_grab, cursor_ungrab},
-    level::spawn_level,
-};
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(OnEnter(Screen::Gameplay), (spawn_level, cursor_grab));
-
     // Toggle pause on keypress.
     app.add_systems(
         Update,
@@ -25,10 +19,7 @@ pub(super) fn plugin(app: &mut App) {
             ),
         ),
     );
-    app.add_systems(
-        OnExit(Screen::Gameplay),
-        (close_menu, unpause, cursor_ungrab),
-    );
+    app.add_systems(OnExit(Screen::Gameplay), (close_menu, unpause));
     app.add_systems(
         OnEnter(Menu::None),
         unpause.run_if(in_state(Screen::Gameplay)),

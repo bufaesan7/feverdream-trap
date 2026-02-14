@@ -1,7 +1,30 @@
+mod asset_loader;
+mod asset_tracking;
+pub mod chunk;
+pub mod chunk_assets;
+pub mod interactions;
+pub mod level;
+pub mod physics;
 pub mod prelude;
+mod theme;
+pub(crate) mod utils;
 
 use crate::prelude::*;
 use bevy::asset::AssetMetaCheck;
+use bevy_skein::SkeinPlugin;
+
+pub fn utility_plugin<S: States>(app: &mut App, state: Option<S>) {
+    app.add_plugins(SkeinPlugin::default());
+
+    app.add_plugins((
+        asset_tracking::plugin,
+        chunk_assets::plugin,
+        chunk::plugin,
+        utils::audio::plugin,
+    ));
+
+    theme::plugin(app, state);
+}
 
 pub fn asset_plugin() -> AssetPlugin {
     #[allow(unused_mut)]

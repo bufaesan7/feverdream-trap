@@ -9,8 +9,8 @@ use bevy::{
         states::log_transitions,
     },
     input::common_conditions::input_toggle_active,
-    window::{CursorGrabMode, CursorOptions},
 };
+use feverdream_trap_core::prelude::cursor::toggle_cursor_grab;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(FpsOverlayPlugin {
@@ -33,7 +33,10 @@ pub(super) fn plugin(app: &mut App) {
             aabb_color: Some(Color::WHITE),
             ..default()
         },
-        GizmoConfig::default(),
+        GizmoConfig {
+            enabled: false,
+            ..default()
+        },
     );
 
     // Log `Screen` state transitions.
@@ -104,14 +107,5 @@ const TOGGLE_PHYSICS_GIZMOS_KEY: KeyCode = KeyCode::F5;
 fn toggle_physics_gizmos(mut gizmo: ResMut<GizmoConfigStore>) {
     if let Some((config, _)) = gizmo.get_config_mut_dyn(&TypeId::of::<PhysicsGizmos>()) {
         config.enabled = !config.enabled;
-    }
-}
-
-fn toggle_cursor_grab(mut cursor_options: Single<&mut CursorOptions>) {
-    cursor_options.visible = !cursor_options.visible;
-
-    cursor_options.grab_mode = match cursor_options.grab_mode {
-        CursorGrabMode::None => CursorGrabMode::Locked,
-        _ => CursorGrabMode::None,
     }
 }

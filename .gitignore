@@ -1,7 +1,23 @@
 # Rust builds
 /target
+
+# IDE Configs
+.idea
+
+# Game save
+assets/game_state.scn.ron
+
+# Chunk assets
+assets/chunks/*
+!assets/chunks/demo
+assets/chunks/elements
+!assets/chunks/elements/demo
+!assets/chunks/chunk.layout
+
 # This file contains environment-specific configuration like linker settings
 .cargo/config.toml
+
 # Nightly toolchain
 rust-toolchain.toml
 justfile
+
