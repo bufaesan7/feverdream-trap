@@ -349,12 +349,12 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                             .layout_buffer
                             .clone();
                         let mut delete_index = None;
-                        for (iteration, ((x, y), descriptor, components)) in
-                            layout.iter_mut().enumerate()
-                        {
+                        for (chunk_id, ((x, y), descriptor, components)) in layout.iter_mut() {
                             ui.horizontal(|ui| {
                                 ui.vertical(|ui| {
                                     ui.horizontal(|ui| {
+                                        ui.label(format!("Id: {chunk_id}"));
+
                                         ui.label("x:");
                                         ui.add_sized(
                                             [2.0, ui.spacing().interact_size.y],
@@ -367,7 +367,7 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                                         );
 
                                         if ui.button("Delete chunk").clicked() {
-                                            delete_index = Some(iteration);
+                                            delete_index = Some(*chunk_id);
                                         }
                                     });
                                     ui.horizontal(|ui| {
@@ -386,7 +386,7 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                                             .get(&*descriptor)
                                             .map(|e| e.name.clone())
                                             .unwrap_or_default();
-                                        ui.push_id(iteration, |ui| {
+                                        ui.push_id(chunk_id, |ui| {
                                             egui::ComboBox::from_label("Pick handle")
                                                 .selected_text(selected_name)
                                                 .show_ui(ui, |ui| {
@@ -408,12 +408,18 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                                     });
                                 });
                             });
+
+                            ui.separator();
                         }
                         if let Some(index) = delete_index {
-                            layout.remove(index);
+                            layout.remove(&index);
                         }
                         if ui.button("Add chunk to layout").clicked() {
-                            layout.push(Default::default());
+                            let mut new_id = 0;
+                            while layout.contains_key(&new_id) {
+                                new_id += 1;
+                            }
+                            layout.insert(new_id, Default::default());
                         }
                         self.world.resource_mut::<EguiActionBuffer>().layout_buffer = layout;
 

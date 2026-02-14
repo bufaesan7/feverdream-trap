@@ -163,10 +163,10 @@ pub fn spawn_level_from_layout(
         ))
         .id();
 
-    for (chunk_id, entry) in layout.chunks.iter().enumerate() {
+    for (chunk_id, entry) in layout.chunks.iter() {
         commands.trigger(SpawnChunk {
             level,
-            id: ChunkId(chunk_id as u32),
+            id: ChunkId(*chunk_id),
             grid_position: Vec2::new(entry.grid_pos.0 as f32, entry.grid_pos.1 as f32),
             descriptor: entry.descriptor.clone(),
             components: entry.components.clone(),

@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+};
 
 #[cfg(feature = "dev_native")]
 use bevy_inspector_egui::inspector_egui_impls::InspectorEguiImpl;
@@ -307,7 +310,7 @@ pub struct ChunkEntryAsset {
 
 #[derive(Asset, TypePath, Debug, Serialize, Deserialize)]
 pub struct ChunkLayoutAsset {
-    pub chunks: Vec<ChunkEntryAsset>,
+    pub chunks: BTreeMap<u32, ChunkEntryAsset>,
 }
 
 #[derive(Reflect, Debug, Clone)]
@@ -320,7 +323,7 @@ pub struct ChunkEntry {
 #[derive(Asset, Reflect, Debug)]
 #[reflect(Asset)]
 pub struct ChunkLayout {
-    pub chunks: Vec<ChunkEntry>,
+    pub chunks: BTreeMap<u32, ChunkEntry>,
 }
 
 impl From<(&ChunkLayout, &Assets<ChunkDescriptor>)> for ChunkLayoutAsset {
@@ -328,10 +331,15 @@ impl From<(&ChunkLayout, &Assets<ChunkDescriptor>)> for ChunkLayoutAsset {
         let chunks = value
             .chunks
             .iter()
-            .map(|entry| ChunkEntryAsset {
-                grid_pos: entry.grid_pos,
-                descriptor: descriptors.get(&entry.descriptor).unwrap().name.clone(),
-                components: entry.components.clone(),
+            .map(|(id, entry)| {
+                (
+                    *id,
+                    ChunkEntryAsset {
+                        grid_pos: entry.grid_pos,
+                        descriptor: descriptors.get(&entry.descriptor).unwrap().name.clone(),
+                        components: entry.components.clone(),
+                    },
+                )
             })
             .collect();
         Self { chunks }
@@ -356,14 +364,17 @@ impl RonAsset for ChunkLayoutAsset {
         let chunks = self
             .chunks
             .into_iter()
-            .map(|entry| {
+            .map(|(id, entry)| {
                 let descriptor =
                     context.load(ChunkDescriptorAsset::path_from_name(&entry.descriptor));
-                ChunkEntry {
-                    grid_pos: entry.grid_pos,
-                    descriptor,
-                    components: entry.components,
-                }
+                (
+                    id,
+                    ChunkEntry {
+                        grid_pos: entry.grid_pos,
+                        descriptor,
+                        components: entry.components,
+                    },
+                )
             })
             .collect();
         ChunkLayout { chunks }
