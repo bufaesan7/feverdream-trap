@@ -1,7 +1,10 @@
 pub mod audio;
 pub mod cursor;
 
-use bevy::ecs::{lifecycle::HookContext, world::DeferredWorld};
+use bevy::{
+    audio::Volume,
+    ecs::{lifecycle::HookContext, world::DeferredWorld},
+};
 
 use crate::prelude::*;
 
@@ -15,14 +18,15 @@ impl DespawnAfter {
     }
 }
 
-pub fn despawn_after_internal(
-    commands: &mut Commands,
-    entity: Entity,
-    despawn_after: &mut DespawnAfter,
-    delta: Duration,
+pub fn despawn_after(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut query: Query<(Entity, &mut DespawnAfter)>,
 ) {
-    if despawn_after.0.tick(delta).just_finished() {
-        commands.entity(entity).try_despawn();
+    for (entity, mut despawn_after) in &mut query {
+        if despawn_after.0.tick(time.delta()).just_finished() {
+            commands.entity(entity).try_despawn();
+        }
     }
 }
 
@@ -35,12 +39,12 @@ pub enum FadeMode {
 #[derive(Debug, Component, Reflect)]
 #[reflect(Component)]
 #[component(on_add)]
-pub struct FadeText {
+pub struct Fade {
     mode: FadeMode,
     timer: Timer,
 }
 
-impl FadeText {
+impl Fade {
     pub fn new(mode: FadeMode, duration: Duration) -> Self {
         Self {
             mode,
@@ -49,11 +53,11 @@ impl FadeText {
     }
 
     fn on_add(mut world: DeferredWorld, ctx: HookContext) {
-        let Some(fade_text) = world.entity(ctx.entity).get::<Self>() else {
+        let Some(fade) = world.entity(ctx.entity).get::<Self>() else {
             return;
         };
-        let mode = fade_text.mode;
-        let duration = fade_text.timer.duration();
+        let mode = fade.mode;
+        let duration = fade.timer.duration();
 
         match mode {
             FadeMode::In => { /* Nothing to do */ }
@@ -68,9 +72,9 @@ impl FadeText {
     }
 }
 
-pub fn fade_text_internal(query: &mut Query<(&mut TextColor, &mut FadeText)>, delta: Duration) {
-    for (mut color, mut fade) in query {
-        fade.timer.tick(delta);
+pub fn fade_text(time: Res<Time>, mut query: Query<(&mut TextColor, &mut Fade)>) {
+    for (mut color, mut fade) in &mut query {
+        fade.timer.tick(time.delta());
 
         let fraction = fade.timer.fraction();
         let fraction = match fade.mode {
@@ -79,5 +83,19 @@ pub fn fade_text_internal(query: &mut Query<(&mut TextColor, &mut FadeText)>, de
         };
 
         color.0.set_alpha(fraction);
+    }
+}
+
+pub fn fade_sound(time: Res<Time>, mut query: Query<(&mut PlaybackSettings, &mut Fade)>) {
+    for (mut playback_settings, mut fade) in &mut query {
+        fade.timer.tick(time.delta());
+
+        let fraction = fade.timer.fraction();
+        let fraction = match fade.mode {
+            FadeMode::In => fraction,
+            FadeMode::Out => 1.0 - fraction,
+        };
+
+        playback_settings.volume = Volume::Linear(fraction);
     }
 }
