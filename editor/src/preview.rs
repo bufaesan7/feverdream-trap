@@ -104,22 +104,12 @@ fn rotate_camera(
     let pitch = pitch + delta_pitch;
     let yaw = yaw + delta_yaw;
     camera.rotation = Quat::from_euler(EulerRot::YXZ, yaw, pitch, roll);
-
-    // Adjust the translation to maintain the correct orientation toward the orbit target.
-    // In our example it's a static target, but this could easily be customized.
-    let target = Vec3::ZERO;
-    camera.translation = target - camera.forward() * CHUNK_SIZE * 4.;
 }
-
-#[derive(Component)]
-/// The ankor point of the camera (the camera will rotate around this center)
-pub(super) struct CameraAnkor;
 
 fn move_camera(
     time: Res<Time>,
     input: Res<ButtonInput<KeyCode>>,
-    mut ankor: Single<&mut Transform, With<CameraAnkor>>,
-    camera: Single<&Transform, (With<Camera3d>, Without<CameraAnkor>)>,
+    mut camera: Single<&mut Transform, With<Camera3d>>,
 ) {
     let mut direction = Vec3::ZERO;
     if input.pressed(KeyCode::KeyW) {
@@ -141,10 +131,7 @@ fn move_camera(
         direction += Vec3::NEG_Y;
     }
     let speed = 10.;
-    ankor.translation += Quat::from_rotation_arc(
-        Vec3::NEG_Z,
-        camera.forward().as_vec3().with_y(0.).normalize_or_zero(),
-    ) * direction
-        * time.delta_secs()
-        * speed;
+    let forward = camera.forward().as_vec3().with_y(0.).normalize_or_zero();
+    camera.translation +=
+        Quat::from_rotation_arc(Vec3::NEG_Z, forward) * direction * time.delta_secs() * speed;
 }

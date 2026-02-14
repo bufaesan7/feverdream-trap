@@ -13,11 +13,7 @@ use egui_dock::{DockArea, DockState, NodeIndex, Style};
 #[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
 
-use crate::{
-    action_buffer::EguiActionBuffer,
-    prelude::*,
-    preview::{CameraAnkor, EditorPreview},
-};
+use crate::{action_buffer::EguiActionBuffer, prelude::*, preview::EditorPreview};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(bevy_egui::EguiPlugin::default());
@@ -41,17 +37,18 @@ pub(super) fn plugin(app: &mut App) {
 fn setup(mut commands: Commands, mut egui_global_settings: ResMut<EguiGlobalSettings>) {
     egui_global_settings.auto_create_primary_context = false;
 
+    info!(
+        "Camera controll:\n\
+        \tWASD to move horizontally\n\
+        \tShift/Space to move vertically\n\
+        \tHold middle mouse or right mouse button and move mouse to rotate"
+    );
+
     // camera
     commands.spawn((
-        Name::new("CameraAnkor"),
-        CameraAnkor,
-        Transform::default(),
-        Visibility::default(),
-        children![(
-            Name::new("Camera3d"),
-            Camera3d::default(),
-            Transform::from_xyz(-15.0, 10.0, -15.0).looking_at(Vec3::new(0.0, 0., 0.0), Vec3::Y),
-        )],
+        Name::new("Camera3d"),
+        Camera3d::default(),
+        Transform::from_xyz(-15.0, 10.0, -15.0).looking_at(Vec3::new(0.0, 0., 0.0), Vec3::Y),
     ));
 
     // egui camera
@@ -349,15 +346,14 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                             .layout_buffer
                             .clone();
                         let mut delete_index = None;
-                        for (iteration, ((x, y), descriptor, components)) in
-                            layout.iter_mut().enumerate()
-                        {
+                        for (chunk_id, ((x, y), descriptor, components)) in layout.iter_mut() {
                             ui.horizontal(|ui| {
                                 ui.vertical(|ui| {
                                     ui.horizontal(|ui| {
                                         ui.label(
-                                            egui::RichText::new(format!("#{iteration}"))
+                                            egui::RichText::new(format!("Id: #{chunk_id} "))
                                                 .strong()
+                                                .size(14.)
                                                 .color(egui::Color32::LIGHT_BLUE),
                                         );
                                         ui.label("x:");
@@ -372,7 +368,7 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                                         );
 
                                         if ui.button("Delete chunk").clicked() {
-                                            delete_index = Some(iteration);
+                                            delete_index = Some(*chunk_id);
                                         }
                                     });
                                     ui.horizontal(|ui| {
@@ -391,7 +387,7 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                                             .get(&*descriptor)
                                             .map(|e| e.name.clone())
                                             .unwrap_or_default();
-                                        ui.push_id(iteration, |ui| {
+                                        ui.push_id(chunk_id, |ui| {
                                             egui::ComboBox::from_label("Pick handle")
                                                 .selected_text(selected_name)
                                                 .show_ui(ui, |ui| {
@@ -413,12 +409,18 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                                     });
                                 });
                             });
+
+                            ui.separator();
                         }
                         if let Some(index) = delete_index {
-                            layout.remove(index);
+                            layout.remove(&index);
                         }
                         if ui.button("Add chunk to layout").clicked() {
-                            layout.push(Default::default());
+                            let mut new_id = 0;
+                            while layout.contains_key(&new_id) {
+                                new_id += 1;
+                            }
+                            layout.insert(new_id, Default::default());
                         }
                         self.world.resource_mut::<EguiActionBuffer>().layout_buffer = layout;
 
