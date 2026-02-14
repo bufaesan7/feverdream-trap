@@ -2,6 +2,10 @@ use bevy::ecs::{lifecycle::HookContext, world::DeferredWorld};
 
 use crate::prelude::*;
 
+pub(super) fn plugin(app: &mut App) {
+    app.add_systems(OnExit(Screen::Gameplay), add_fade_out_music);
+}
+
 #[derive(Debug, Component, Reflect)]
 #[reflect(Component)]
 #[require(LevelComponent)]
@@ -27,5 +31,13 @@ impl MusicMarker {
             .commands()
             .entity(ctx.entity)
             .insert((Name::new(path), music(handle)));
+    }
+}
+
+fn add_fade_out_music(mut commands: Commands, query: Query<Entity, With<MusicMarker>>) {
+    for entity in &query {
+        commands
+            .entity(entity)
+            .insert(Fade::new(FadeMode::Out, Duration::from_secs_f32(3.0)));
     }
 }

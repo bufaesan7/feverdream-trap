@@ -10,6 +10,7 @@ pub(super) fn register_required_components(world: &mut World) {
     world.register_required_components::<DebugInteraction, Interactable>();
     world.register_required_components::<DespawnInteraction, Interactable>();
     world.register_required_components::<SwapChunksInteraction, Interactable>();
+    world.register_required_components::<PlaySoundEffectInteraction, Interactable>();
 }
 
 pub(super) fn register_component_hooks(world: &mut World) {
@@ -50,6 +51,24 @@ pub(super) fn register_component_hooks(world: &mut World) {
                             chunk_swap_interaction.get(on_interact.entity)
                         {
                             commands.trigger(SwapChunks(*chunk1, *chunk2));
+                        }
+                    },
+                )
+                .with_entity(ctx.entity),
+            );
+        });
+
+    world
+        .register_component_hooks::<PlaySoundEffectInteraction>()
+        .on_add(|mut world: DeferredWorld, ctx: HookContext| {
+            world.commands().spawn(
+                Observer::new(
+                    |on_interact: On<Interact>,
+                     mut commands: Commands,
+                     asset_server: Res<AssetServer>,
+                     play_sound_effect_interaction: Query<&PlaySoundEffectInteraction>| {
+                        if let Ok(PlaySoundEffectInteraction(path)) = play_sound_effect_interaction.get(on_interact.entity) {
+                            commands.spawn(sound_effect(asset_server.load(path)));
                         }
                     },
                 )

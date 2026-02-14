@@ -1,3 +1,5 @@
+use bevy::audio::Volume;
+
 use crate::prelude::*;
 
 pub(crate) fn plugin(app: &mut App) {
@@ -40,5 +42,23 @@ fn apply_global_volume(
 ) {
     for (playback, mut sink) in &mut audio_query {
         sink.set_volume(global_volume.volume * playback.volume);
+    }
+}
+
+pub fn fade_sound(
+    time: Res<Time>,
+    global_volume: Res<GlobalVolume>,
+    mut query: Query<(&mut AudioSink, &mut Fade)>,
+) {
+    for (mut sink, mut fade) in &mut query {
+        fade.timer.tick(time.delta());
+
+        let fraction = fade.timer.fraction();
+        let fraction = match fade.mode {
+            FadeMode::In => fraction,
+            FadeMode::Out => 1.0 - fraction,
+        };
+
+        sink.set_volume(global_volume.volume * Volume::Linear(fraction));
     }
 }

@@ -152,7 +152,7 @@ impl RonAsset for ChunkElementAsset {
             } => ChunkElementShape::Gltf {
                 mesh: context.load(&mesh_path),
                 mesh_path,
-                collider: collider.map(|c| DefaultWrap(c)),
+                collider: collider.map(DefaultWrap),
             },
         };
         ChunkElement {

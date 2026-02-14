@@ -350,8 +350,12 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                             ui.horizontal(|ui| {
                                 ui.vertical(|ui| {
                                     ui.horizontal(|ui| {
-                                        ui.label(format!("Id: {chunk_id}"));
-
+                                        ui.label(
+                                            egui::RichText::new(format!("Id: #{chunk_id} "))
+                                                .strong()
+                                                .size(14.)
+                                                .color(egui::Color32::LIGHT_BLUE),
+                                        );
                                         ui.label("x:");
                                         ui.add_sized(
                                             [2.0, ui.spacing().interact_size.y],
