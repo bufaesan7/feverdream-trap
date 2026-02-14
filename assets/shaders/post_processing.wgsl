@@ -20,7 +20,7 @@
 //
 // You don't need to worry about this too much since bevy will compute the correct UVs for you.
 #import bevy_core_pipeline::fullscreen_vertex_shader::FullscreenVertexOutput
-#import bevy_pbr::mesh_view_bindings::globals::Globals
+#import bevy_render::globals::Globals;
 
 @group(0) @binding(0) var screen_texture: texture_2d<f32>;
 @group(0) @binding(1) var texture_sampler: sampler;
@@ -31,14 +31,13 @@ struct PostProcessSettings {
     _webgl2_padding: vec3<f32>
 #endif
 }
-// TODO: With this uncommented the shader does not function anymore. I dont understand
-//@group(0) @binding(2) var<uniform> globals: Globals;
+@group(0) @binding(2) var<uniform> globals: Globals;
 @group(0) @binding(3) var<uniform> settings: PostProcessSettings;
 
 @fragment
 fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     // Chromatic aberration strength
-    let offset_strength = settings.intensity;
+    let offset_strength = settings.intensity * sin(globals.time);
 
     // Sample each color channel with an arbitrary shift
     return vec4<f32>(
