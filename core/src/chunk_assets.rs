@@ -49,6 +49,8 @@ pub struct ChunkElementAsset {
     pub name: String,
     pub transform: Transform,
     pub shape: ChunkElementShapeAsset,
+    pub color: Color,
+    pub has_collider: bool,
 }
 
 #[derive(Asset, Reflect, Debug, Clone)]
@@ -57,6 +59,8 @@ pub struct ChunkElement {
     pub name: String,
     pub transform: Transform,
     pub shape: ChunkElementShape,
+    pub color: Color,
+    pub has_collider: bool,
 }
 
 impl ChunkElement {
@@ -65,12 +69,14 @@ impl ChunkElement {
             name,
             transform: Transform::default(),
             shape: ChunkElementShape::Cube,
+            color: Color::WHITE,
+            has_collider: true,
         }
     }
 }
 
 impl ChunkElementAsset {
-    const PATH: [&str; 2] = ["chunks", "elements"];
+    pub const PATH: [&str; 2] = ["chunks", "elements"];
 
     pub fn path(&self) -> PathBuf {
         Self::path_from_name(&self.name)
@@ -97,6 +103,8 @@ impl From<&ChunkElement> for ChunkElementAsset {
                     mesh_path: mesh_path.clone(),
                 },
             },
+            color: value.color,
+            has_collider: value.has_collider,
         }
     }
 }
@@ -119,6 +127,8 @@ impl RonAsset for ChunkElementAsset {
             name: self.name,
             transform: self.transform,
             shape,
+            color: self.color,
+            has_collider: self.has_collider,
         }
     }
 }
@@ -219,7 +229,7 @@ impl bevy_inspector_egui::inspector_egui_impls::InspectorPrimitive
 }
 
 impl ChunkDescriptorAsset {
-    const PATH: &str = "chunks";
+    pub const PATH: &str = "chunks";
 
     pub fn path(&self) -> PathBuf {
         Self::path_from_name(&self.name)

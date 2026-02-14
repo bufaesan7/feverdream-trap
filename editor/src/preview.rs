@@ -12,9 +12,15 @@ pub(super) fn plugin(app: &mut App) {
         Update,
         (
             update_descriptor_preview.chain(),
-            rotate_camera.run_if(input_pressed(MouseButton::Middle)),
-            cursor_grab.run_if(input_just_pressed(MouseButton::Middle)),
-            cursor_ungrab.run_if(input_just_released(MouseButton::Middle)),
+            rotate_camera
+                .run_if(input_pressed(MouseButton::Middle).or(input_pressed(MouseButton::Right))),
+            cursor_grab.run_if(
+                input_just_pressed(MouseButton::Middle).or(input_just_pressed(MouseButton::Right)),
+            ),
+            cursor_ungrab.run_if(
+                input_just_released(MouseButton::Middle)
+                    .or(input_just_released(MouseButton::Right)),
+            ),
             move_camera,
         )
             .run_if(in_state(Screen::Editor)),

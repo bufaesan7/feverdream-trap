@@ -191,6 +191,35 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                     ui.collapsing(egui::RichText::new("ChunkElements").size(18.), |ui| {
                         ui_for_assets::<ChunkElement>(self.world, ui);
                         ui.separator();
+
+                        // Delete buttons for each element
+                        ui.collapsing("Deletion menu", |ui| {
+                            for (index, element) in self
+                                .world
+                                .resource::<ChunkAssetStash>()
+                                .elements
+                                .clone()
+                                .into_iter()
+                                .enumerate()
+                            {
+                                let name = &self
+                                    .world
+                                    .resource::<Assets<ChunkElement>>()
+                                    .get(&element)
+                                    .unwrap()
+                                    .name;
+                                if ui.button(format!("Delete element {name}")).clicked() {
+                                    self.world
+                                        .resource_mut::<ChunkAssetStash>()
+                                        .elements
+                                        .remove(index);
+                                    self.world
+                                        .resource_mut::<Assets<ChunkElement>>()
+                                        .remove(&element);
+                                }
+                            }
+                        });
+
                         let path = &mut self
                             .world
                             .resource_mut::<EguiActionBuffer>()
@@ -222,6 +251,34 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                     ui.collapsing(egui::RichText::new("ChunkDescriptors").size(18.), |ui| {
                         ui_for_assets::<ChunkDescriptor>(self.world, ui);
                         ui.separator();
+
+                        // Delete buttons for each descriptor
+                        ui.collapsing("Deletion menu", |ui| {
+                            for (index, descriptor) in self
+                                .world
+                                .resource::<ChunkAssetStash>()
+                                .descriptors
+                                .clone()
+                                .into_iter()
+                                .enumerate()
+                            {
+                                let name = &self
+                                    .world
+                                    .resource::<Assets<ChunkDescriptor>>()
+                                    .get(&descriptor)
+                                    .unwrap()
+                                    .name;
+                                if ui.button(format!("Delete chunk {name}")).clicked() {
+                                    self.world
+                                        .resource_mut::<ChunkAssetStash>()
+                                        .descriptors
+                                        .remove(index);
+                                    self.world
+                                        .resource_mut::<Assets<ChunkDescriptor>>()
+                                        .remove(&descriptor);
+                                }
+                            }
+                        });
 
                         // Preview buttons for each descriptor
                         ui.label("Preview descriptor:");
@@ -291,6 +348,7 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                             .resource_mut::<EguiActionBuffer>()
                             .layout_buffer
                             .clone();
+                        let mut delete_index = None;
                         for (iteration, ((x, y), descriptor, components)) in
                             layout.iter_mut().enumerate()
                         {
@@ -302,11 +360,15 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                                             [2.0, ui.spacing().interact_size.y],
                                             egui::TextEdit::singleline(x),
                                         );
-                                        ui.label("y:");
+                                        ui.label("z:");
                                         ui.add_sized(
                                             [2.0, ui.spacing().interact_size.y],
                                             egui::TextEdit::singleline(y),
                                         );
+
+                                        if ui.button("Delete chunk").clicked() {
+                                            delete_index = Some(iteration);
+                                        }
                                     });
                                     ui.horizontal(|ui| {
                                         let mut descriptor_assets =
@@ -347,6 +409,9 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                                 });
                             });
                         }
+                        if let Some(index) = delete_index {
+                            layout.remove(index);
+                        }
                         if ui.button("Add chunk to layout").clicked() {
                             layout.push(Default::default());
                         }
@@ -369,6 +434,57 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                     }
                     #[cfg(feature = "dev_native")]
                     if ui.button("Save Assets").clicked() {
+                        use std::fs;
+
+                        let element_asset_dir = PathBuf::from("assets")
+                            .join(PathBuf::from_iter(ChunkElementAsset::PATH));
+                        let descriptor_asset_dir =
+                            PathBuf::from("assets").join(ChunkDescriptorAsset::PATH);
+
+                        info!("Deleting previous assets");
+                        // ------------------------------
+                        // Delete all previous asset files
+                        // ------------------------------
+                        let mut file_paths = vec![];
+                        for entry in fs::read_dir(element_asset_dir)
+                            .unwrap()
+                            .flatten()
+                            .filter_map(|entry| {
+                                entry
+                                    .file_type()
+                                    .is_ok_and(|ft| ft.is_file())
+                                    .then_some(entry.path())
+                            })
+                        {
+                            if entry
+                                .to_string_lossy()
+                                .ends_with(ChunkElementAsset::EXTENSION)
+                            {
+                                file_paths.push(entry);
+                            }
+                        }
+                        for entry in fs::read_dir(descriptor_asset_dir)
+                            .unwrap()
+                            .flatten()
+                            .filter_map(|entry| {
+                                entry
+                                    .file_type()
+                                    .is_ok_and(|ft| ft.is_file())
+                                    .then_some(entry.path())
+                            })
+                        {
+                            if entry
+                                .to_string_lossy()
+                                .ends_with(ChunkDescriptorAsset::EXTENSION)
+                            {
+                                file_paths.push(entry);
+                            }
+                        }
+                        for file in file_paths {
+                            if let Err(e) = fs::remove_file(&file) {
+                                warn!("Failed to delete file {}: {e}", file.display());
+                            }
+                        }
                         info!("Saving assets");
                         // ------------------------------
                         // Chunk elements
@@ -380,7 +496,7 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                             let serialized_asset = to_string(&element_asset).unwrap();
 
                             info!("saving chunk element asset {}", element_path.display());
-                            std::fs::write(element_path, serialized_asset).unwrap();
+                            fs::write(element_path, serialized_asset).unwrap();
                         }
                         // ------------------------------
                         // Chunk descriptors
@@ -392,7 +508,7 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                             let serialized_asset = to_string(&chunk_asset).unwrap();
 
                             info!("saving chunk asset {}", chunk_path.display());
-                            std::fs::write(chunk_path, serialized_asset).unwrap();
+                            fs::write(chunk_path, serialized_asset).unwrap();
                         }
                         // ------------------------------
                         // Chunk layout

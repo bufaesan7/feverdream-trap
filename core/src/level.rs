@@ -27,10 +27,17 @@ pub struct LevelComponentGltf {
 #[component(on_add)]
 /// Abstract [`Mesh3d`] and [`MeshMaterial3d`] insertion to avoid inserting them in the
 /// [`DynamicScene`] storage.
-pub enum LevelComponent3d {
-    Plane { size: Vec2, color: Color },
-    Cube { length: f32, color: Color },
-    Sphere { radius: f32, color: Color },
+pub struct LevelComponent3d {
+    pub shape: LevelComponentShape,
+    pub color: Color,
+    pub has_collider: bool,
+}
+
+#[derive(Reflect, Debug, Clone)]
+pub enum LevelComponentShape {
+    Plane { size: Vec2 },
+    Cube { length: f32 },
+    Sphere { radius: f32 },
 }
 
 #[derive(Component, Reflect, Debug, Clone)]
@@ -107,42 +114,36 @@ impl LevelComponent3d {
             return;
         }
 
-        let mesh_type = world.get::<LevelComponent3d>(hook.entity).unwrap().clone();
+        let lvl_comp = world.get::<LevelComponent3d>(hook.entity).unwrap().clone();
 
         let mut meshes: Mut<Assets<Mesh>> = world.resource_mut();
 
-        let mesh = match mesh_type {
-            LevelComponent3d::Plane { size, .. } => meshes.add(Plane3d::new(Vec3::Y, size)),
-            LevelComponent3d::Cube { length, .. } => meshes.add(Cuboid::from_length(length)),
-            LevelComponent3d::Sphere { radius, .. } => meshes.add(Sphere::new(radius)),
+        let mesh = match lvl_comp.shape {
+            LevelComponentShape::Plane { size, .. } => meshes.add(Plane3d::new(Vec3::Y, size)),
+            LevelComponentShape::Cube { length, .. } => meshes.add(Cuboid::from_length(length)),
+            LevelComponentShape::Sphere { radius, .. } => meshes.add(Sphere::new(radius)),
         };
 
         let mut materials: Mut<Assets<StandardMaterial>> = world.resource_mut();
 
-        let material = match mesh_type {
-            LevelComponent3d::Plane { color, .. } => {
-                materials.add(StandardMaterial::from_color(color))
-            }
-            LevelComponent3d::Cube { color, .. } => {
-                materials.add(StandardMaterial::from_color(color))
-            }
-            LevelComponent3d::Sphere { color, .. } => {
-                materials.add(StandardMaterial::from_color(color))
-            }
-        };
+        let material = materials.add(StandardMaterial::from_color(lvl_comp.color));
 
-        let collider = match mesh_type {
-            LevelComponent3d::Plane { size, .. } => Collider::cuboid(size.x * 2., 0.1, size.y * 2.),
-            LevelComponent3d::Cube { length, .. } => Collider::cuboid(length, length, length),
-            LevelComponent3d::Sphere { radius, .. } => Collider::sphere(radius),
-        };
+        let collider_maybe = lvl_comp.has_collider.then(|| match lvl_comp.shape {
+            LevelComponentShape::Plane { size, .. } => {
+                Collider::cuboid(size.x * 2., 0.1, size.y * 2.)
+            }
+            LevelComponentShape::Cube { length, .. } => Collider::cuboid(length, length, length),
+            LevelComponentShape::Sphere { radius, .. } => Collider::sphere(radius),
+        });
 
-        world.commands().entity(hook.entity).insert((
-            RigidBody::Static,
-            collider,
-            Mesh3d(mesh),
-            MeshMaterial3d(material),
-        ));
+        let mut cmds = world.commands();
+        let mut entity_cmds = cmds.entity(hook.entity);
+
+        entity_cmds.insert((RigidBody::Static, Mesh3d(mesh), MeshMaterial3d(material)));
+
+        if let Some(collider) = collider_maybe {
+            entity_cmds.insert(collider);
+        }
     }
 }
 
