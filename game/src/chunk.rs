@@ -3,8 +3,9 @@ use feverdream_trap_core::prelude::*;
 use std::mem::swap;
 impl Plugin for ChunkPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<PlayerChunk>()
+        app.init_resource::<ActivePlayerChunks>()
             .add_observer(on_player_entered_chunk)
+            .add_observer(on_player_exited_chunk)
             .add_observer(on_replace_chunk_asset)
             .add_observer(on_swap_chunks)
             .add_systems(
@@ -22,17 +23,33 @@ pub struct SwapChunks(pub ChunkId, pub ChunkId);
 #[derive(Debug, Event)]
 pub struct ReplaceChunkAsset(pub ChunkId, pub Handle<ChunkDescriptor>);
 
-/// the Chunk the player is currently in
-#[derive(Resource, Default)]
-pub struct PlayerChunk(pub Option<Entity>);
+#[derive(Resource, Default, Reflect)]
+#[reflect(Resource)]
+/// Chunks the player is currently in
+struct ActivePlayerChunks(Vec<ActivePlayerChunk>);
+#[derive(Reflect)]
+struct ActivePlayerChunk {
+    chunk_entity: Entity,
+    swap_sensor_activated: bool,
+    asset_sensor_activated: bool,
+}
+impl ActivePlayerChunk {
+    fn new(id: Entity) -> Self {
+        Self {
+            chunk_entity: id,
+            swap_sensor_activated: false,
+            asset_sensor_activated: false,
+        }
+    }
+}
 
 pub struct ChunkPlugin;
 
-pub fn on_player_entered_chunk(
+fn on_player_entered_chunk(
     event: On<CollisionStart>,
     player_query: Query<&Player>,
     chunk_query: Query<&ChunkId>,
-    mut player_chunk: ResMut<PlayerChunk>,
+    mut player_chunk: ResMut<ActivePlayerChunks>,
 ) {
     let chunk = event.collider1;
     let player = event.collider2;
@@ -47,7 +64,29 @@ pub fn on_player_entered_chunk(
 
     info!("Player {player} entered chunk {chunk_id}");
 
-    player_chunk.0 = Some(chunk);
+    player_chunk.0.push(ActivePlayerChunk::new(chunk));
+}
+
+fn on_player_exited_chunk(
+    event: On<CollisionEnd>,
+    player_query: Query<&Player>,
+    chunk_query: Query<&ChunkId>,
+    mut player_chunk: ResMut<ActivePlayerChunks>,
+) {
+    let chunk = event.collider1;
+    let player = event.collider2;
+
+    if !player_query.contains(player) {
+        return;
+    }
+
+    let Ok(ChunkId(chunk_id)) = chunk_query.get(chunk) else {
+        return;
+    };
+
+    info!("Player {player} exited chunk {chunk_id}");
+
+    player_chunk.0.retain(|active| active.chunk_entity != chunk);
 }
 
 fn on_swap_chunks(
@@ -105,40 +144,81 @@ fn on_replace_chunk_asset(
 
 fn replace_chunk_asset_on_contact_with_sensor(
     mut commands: Commands,
-    player_chunk: Res<PlayerChunk>,
-    sensors_query: Query<(&ReplaceAssetSensorChunk, &ChunkId)>,
+    mut player_chunk: ResMut<ActivePlayerChunks>,
+    mut chunk_query: Query<(&mut Chunk, &ChunkId)>,
+    sensors_query: Query<(
+        &ReplaceAssetSensorChunk,
+        &ReplaceAssetSensorChunkHandle,
+        &ChunkId,
+    )>,
 ) {
-    let Some(player_chunk) = player_chunk.0 else {
-        return;
-    };
+    for active in player_chunk.0.iter_mut() {
+        match active.asset_sensor_activated {
+            true => continue,
+            false => active.asset_sensor_activated = true,
+        }
+        let Ok((sensor, sensor_handle, ChunkId(chunk_id))) = sensors_query.get(active.chunk_entity)
+        else {
+            continue;
+        };
 
-    let Ok((ReplaceAssetSensorChunk(chunk_to_replace, chunk_asset), ChunkId(chunk_id))) =
-        sensors_query.get(player_chunk)
-    else {
-        return;
-    };
+        info!("Player triggered chunk asset replacement by entering sensor chunk {chunk_id}");
 
-    info!("Player triggered chunk asset replacement by entering sensor chunk {chunk_id}");
-
-    commands.trigger(ReplaceChunkAsset(*chunk_to_replace, chunk_asset.clone()));
-    commands
-        .entity(player_chunk)
-        .remove::<ReplaceAssetSensorChunk>();
+        commands.trigger(ReplaceChunkAsset(sensor.chunk, sensor_handle.asset.clone()));
+        let mut chunk_cmds = commands.entity(active.chunk_entity);
+        match sensor.invert_after_swap {
+            true => {
+                let mut new_sensor = sensor.clone();
+                std::mem::swap(
+                    &mut chunk_query
+                        .iter_mut()
+                        .find(|(_, ChunkId(id))| *id == new_sensor.chunk.0)
+                        .unwrap()
+                        .0
+                        .descriptor_name,
+                    &mut new_sensor.descriptor,
+                );
+                // Trigger on_insert hook to update the asset handle on [`ReplaceAssetSensorChunkHandle`]
+                chunk_cmds.insert(new_sensor);
+            }
+            false => {
+                chunk_cmds
+                    .remove::<ReplaceAssetSensorChunk>()
+                    .remove::<ReplaceAssetSensorChunkHandle>();
+            }
+        }
+    }
 }
 
 fn swap_chunks_on_contact_with_sensor(
     mut commands: Commands,
-    player_chunk: Res<PlayerChunk>,
+    mut player_chunk: ResMut<ActivePlayerChunks>,
     sensors_query: Query<(&SwapSensorChunk, &ChunkId)>,
 ) {
-    let Some(chunk) = player_chunk.0 else { return };
-    let Ok((SwapSensorChunk(chunk_a, chunk_b), ChunkId(chunk_id))) = sensors_query.get(chunk)
-    else {
-        return;
-    };
+    for active in player_chunk.0.iter_mut() {
+        match active.swap_sensor_activated {
+            true => continue,
+            false => active.swap_sensor_activated = true,
+        }
+        let Ok((
+            SwapSensorChunk {
+                chunk_a,
+                chunk_b,
+                preserve_after_swap,
+            },
+            ChunkId(chunk_id),
+        )) = sensors_query.get(active.chunk_entity)
+        else {
+            continue;
+        };
 
-    info!("Player triggered chunk swaps by entering sensor chunk {chunk_id}");
+        info!("Player triggered chunk swaps by entering sensor chunk {chunk_id}");
 
-    commands.trigger(SwapChunks(*chunk_a, *chunk_b));
-    commands.entity(chunk).remove::<SwapSensorChunk>();
+        commands.trigger(SwapChunks(*chunk_a, *chunk_b));
+        if !preserve_after_swap {
+            commands
+                .entity(active.chunk_entity)
+                .remove::<SwapSensorChunk>();
+        }
+    }
 }

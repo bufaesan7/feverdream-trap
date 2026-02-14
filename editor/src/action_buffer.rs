@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
@@ -17,7 +19,7 @@ pub struct EguiActionBuffer {
     pub new_layout_pos: (String, String),
     /// Count the hashmap inserts to prevent egui salt conflicts
     pub layout_push_counter: usize,
-    pub layout_buffer: Vec<((String, String), Handle<ChunkDescriptor>, Vec<ChunkMarker>)>,
+    pub layout_buffer: BTreeMap<u32, ((String, String), Handle<ChunkDescriptor>, Vec<ChunkMarker>)>,
 }
 
 fn insert_egui_buffer(mut commands: Commands, layout: Res<Assets<ChunkLayout>>) {
@@ -25,39 +27,38 @@ fn insert_egui_buffer(mut commands: Commands, layout: Res<Assets<ChunkLayout>>) 
     commands.insert_resource(EguiActionBuffer {
         layout_buffer: layout
             .iter()
-            .map(
-                |ChunkEntry {
-                     grid_pos: (x, y),
-                     descriptor,
-                     components,
-                 }| {
+            .map(|(id, entry)| {
+                (
+                    *id,
                     (
-                        (x.to_string(), y.to_string()),
-                        descriptor.clone(),
-                        components.clone(),
-                    )
-                },
-            )
+                        (entry.grid_pos.0.to_string(), entry.grid_pos.1.to_string()),
+                        entry.descriptor.clone(),
+                        entry.components.clone(),
+                    ),
+                )
+            })
             .collect(),
         ..Default::default()
     });
 }
 
 fn sync_layout_buffer(mut layout: ResMut<Assets<ChunkLayout>>, buffer: Res<EguiActionBuffer>) {
-    let layout_buffer =
-        buffer
-            .layout_buffer
-            .iter()
-            .fold(vec![], |mut acc, ((x, y), handle, markers)| {
-                let Ok(x) = x.parse() else { return acc };
-                let Ok(y) = y.parse() else { return acc };
-                acc.push(ChunkEntry {
-                    grid_pos: (x, y),
+    let layout_buffer = buffer.layout_buffer.iter().fold(
+        BTreeMap::new(),
+        |mut acc, (id, ((x, z), handle, markers))| {
+            let Ok(x) = x.parse() else { return acc };
+            let Ok(z) = z.parse() else { return acc };
+            acc.insert(
+                *id,
+                ChunkEntry {
+                    grid_pos: (x, z),
                     descriptor: handle.clone(),
                     components: markers.clone(),
-                });
-                acc
-            });
+                },
+            );
+            acc
+        },
+    );
 
-    layout.iter_mut().next().unwrap().1.chunks = layout_buffer.into_iter().collect();
+    layout.iter_mut().next().unwrap().1.chunks = layout_buffer;
 }
