@@ -135,6 +135,7 @@ fn spawn_scene(mut commands: Commands, game_scene: Res<GameSceneStorage>) {
             let _ = world.run_system_once(spawn_camera);
             let _ = world.run_system_once(spawn_player);
             let _ = world.run_system_once(spawn_music);
+            let _ = world.run_system_once(spawn_text);
         });
     }
 }
@@ -159,4 +160,13 @@ fn spawn_music(mut commands: Commands) {
     commands.spawn(MusicMarker::new(String::from(
         "audio/music/Heavenly Loop.ogg",
     )));
+}
+
+fn spawn_text(mut commands: Commands) {
+    commands.spawn((
+        Name::new("Text"),
+        Text::new("Oh my god, dont let me go."),
+        FadeText::new(FadeMode::Out, Duration::from_secs_f32(4.0)),
+        DespawnAfter::new(Duration::from_secs_f32(4.0)),
+    ));
 }
