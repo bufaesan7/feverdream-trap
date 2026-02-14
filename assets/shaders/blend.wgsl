@@ -16,8 +16,6 @@
 }
 #endif
 
-@group(#{MATERIAL_BIND_GROUP}) @binding(100) var<storage, read> colors: array<vec4<f32>, 2>;
-
 @fragment
 fn fragment(
     in: VertexOutput,
@@ -28,6 +26,12 @@ fn fragment(
     // generate a PbrInput struct from the StandardMaterial bindings
     var pbr_input = pbr_input_from_standard_material(in, is_front);
 
+    let colors = array<vec4<f32>, 2>(
+        vec4<f32>(1.0, 1.0, 1.0, 1.0),
+        vec4<f32>(0.0, 0.0, 1.0, 0.5),
+    );
+    pbr_input.material.base_color = mix(vec4<f32>(0.4, 0.4, 0.4, 0.4), pbr_input.material.base_color, colors[tag]);
+
     // alpha discard
     pbr_input.material.base_color = alpha_discard(pbr_input.material, pbr_input.material.base_color);
 
@@ -36,16 +40,14 @@ fn fragment(
     let out = deferred_output(in, pbr_input);
 #else
     var out: FragmentOutput;
+
     // apply lighting
     out.color = apply_pbr_lighting(pbr_input);
 
     // apply in-shader post processing (fog, alpha-premultiply, and also tonemapping, debanding if the camera is non-hdr)
     // note this does not include fullscreen postprocessing effects like bloom.
     out.color = main_pass_post_lighting_processing(pbr_input, out.color);
-
-    out.color = mix(vec4<f32>(0.1, 0.1, 0.1, 0.1), out.color, colors[tag]);
 #endif
 
     return out;
-
 }
