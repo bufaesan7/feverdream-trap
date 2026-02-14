@@ -13,11 +13,7 @@ use egui_dock::{DockArea, DockState, NodeIndex, Style};
 #[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
 
-use crate::{
-    action_buffer::EguiActionBuffer,
-    prelude::*,
-    preview::{CameraAnkor, EditorPreview},
-};
+use crate::{action_buffer::EguiActionBuffer, prelude::*, preview::EditorPreview};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(bevy_egui::EguiPlugin::default());
@@ -41,17 +37,18 @@ pub(super) fn plugin(app: &mut App) {
 fn setup(mut commands: Commands, mut egui_global_settings: ResMut<EguiGlobalSettings>) {
     egui_global_settings.auto_create_primary_context = false;
 
+    info!(
+        "Camera controll:\n\
+        \tWASD to move horizontally\n\
+        \tShift/Space to move vertically\n\
+        \tHold middle mouse or right mouse button and move mouse to rotate"
+    );
+
     // camera
     commands.spawn((
-        Name::new("CameraAnkor"),
-        CameraAnkor,
-        Transform::default(),
-        Visibility::default(),
-        children![(
-            Name::new("Camera3d"),
-            Camera3d::default(),
-            Transform::from_xyz(-15.0, 10.0, -15.0).looking_at(Vec3::new(0.0, 0., 0.0), Vec3::Y),
-        )],
+        Name::new("Camera3d"),
+        Camera3d::default(),
+        Transform::from_xyz(-15.0, 10.0, -15.0).looking_at(Vec3::new(0.0, 0., 0.0), Vec3::Y),
     ));
 
     // egui camera
