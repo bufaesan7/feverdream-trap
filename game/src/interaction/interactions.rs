@@ -12,6 +12,7 @@ pub(super) fn register_required_components(world: &mut World) {
     world.register_required_components::<SwapChunksInteraction, Interactable>();
     world.register_required_components::<PlaySoundEffectInteraction, Interactable>();
     world.register_required_components::<TakeFuseInteraction, Interactable>();
+    world.register_required_components::<ElevatorInteraction, Interactable>();
 }
 
 pub(super) fn register_component_hooks(world: &mut World) {
@@ -83,6 +84,23 @@ pub(super) fn register_component_hooks(world: &mut World) {
             world.commands().spawn(
                 Observer::new(|_on_interact: On<Interact>, mut fuse: ResMut<Fuse>| {
                     fuse.0 = true;
+                })
+                .with_entity(ctx.entity),
+            );
+        });
+
+    world
+        .register_component_hooks::<ElevatorInteraction>()
+        .on_add(|mut world: DeferredWorld, ctx: HookContext| {
+            world.commands().spawn(
+                Observer::new(|_on_interact: On<Interact>, fuse: Res<Fuse>| {
+                    if fuse.0 {
+                        // TODO: Spawn this as Text
+                        info!("Congrats. You escaped.");
+                    } else {
+                        // TODO: Spawn this as Text
+                        info!("This wont work without a fuse.");
+                    }
                 })
                 .with_entity(ctx.entity),
             );
