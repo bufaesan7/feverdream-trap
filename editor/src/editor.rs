@@ -223,6 +223,34 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                         ui_for_assets::<ChunkDescriptor>(self.world, ui);
                         ui.separator();
 
+                        // Delete buttons for each descriptor
+                        ui.collapsing("Deletion menu", |ui| {
+                            for (index, descriptor) in self
+                                .world
+                                .resource::<ChunkAssetStash>()
+                                .descriptors
+                                .clone()
+                                .into_iter()
+                                .enumerate()
+                            {
+                                let name = &self
+                                    .world
+                                    .resource::<Assets<ChunkDescriptor>>()
+                                    .get(&descriptor)
+                                    .unwrap()
+                                    .name;
+                                if ui.button(format!("Delete chunk {name}")).clicked() {
+                                    self.world
+                                        .resource_mut::<ChunkAssetStash>()
+                                        .descriptors
+                                        .remove(index);
+                                    self.world
+                                        .resource_mut::<Assets<ChunkDescriptor>>()
+                                        .remove(&descriptor);
+                                }
+                            }
+                        });
+
                         // Preview buttons for each descriptor
                         ui.label("Preview descriptor:");
                         {
