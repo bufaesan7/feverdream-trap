@@ -2,7 +2,7 @@ use bevy::{
     ecs::{lifecycle::HookContext, world::DeferredWorld},
     mesh::MeshTag,
     pbr::{ExtendedMaterial, MaterialExtension},
-    render::{render_resource::AsBindGroup, storage::ShaderStorageBuffer},
+    render::render_resource::AsBindGroup,
     shader::ShaderRef,
 };
 
@@ -13,10 +13,9 @@ use crate::{
 };
 
 pub(crate) fn plugin(app: &mut App) {
-    app.init_resource::<HighlightStorageBuffer>()
-        .add_plugins(MaterialPlugin::<
-            ExtendedMaterial<StandardMaterial, HighlightExtension>,
-        >::default())
+    app.add_plugins(MaterialPlugin::<
+        ExtendedMaterial<StandardMaterial, HighlightExtension>,
+    >::default())
         .add_systems(Startup, extended_material_required_components)
         .add_systems(
             Update,
@@ -99,26 +98,9 @@ impl FocusTarget {
 
 const SHADER_ASSET_PATH: &str = "shaders/blend.wgsl";
 
-/// This resource holds the common color storage buffer for highlighting
-#[derive(Debug, Resource, Reflect)]
-#[reflect(Resource)]
-pub struct HighlightStorageBuffer(pub Handle<ShaderStorageBuffer>);
-
-impl FromWorld for HighlightStorageBuffer {
-    fn from_world(world: &mut World) -> Self {
-        let mut buffers = world
-            .get_resource_mut::<Assets<ShaderStorageBuffer>>()
-            .unwrap();
-        let color_data: Vec<[f32; 4]> = vec![[1.0, 1.0, 1.0, 1.0], [0.9, 0.9, 0.9, 0.9]];
-
-        Self(buffers.add(ShaderStorageBuffer::from(color_data)))
-    }
-}
-
-#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+#[derive(Asset, TypePath, AsBindGroup, Debug, Default, Clone)]
 pub struct HighlightExtension {
-    #[storage(100, read_only)]
-    pub colors: Handle<ShaderStorageBuffer>,
+    _unused: [f32; 4], // TODO: This cant be empty?
 }
 
 impl MaterialExtension for HighlightExtension {
@@ -141,7 +123,6 @@ fn replace_standard_material(
     mesh_materials: Query<&MeshMaterial3d<StandardMaterial>>,
     standard_materials: Res<Assets<StandardMaterial>>,
     mut extended_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, HighlightExtension>>>,
-    colors: Res<HighlightStorageBuffer>,
 ) {
     let Ok(mesh_material) = mesh_materials.get(trigger.entity) else {
         return;
@@ -153,9 +134,7 @@ fn replace_standard_material(
 
     let extended_material = extended_materials.add(ExtendedMaterial {
         base: standard_material.clone(),
-        extension: HighlightExtension {
-            colors: colors.0.clone(),
-        },
+        extension: HighlightExtension::default(),
     });
 
     // Replace component
