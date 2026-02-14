@@ -11,3 +11,7 @@ pub struct DespawnInteraction;
 #[derive(Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct SwapChunksInteraction(pub ChunkId, pub ChunkId);
+
+#[derive(Debug, Default, Component, Reflect)]
+#[reflect(Component)]
+pub struct PlaySoundEffectInteraction(pub String);

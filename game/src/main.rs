@@ -57,6 +57,7 @@ impl Plugin for AppPlugin {
             screens::plugin,
             scene::plugin,
             interaction::plugin,
+            utils::plugin,
         ));
 
         // Custom game plugins

@@ -80,6 +80,7 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             .allow_component::<Interactable>()
             .allow_component::<DespawnInteraction>()
             .allow_component::<SwapChunksInteraction>()
+            .allow_component::<PlaySoundEffectInteraction>()
             // Audio
             .allow_component::<MusicMarker>()
             //
@@ -135,6 +136,7 @@ fn spawn_scene(mut commands: Commands, game_scene: Res<GameSceneStorage>) {
             let _ = world.run_system_once(spawn_camera);
             let _ = world.run_system_once(spawn_player);
             let _ = world.run_system_once(spawn_music);
+            let _ = world.run_system_once(spawn_text);
         });
     }
 }
@@ -147,8 +149,17 @@ fn on_level_spawned(event: On<Add, Level>, mut commands: Commands) {
         .insert(DespawnOnExit(Screen::Gameplay));
 }
 
-fn on_level_component_spawned(event: On<Add, LevelComponent>, mut commands: Commands) {
+fn on_level_component_spawned(
+    event: On<Add, LevelComponent>,
+    mut commands: Commands,
+    music_marker: Query<(), With<MusicMarker>>,
+) {
     let entity = event.event_target();
+
+    // Kinda hacky, but we are ignoring Music Marker here, so we can handle a fadeout OnExit(Screen::Gameplay) somewhere else
+    if music_marker.contains(entity) {
+        return;
+    }
 
     commands
         .entity(entity)
@@ -159,4 +170,12 @@ fn spawn_music(mut commands: Commands) {
     commands.spawn(MusicMarker::new(String::from(
         "audio/music/Heavenly Loop.ogg",
     )));
+}
+
+fn spawn_text(mut commands: Commands) {
+    commands.spawn((
+        Name::new("Text"),
+        Text::new("Oh my god, dont let me go."),
+        Fade::new(FadeMode::Out, Duration::from_secs_f32(4.0)),
+    ));
 }
