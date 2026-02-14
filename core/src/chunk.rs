@@ -81,6 +81,8 @@ impl ChunkMarkers {
                                 Name::new("Player spawn indicator"),
                                 Mesh3d(mesh),
                                 MeshMaterial3d(material),
+                                bevy::light::NotShadowCaster,
+                                bevy::light::NotShadowReceiver,
                                 t,
                             ));
                     }
@@ -108,6 +110,9 @@ impl ChunkMarkers {
                             intensity: 1_000_000.,
                             range: 50.,
                             shadows_enabled: true,
+                            // Default: 0.8
+                            // Lowering this generates some cool artifacts :)
+                            shadow_depth_bias: 0.03,
                             ..Default::default()
                         },
                         translation,
@@ -166,8 +171,6 @@ pub fn on_spawn_chunk(
 
     let chunk_entity = chunk_cmds.id();
 
-    let color = Color::srgb(0.95, 0.95, 0.95);
-
     for element in elements {
         let mut element_entity = commands.spawn((
             Name::new(element.name.clone()),
@@ -176,25 +179,26 @@ pub fn on_spawn_chunk(
             ChildOf(chunk_entity),
         ));
 
-        match &element.shape {
-            ChunkElementShape::Plane => {
-                element_entity.insert(LevelComponent3d::Plane {
-                    size: Vec2::splat(0.5),
-                    color,
-                });
-            }
-            ChunkElementShape::Cube => {
-                element_entity.insert(LevelComponent3d::Cube { length: 1., color });
-            }
-            ChunkElementShape::Sphere => {
-                element_entity.insert(LevelComponent3d::Sphere { radius: 1., color });
-            }
-            ChunkElementShape::Gltf { mesh_path, .. } => {
-                element_entity.insert(LevelComponentGltf {
-                    path: mesh_path.clone(),
-                });
-            }
+        if let ChunkElementShape::Gltf { mesh_path, .. } = &element.shape {
+            element_entity.insert(LevelComponentGltf {
+                path: mesh_path.clone(),
+            });
+            continue;
+        }
+
+        let shape = match &element.shape {
+            ChunkElementShape::Plane => LevelComponentShape::Plane {
+                size: Vec2::splat(0.5),
+            },
+            ChunkElementShape::Cube => LevelComponentShape::Cube { length: 1. },
+            ChunkElementShape::Sphere => LevelComponentShape::Sphere { radius: 1. },
+            ChunkElementShape::Gltf { .. } => unreachable!(),
         };
+        element_entity.insert(LevelComponent3d {
+            shape,
+            color: element.color,
+            has_collider: element.has_collider,
+        });
     }
 }
 

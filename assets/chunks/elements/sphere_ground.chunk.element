@@ -1,0 +1,1 @@
+(name:"sphere_ground",transform:(translation:(0.0,-1.5,0.0),rotation:(0.0,0.0,0.0,1.0),scale:(1.0,1.0,1.0)),shape:Sphere,color:Srgba((red:0.0,green:0.49019608,blue:1.0,alpha:1.0)),has_collider:false)

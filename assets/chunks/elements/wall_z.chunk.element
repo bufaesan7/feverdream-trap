@@ -1,1 +1,1 @@
-(name:"wall_z",transform:(translation:(0.0,0.0,2.5),rotation:(0.0,0.0,0.0,1.0),scale:(5.0,5.0,1.0)),shape:Cube)
+(name:"wall_z",transform:(translation:(0.0,0.0,2.5),rotation:(0.0,0.0,0.0,1.0),scale:(5.0,5.0,1.0)),shape:Cube,color:Srgba((red:0.95,green:0.95,blue:0.95,alpha:1.0)),has_collider:true)

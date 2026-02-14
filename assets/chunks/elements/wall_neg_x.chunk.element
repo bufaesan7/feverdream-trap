@@ -1,1 +1,1 @@
-(name:"wall_neg_x",transform:(translation:(-2.5,0.0,0.0),rotation:(0.0,0.0,0.0,1.0),scale:(1.0,5.0,5.0)),shape:Cube)
+(name:"wall_neg_x",transform:(translation:(-2.5,0.0,0.0),rotation:(0.0,0.0,0.0,1.0),scale:(1.0,5.0,5.0)),shape:Cube,color:Srgba((red:0.95,green:0.95,blue:0.95,alpha:1.0)),has_collider:true)
