@@ -19,3 +19,7 @@ pub struct PlaySoundEffectInteraction(pub String);
 #[derive(Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct TakeFuseInteraction;
+
+#[derive(Debug, Default, Component, Reflect)]
+#[reflect(Component)]
+pub struct ElevatorInteraction;
