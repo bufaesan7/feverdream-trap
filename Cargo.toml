@@ -29,6 +29,7 @@ avian3d = { version = "0.6.0-rc.1", default-features = false, features = [
   "debug-plugin",
   "parallel",
   # Non-default
+  "serialize",
   "simd",
 ] }
 bevy_ahoy = "0.1.0-rc.1"

@@ -33,7 +33,11 @@ pub enum ChunkElementShapeAsset {
     Plane,
     Cube,
     Sphere,
-    Gltf { mesh_path: String },
+    Gltf {
+        mesh_path: String,
+        #[serde(default)]
+        collider: Option<ColliderConstructor>,
+    },
 }
 
 #[derive(Debug, Reflect, Clone)]
@@ -44,7 +48,22 @@ pub enum ChunkElementShape {
     Gltf {
         mesh_path: String,
         mesh: Handle<Gltf>,
+        collider: Option<DefaultWrap>,
     },
+}
+
+#[derive(Clone, Reflect, Debug)]
+#[reflect(Default)]
+/// TODO: remove this and add avian collider-from-mesh feature instead
+pub struct DefaultWrap(pub ColliderConstructor);
+impl Default for DefaultWrap {
+    fn default() -> Self {
+        Self(ColliderConstructor::Cuboid {
+            x_length: 1.,
+            y_length: 1.,
+            z_length: 1.,
+        })
+    }
 }
 
 #[derive(Asset, TypePath, Debug, Serialize, Deserialize)]
@@ -53,6 +72,7 @@ pub struct ChunkElementAsset {
     pub transform: Transform,
     pub shape: ChunkElementShapeAsset,
     pub color: Color,
+    /// Has no effect on [`ChunkElementShapeAsset::Gltf`]
     pub has_collider: bool,
 }
 
@@ -102,8 +122,13 @@ impl From<&ChunkElement> for ChunkElementAsset {
                 ChunkElementShape::Plane => ChunkElementShapeAsset::Plane,
                 ChunkElementShape::Cube => ChunkElementShapeAsset::Cube,
                 ChunkElementShape::Sphere => ChunkElementShapeAsset::Sphere,
-                ChunkElementShape::Gltf { mesh_path, .. } => ChunkElementShapeAsset::Gltf {
+                ChunkElementShape::Gltf {
+                    mesh_path,
+                    collider,
+                    ..
+                } => ChunkElementShapeAsset::Gltf {
                     mesh_path: mesh_path.clone(),
+                    collider: collider.clone().map(|w| w.0),
                 },
             },
             color: value.color,
@@ -121,9 +146,13 @@ impl RonAsset for ChunkElementAsset {
             ChunkElementShapeAsset::Plane => ChunkElementShape::Plane,
             ChunkElementShapeAsset::Cube => ChunkElementShape::Cube,
             ChunkElementShapeAsset::Sphere => ChunkElementShape::Sphere,
-            ChunkElementShapeAsset::Gltf { mesh_path } => ChunkElementShape::Gltf {
+            ChunkElementShapeAsset::Gltf {
+                mesh_path,
+                collider,
+            } => ChunkElementShape::Gltf {
                 mesh: context.load(&mesh_path),
                 mesh_path,
+                collider: collider.map(|c| DefaultWrap(c)),
             },
         };
         ChunkElement {
