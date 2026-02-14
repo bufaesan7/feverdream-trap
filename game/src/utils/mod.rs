@@ -1,5 +1,7 @@
 pub mod audio;
 
+use feverdream_trap_core::prelude::audio::fade_sound;
+
 use crate::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {

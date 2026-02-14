@@ -1,10 +1,7 @@
 pub mod audio;
 pub mod cursor;
 
-use bevy::{
-    audio::Volume,
-    ecs::{lifecycle::HookContext, world::DeferredWorld},
-};
+use bevy::ecs::{lifecycle::HookContext, world::DeferredWorld};
 
 use crate::prelude::*;
 
@@ -83,19 +80,5 @@ pub fn fade_text(time: Res<Time>, mut query: Query<(&mut TextColor, &mut Fade)>)
         };
 
         color.0.set_alpha(fraction);
-    }
-}
-
-pub fn fade_sound(time: Res<Time>, mut query: Query<(&mut PlaybackSettings, &mut Fade)>) {
-    for (mut playback_settings, mut fade) in &mut query {
-        fade.timer.tick(time.delta());
-
-        let fraction = fade.timer.fraction();
-        let fraction = match fade.mode {
-            FadeMode::In => fraction,
-            FadeMode::Out => 1.0 - fraction,
-        };
-
-        playback_settings.volume = Volume::Linear(fraction);
     }
 }
