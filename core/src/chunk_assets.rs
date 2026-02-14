@@ -290,8 +290,12 @@ impl RonAsset for ChunkDescriptorAsset {
 pub enum ChunkMarker {
     PlayerSpawn(Transform),
     Light(Transform),
-    SwapSensor(u32, u32),
-    ReplaceAssetSensor(u32, String),
+    /// Mark this chunk as a sensor chunk, that will cause two other chunks to be swapped when this
+    /// one is entered by the player
+    SwapSensor(SwapSensorChunk),
+    /// Mark this chunk as a sensor chunk, that will cause one chunk to be replaced with a
+    /// not-yet-loaded chunk asset when this one is entered by the player
+    ReplaceAssetSensor(ReplaceAssetSensorChunk),
 }
 
 impl Default for ChunkMarker {

@@ -1,5 +1,6 @@
 use bevy::ecs::lifecycle::HookContext;
 use bevy::ecs::world::DeferredWorld;
+use serde::{Deserialize, Serialize};
 
 use crate::chunk_assets::{ChunkDescriptorAsset, ChunkElementShape, ChunkMarker};
 use crate::level::*;
@@ -16,10 +17,11 @@ pub const CHUNK_SIZE: f32 = 5.;
 #[derive(Default, Component, Reflect)]
 #[require(Transform, Visibility, Sensor, LevelComponent)]
 #[reflect(Component)]
-pub struct Chunk;
+pub struct Chunk {
+    pub descriptor_name: String,
+}
 
-#[derive(Default, Component, Reflect, Debug, Copy, Clone)]
-#[require(Chunk)]
+#[derive(Component, Debug, Default, Serialize, Deserialize, Reflect, Clone, Copy)]
 #[reflect(Component)]
 pub struct ChunkId(pub u32);
 
@@ -35,15 +37,47 @@ pub struct SpawnChunk {
 #[derive(Debug, Event)]
 pub struct DespawnChunk(pub ChunkId);
 
-#[derive(Component, Reflect)]
-#[require(Chunk)]
-#[reflect(Component)]
-pub struct SwapSensorChunk(pub ChunkId, pub ChunkId);
+#[derive(Component, Debug, Default, Clone, Serialize, Deserialize, Reflect)]
+#[reflect(Component, Default)]
+pub struct SwapSensorChunk {
+    /// Id of the chunk to be swapped with `chunk_b`
+    pub chunk_a: ChunkId,
+    /// Id of the chunk to be swapped with `chunk_a`
+    pub chunk_b: ChunkId,
+    /// Whether the sensor should be preserved or removed after the first swap
+    pub preserve_after_swap: bool,
+}
 
-#[derive(Component, Reflect)]
-#[require(Chunk)]
-#[reflect(Component)]
-pub struct ReplaceAssetSensorChunk(pub ChunkId, pub Handle<ChunkDescriptor>);
+#[derive(Component, Debug, Default, Clone, Serialize, Deserialize, Reflect)]
+#[component(on_insert)]
+#[reflect(Component, Default)]
+pub struct ReplaceAssetSensorChunk {
+    /// Id of the chunk whose descriptor will be replaced with `descriptor`
+    pub chunk: ChunkId,
+    /// Name of the chunk descriptor that will be swapped-in
+    pub descriptor: String,
+    /// Whether the sensor should be inverted or removed after the first swap
+    pub invert_after_swap: bool,
+}
+
+impl ReplaceAssetSensorChunk {
+    fn on_insert<'a>(mut world: DeferredWorld<'a>, hook: HookContext) {
+        if world.get_resource::<AssetServer>().is_none() {
+            return;
+        }
+        let this: &Self = world.get(hook.entity).unwrap();
+        let path = ChunkDescriptorAsset::path_from_name(&this.descriptor);
+        let sensor = ReplaceAssetSensorChunkHandle {
+            asset: world.load_asset(path),
+        };
+        world.commands().entity(hook.entity).insert(sensor);
+    }
+}
+
+#[derive(Component)]
+pub struct ReplaceAssetSensorChunkHandle {
+    pub asset: Handle<ChunkDescriptor>,
+}
 
 #[cfg(feature = "dev_native")]
 pub static CHUNK_WIREFRAMES_ENABLED: std::sync::atomic::AtomicBool =
@@ -87,21 +121,11 @@ impl ChunkMarkers {
                             ));
                     }
                 }
-                ChunkMarker::SwapSensor(a, b) => {
-                    world
-                        .commands()
-                        .entity(hook.entity)
-                        .insert(SwapSensorChunk(ChunkId(a), ChunkId(b)));
+                ChunkMarker::SwapSensor(sensor) => {
+                    world.commands().entity(hook.entity).insert(sensor);
                 }
-                ChunkMarker::ReplaceAssetSensor(id, descriptor_name) => {
-                    let path = ChunkDescriptorAsset::path_from_name(&descriptor_name);
-                    let handle: Handle<ChunkDescriptor> =
-                        world.load_asset(path.to_string_lossy().into_owned());
-
-                    world
-                        .commands()
-                        .entity(hook.entity)
-                        .insert(ReplaceAssetSensorChunk(ChunkId(id), handle));
+                ChunkMarker::ReplaceAssetSensor(sensor) => {
+                    world.commands().entity(hook.entity).insert(sensor);
                 }
                 ChunkMarker::Light(translation) => {
                     world.commands().entity(hook.entity).with_child((
@@ -150,7 +174,9 @@ pub fn on_spawn_chunk(
     let mut chunk_cmds = commands.spawn((
         Name::new(format!("Chunk ({}, {})", grid_position.x, grid_position.y)),
         Visibility::default(),
-        Chunk,
+        Chunk {
+            descriptor_name: descriptor.name.clone(),
+        },
         id,
         transform,
         LevelCollider::Cube { length: CHUNK_SIZE },
