@@ -101,14 +101,7 @@ const SHADER_ASSET_PATH: &str = "shaders/blend.wgsl";
 // TODO: This cant be empty?
 #[derive(Asset, TypePath, AsBindGroup, Debug, Default, Clone)]
 pub struct HighlightExtension {
-    #[uniform(100)]
-    _unused1: f32,
-    #[uniform(100)]
-    _unused2: f32,
-    #[uniform(100)]
-    _unused3: f32,
-    #[uniform(100)]
-    _unused4: f32,
+    _unused1: u8,
 }
 
 impl MaterialExtension for HighlightExtension {
