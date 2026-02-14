@@ -303,7 +303,7 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                                             [2.0, ui.spacing().interact_size.y],
                                             egui::TextEdit::singleline(x),
                                         );
-                                        ui.label("y:");
+                                        ui.label("z:");
                                         ui.add_sized(
                                             [2.0, ui.spacing().interact_size.y],
                                             egui::TextEdit::singleline(y),
