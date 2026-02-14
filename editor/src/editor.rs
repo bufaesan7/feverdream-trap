@@ -434,6 +434,57 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                     }
                     #[cfg(feature = "dev_native")]
                     if ui.button("Save Assets").clicked() {
+                        use std::fs;
+
+                        let element_asset_dir = PathBuf::from("assets")
+                            .join(PathBuf::from_iter(ChunkElementAsset::PATH));
+                        let descriptor_asset_dir =
+                            PathBuf::from("assets").join(ChunkDescriptorAsset::PATH);
+
+                        info!("Deleting previous assets");
+                        // ------------------------------
+                        // Delete all previous asset files
+                        // ------------------------------
+                        let mut file_paths = vec![];
+                        for entry in fs::read_dir(element_asset_dir)
+                            .unwrap()
+                            .flatten()
+                            .filter_map(|entry| {
+                                entry
+                                    .file_type()
+                                    .is_ok_and(|ft| ft.is_file())
+                                    .then_some(entry.path())
+                            })
+                        {
+                            if entry
+                                .to_string_lossy()
+                                .ends_with(ChunkElementAsset::EXTENSION)
+                            {
+                                file_paths.push(entry);
+                            }
+                        }
+                        for entry in fs::read_dir(descriptor_asset_dir)
+                            .unwrap()
+                            .flatten()
+                            .filter_map(|entry| {
+                                entry
+                                    .file_type()
+                                    .is_ok_and(|ft| ft.is_file())
+                                    .then_some(entry.path())
+                            })
+                        {
+                            if entry
+                                .to_string_lossy()
+                                .ends_with(ChunkDescriptorAsset::EXTENSION)
+                            {
+                                file_paths.push(entry);
+                            }
+                        }
+                        for file in file_paths {
+                            if let Err(e) = fs::remove_file(&file) {
+                                warn!("Failed to delete file {}: {e}", file.display());
+                            }
+                        }
                         info!("Saving assets");
                         // ------------------------------
                         // Chunk elements
@@ -445,7 +496,7 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                             let serialized_asset = to_string(&element_asset).unwrap();
 
                             info!("saving chunk element asset {}", element_path.display());
-                            std::fs::write(element_path, serialized_asset).unwrap();
+                            fs::write(element_path, serialized_asset).unwrap();
                         }
                         // ------------------------------
                         // Chunk descriptors
@@ -457,7 +508,7 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                             let serialized_asset = to_string(&chunk_asset).unwrap();
 
                             info!("saving chunk asset {}", chunk_path.display());
-                            std::fs::write(chunk_path, serialized_asset).unwrap();
+                            fs::write(chunk_path, serialized_asset).unwrap();
                         }
                         // ------------------------------
                         // Chunk layout

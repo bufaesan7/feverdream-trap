@@ -70,7 +70,7 @@ impl ChunkElement {
 }
 
 impl ChunkElementAsset {
-    const PATH: [&str; 2] = ["chunks", "elements"];
+    pub const PATH: [&str; 2] = ["chunks", "elements"];
 
     pub fn path(&self) -> PathBuf {
         Self::path_from_name(&self.name)
@@ -219,7 +219,7 @@ impl bevy_inspector_egui::inspector_egui_impls::InspectorPrimitive
 }
 
 impl ChunkDescriptorAsset {
-    const PATH: &str = "chunks";
+    pub const PATH: &str = "chunks";
 
     pub fn path(&self) -> PathBuf {
         Self::path_from_name(&self.name)
