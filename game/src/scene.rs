@@ -80,6 +80,7 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             .allow_component::<Interactable>()
             .allow_component::<DespawnInteraction>()
             .allow_component::<SwapChunksInteraction>()
+            .allow_component::<PlaySoundEffectInteraction>()
             // Audio
             .allow_component::<MusicMarker>()
             //
@@ -148,8 +149,17 @@ fn on_level_spawned(event: On<Add, Level>, mut commands: Commands) {
         .insert(DespawnOnExit(Screen::Gameplay));
 }
 
-fn on_level_component_spawned(event: On<Add, LevelComponent>, mut commands: Commands) {
+fn on_level_component_spawned(
+    event: On<Add, LevelComponent>,
+    mut commands: Commands,
+    music_marker: Query<(), With<MusicMarker>>,
+) {
     let entity = event.event_target();
+
+    // Kinda hacky, but we are ignoring Music Marker here, so we can handle a fadeout OnExit(Screen::Gameplay) somewhere else
+    if music_marker.contains(entity) {
+        return;
+    }
 
     commands
         .entity(entity)

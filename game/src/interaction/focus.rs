@@ -22,9 +22,9 @@ pub(crate) fn plugin(app: &mut App) {
         )
         .add_systems(
             Update,
-            (interactable_in_range, toggle_interact_ui_visibility)
-                .run_if(in_state(Screen::Gameplay).and(in_state(Menu::None))),
+            interactable_in_range.run_if(in_state(Screen::Gameplay).and(in_state(Menu::None))),
         )
+        .add_systems(Update, toggle_interact_ui_visibility)
         .add_observer(replace_standard_material);
 }
 
@@ -157,6 +157,7 @@ struct InteractUiMarker;
 
 fn setup_interact_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
+        Name::new("InteractUiMarker"),
         InteractUiMarker,
         Node {
             width: percent(100),
