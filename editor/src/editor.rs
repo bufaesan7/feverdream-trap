@@ -191,6 +191,35 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                     ui.collapsing(egui::RichText::new("ChunkElements").size(18.), |ui| {
                         ui_for_assets::<ChunkElement>(self.world, ui);
                         ui.separator();
+
+                        // Delete buttons for each element
+                        ui.collapsing("Deletion menu", |ui| {
+                            for (index, element) in self
+                                .world
+                                .resource::<ChunkAssetStash>()
+                                .elements
+                                .clone()
+                                .into_iter()
+                                .enumerate()
+                            {
+                                let name = &self
+                                    .world
+                                    .resource::<Assets<ChunkElement>>()
+                                    .get(&element)
+                                    .unwrap()
+                                    .name;
+                                if ui.button(format!("Delete element {name}")).clicked() {
+                                    self.world
+                                        .resource_mut::<ChunkAssetStash>()
+                                        .elements
+                                        .remove(index);
+                                    self.world
+                                        .resource_mut::<Assets<ChunkElement>>()
+                                        .remove(&element);
+                                }
+                            }
+                        });
+
                         let path = &mut self
                             .world
                             .resource_mut::<EguiActionBuffer>()
