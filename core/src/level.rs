@@ -175,3 +175,7 @@ pub fn spawn_level_from_layout(
         });
     }
 }
+
+#[derive(Debug, Default, Resource, Reflect)]
+#[reflect(Resource)]
+pub struct Fuse(pub bool);

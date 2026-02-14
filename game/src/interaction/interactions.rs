@@ -11,6 +11,7 @@ pub(super) fn register_required_components(world: &mut World) {
     world.register_required_components::<DespawnInteraction, Interactable>();
     world.register_required_components::<SwapChunksInteraction, Interactable>();
     world.register_required_components::<PlaySoundEffectInteraction, Interactable>();
+    world.register_required_components::<TakeFuseInteraction, Interactable>();
 }
 
 pub(super) fn register_component_hooks(world: &mut World) {
@@ -72,6 +73,17 @@ pub(super) fn register_component_hooks(world: &mut World) {
                         }
                     },
                 )
+                .with_entity(ctx.entity),
+            );
+        });
+
+    world
+        .register_component_hooks::<TakeFuseInteraction>()
+        .on_add(|mut world: DeferredWorld, ctx: HookContext| {
+            world.commands().spawn(
+                Observer::new(|_on_interact: On<Interact>, mut fuse: ResMut<Fuse>| {
+                    fuse.0 = true;
+                })
                 .with_entity(ctx.entity),
             );
         });

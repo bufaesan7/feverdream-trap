@@ -12,7 +12,8 @@ use crate::utils::audio::MusicMarker;
 use bevy::ecs::system::RunSystemOnce;
 
 pub(crate) fn plugin(app: &mut App) {
-    app.load_resource::<GameSceneStorage>()
+    app.init_resource::<Fuse>()
+        .load_resource::<GameSceneStorage>()
         .add_observer(on_level_spawned)
         .add_observer(on_level_component_spawned)
         .add_systems(OnEnter(Screen::Gameplay), spawn_scene)
