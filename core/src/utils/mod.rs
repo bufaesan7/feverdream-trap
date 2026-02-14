@@ -1,6 +1,8 @@
 pub mod audio;
 pub mod cursor;
 
+use bevy::ecs::{lifecycle::HookContext, world::DeferredWorld};
+
 use crate::prelude::*;
 
 #[derive(Debug, Component, Reflect)]
@@ -24,7 +26,7 @@ pub fn despawn_after_internal(
     }
 }
 
-#[derive(Debug, Reflect)]
+#[derive(Debug, Reflect, Clone, Copy)]
 pub enum FadeMode {
     In,
     Out,
@@ -32,6 +34,7 @@ pub enum FadeMode {
 
 #[derive(Debug, Component, Reflect)]
 #[reflect(Component)]
+#[component(on_add)]
 pub struct FadeText {
     mode: FadeMode,
     timer: Timer,
@@ -42,6 +45,25 @@ impl FadeText {
         Self {
             mode,
             timer: Timer::new(duration, TimerMode::Once),
+        }
+    }
+
+    fn on_add(mut world: DeferredWorld, ctx: HookContext) {
+        let Some(fade_text) = world.entity(ctx.entity).get::<Self>() else {
+            return;
+        };
+        let mode = fade_text.mode;
+        let duration = fade_text.timer.duration();
+
+        match mode {
+            FadeMode::In => { /* Nothing to do */ }
+            FadeMode::Out => {
+                /* Insert DespawnAfter component with the same duration */
+                world
+                    .commands()
+                    .entity(ctx.entity)
+                    .insert(DespawnAfter::new(duration));
+            }
         }
     }
 }

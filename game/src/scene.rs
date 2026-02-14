@@ -167,6 +167,5 @@ fn spawn_text(mut commands: Commands) {
         Name::new("Text"),
         Text::new("Oh my god, dont let me go."),
         FadeText::new(FadeMode::Out, Duration::from_secs_f32(4.0)),
-        DespawnAfter::new(Duration::from_secs_f32(4.0)),
     ));
 }
