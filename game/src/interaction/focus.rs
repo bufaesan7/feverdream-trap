@@ -16,10 +16,14 @@ pub(crate) fn plugin(app: &mut App) {
     app.add_plugins(MaterialPlugin::<
         ExtendedMaterial<StandardMaterial, HighlightExtension>,
     >::default())
-        .add_systems(Startup, extended_material_required_components)
+        .add_systems(
+            Startup,
+            (extended_material_required_components, setup_interact_ui),
+        )
         .add_systems(
             Update,
-            interactable_in_range.run_if(in_state(Screen::Gameplay).and(in_state(Menu::None))),
+            (interactable_in_range, toggle_interact_ui_visibility)
+                .run_if(in_state(Screen::Gameplay).and(in_state(Menu::None))),
         )
         .add_observer(replace_standard_material);
 }
@@ -145,4 +149,47 @@ fn replace_standard_material(
     commands
         .entity(trigger.entity)
         .try_insert(MeshMaterial3d(extended_material));
+}
+
+#[derive(Debug, Default, Component, Reflect)]
+#[reflect(Component)]
+struct InteractUiMarker;
+
+fn setup_interact_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.spawn((
+        InteractUiMarker,
+        Node {
+            width: percent(100),
+            height: percent(100),
+            flex_direction: FlexDirection::Column,
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        Visibility::Hidden,
+        children![(
+            ImageNode {
+                image: asset_server.load("images/splash.png"),
+                ..default()
+            },
+            Node {
+                width: percent(10),
+                height: percent(10),
+                ..default()
+            },
+        )],
+    ));
+}
+
+fn toggle_interact_ui_visibility(
+    mut visibilty: Query<&mut Visibility, With<InteractUiMarker>>,
+    focus_target: Query<(), With<FocusTarget>>,
+) {
+    for mut visibility in &mut visibilty {
+        if focus_target.is_empty() {
+            *visibility = Visibility::Hidden;
+        } else {
+            *visibility = Visibility::Inherited;
+        }
+    }
 }
