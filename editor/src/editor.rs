@@ -291,6 +291,7 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                             .resource_mut::<EguiActionBuffer>()
                             .layout_buffer
                             .clone();
+                        let mut delete_index = None;
                         for (iteration, ((x, y), descriptor, components)) in
                             layout.iter_mut().enumerate()
                         {
@@ -307,6 +308,10 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                                             [2.0, ui.spacing().interact_size.y],
                                             egui::TextEdit::singleline(y),
                                         );
+
+                                        if ui.button("Delete chunk").clicked() {
+                                            delete_index = Some(iteration);
+                                        }
                                     });
                                     ui.horizontal(|ui| {
                                         let mut descriptor_assets =
@@ -346,6 +351,9 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                                     });
                                 });
                             });
+                        }
+                        if let Some(index) = delete_index {
+                            layout.remove(index);
                         }
                         if ui.button("Add chunk to layout").clicked() {
                             layout.push(Default::default());
