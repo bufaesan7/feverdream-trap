@@ -1,1 +1,1 @@
-(name:"elevator",transform:(translation:(0.0,-2.5,-2.2),rotation:(0.0,0.7068252,0.0,0.7073882),scale:(2.5,2.0,3.0)),shape:Gltf(mesh_path:"elevator.glb",collider:Some(Cuboid(x_length:0.4,y_length:5.0,z_length:2.0))),color:LinearRgba((red:1.0,green:1.0,blue:1.0,alpha:1.0)),has_collider:false)
+(name:"elevator",transform:(translation:(0.0,0.0,0.0),rotation:(0.0,0.7068252,0.0,0.7073882),scale:(2.5,2.0,2.5)),shape:Gltf(mesh_path:"elevator.glb",collider:None),color:LinearRgba((red:1.0,green:1.0,blue:1.0,alpha:1.0)),has_collider:true)

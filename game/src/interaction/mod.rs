@@ -11,7 +11,7 @@ use crate::{
     prelude::*,
 };
 
-const INTERACTION_DISTANCE: f32 = 3.0;
+const INTERACTION_DISTANCE: f32 = 5.0;
 
 pub(crate) fn plugin(app: &mut App) {
     app.init_resource::<Fuse>()
