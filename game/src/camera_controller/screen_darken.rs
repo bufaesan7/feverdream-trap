@@ -48,6 +48,6 @@ pub fn apply_screen_darken_intensity(
     effects: Res<CameraStatusEffects>,
     mut effect: Single<&mut ScreenDarkenEffect, With<CameraMarker>>,
 ) {
-    effect.intensity = effects.effect_intensities[&CameraEffect::ScreenDarken].intensity;
+    effect.intensity = effects.effects[&CameraEffect::ScreenDarken].intensity;
     effect.time = time.elapsed_secs();
 }

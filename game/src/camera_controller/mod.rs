@@ -4,6 +4,7 @@ use feverdream_trap_core::prelude::cursor::{cursor_grab, cursor_ungrab};
 
 use crate::prelude::*;
 
+mod drugs;
 mod screen_darken;
 mod setup;
 mod status_effects;
@@ -47,7 +48,7 @@ struct CameraSettings {
     },
     screen_darken::ScreenDarkenEffect,
 )]
-#[component(on_add = status_effects::add_camera_effects)]
+#[component(on_add = CameraStatusEffects::add)]
 pub struct CameraMarker;
 
 #[derive(Component, Reflect)]
