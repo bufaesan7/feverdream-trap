@@ -79,6 +79,40 @@ pub struct ReplaceAssetSensorChunkHandle {
     pub asset: Handle<ChunkDescriptor>,
 }
 
+#[derive(Component, Debug, Default, Clone, Serialize, Deserialize, Reflect)]
+#[reflect(Default, Component)]
+#[component(on_add)]
+#[require(LevelComponent)]
+pub struct ChunkLight {
+    pub transform: Transform,
+    pub intensity: f32,
+    pub color: Color,
+    pub range: f32,
+}
+
+impl ChunkLight {
+    fn on_add<'a>(mut world: DeferredWorld<'a>, hook: HookContext) {
+        if world.get_resource::<AssetServer>().is_none() {
+            return;
+        }
+        let this: Self = world.get(hook.entity).cloned().unwrap();
+        dbg!("insert light");
+        world.commands().entity(hook.entity).insert((
+            this.transform,
+            PointLight {
+                intensity: this.intensity,
+                range: this.range,
+                color: this.color,
+                shadows_enabled: true,
+                // Default: 0.8
+                // Lowering this generates some cool artifacts :)
+                shadow_depth_bias: 0.03,
+                ..Default::default()
+            },
+        ));
+    }
+}
+
 #[cfg(feature = "dev_native")]
 pub static CHUNK_WIREFRAMES_ENABLED: std::sync::atomic::AtomicBool =
     std::sync::atomic::AtomicBool::new(false);
@@ -127,20 +161,11 @@ impl ChunkMarkers {
                 ChunkMarker::ReplaceAssetSensor(sensor) => {
                     world.commands().entity(hook.entity).insert(sensor);
                 }
-                ChunkMarker::Light(translation) => {
-                    world.commands().entity(hook.entity).with_child((
-                        Name::new("Light"),
-                        PointLight {
-                            intensity: 1_000_000.,
-                            range: 50.,
-                            shadows_enabled: true,
-                            // Default: 0.8
-                            // Lowering this generates some cool artifacts :)
-                            shadow_depth_bias: 0.03,
-                            ..Default::default()
-                        },
-                        translation,
-                    ));
+                ChunkMarker::Light(light) => {
+                    world
+                        .commands()
+                        .entity(hook.entity)
+                        .with_child((Name::new("Light"), light));
                 }
             }
         }

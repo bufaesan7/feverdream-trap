@@ -71,6 +71,7 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             // Chunks
             .allow_component::<Chunk>()
             .allow_component::<ChunkId>()
+            .allow_component::<ChunkLight>()
             .allow_component::<SwapSensorChunk>()
             .allow_component::<ReplaceAssetSensorChunk>()
             // Relationships
@@ -156,7 +157,8 @@ fn on_level_component_spawned(
 ) {
     let entity = event.event_target();
 
-    // Kinda hacky, but we are ignoring Music Marker here, so we can handle a fadeout OnExit(Screen::Gameplay) somewhere else
+    // Kinda hacky, but we are ignoring Music Marker here, so we can handle a fade out
+    // OnExit(Screen::Gameplay) somewhere else
     if music_marker.contains(entity) {
         return;
     }

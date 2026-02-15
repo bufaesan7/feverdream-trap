@@ -318,7 +318,7 @@ impl RonAsset for ChunkDescriptorAsset {
 #[reflect(Default)]
 pub enum ChunkMarker {
     PlayerSpawn(Transform),
-    Light(Transform),
+    Light(ChunkLight),
     /// Mark this chunk as a sensor chunk, that will cause two other chunks to be swapped when this
     /// one is entered by the player
     SwapSensor(SwapSensorChunk),
