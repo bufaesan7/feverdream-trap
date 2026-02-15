@@ -2,7 +2,7 @@ use bevy::ecs::{lifecycle::HookContext, world::DeferredWorld};
 
 use crate::{
     chunk::SwapChunks,
-    interaction::{Interact, Interactable},
+    interaction::{Fuse, Interact, Interactable},
     prelude::*,
 };
 
@@ -11,6 +11,7 @@ pub(super) fn register_required_components(world: &mut World) {
     world.register_required_components::<DespawnInteraction, Interactable>();
     world.register_required_components::<SwapChunksInteraction, Interactable>();
     world.register_required_components::<PlaySoundEffectInteraction, Interactable>();
+    world.register_required_components::<PickupFuseInteraction, Interactable>();
 }
 
 pub(super) fn register_component_hooks(world: &mut World) {
@@ -72,6 +73,21 @@ pub(super) fn register_component_hooks(world: &mut World) {
                         }
                     },
                 )
+                .with_entity(ctx.entity),
+            );
+        });
+
+    world
+        .register_component_hooks::<PickupFuseInteraction>()
+        .on_add(|mut world: DeferredWorld, ctx: HookContext| {
+            world.commands().spawn(
+                Observer::new(|_on_interact: On<Interact>, fuse: Res<Fuse>| {
+                    if fuse.0 {
+                        info!("YES");
+                    } else {
+                        info!("NO");
+                    }
+                })
                 .with_entity(ctx.entity),
             );
         });

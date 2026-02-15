@@ -14,7 +14,8 @@ use crate::{
 const INTERACTION_DISTANCE: f32 = 3.0;
 
 pub(crate) fn plugin(app: &mut App) {
-    app.add_plugins(focus::plugin)
+    app.init_resource::<Fuse>()
+        .add_plugins(focus::plugin)
         .add_systems(
             Startup,
             (register_required_components, register_component_hooks),
@@ -66,3 +67,7 @@ fn interact(
         }
     }
 }
+
+#[derive(Debug, Default, Resource, Reflect)]
+#[reflect(Resource)]
+pub struct Fuse(pub bool);
