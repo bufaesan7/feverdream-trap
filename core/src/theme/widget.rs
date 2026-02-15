@@ -70,6 +70,7 @@ where
             align_items: AlignItems::Center,
             justify_content: JustifyContent::Center,
             padding: UiRect::horizontal(Val::Px(30.)),
+            border: UiRect::bottom(Val::Px(6.)),
             ..default()
         },
     )
@@ -97,6 +98,7 @@ where
             height: px(30),
             align_items: AlignItems::Center,
             justify_content: JustifyContent::Center,
+            border: UiRect::bottom(Val::Px(3.)),
             ..default()
         },
     )
@@ -125,6 +127,7 @@ where
                     Name::new("Button Inner"),
                     Button,
                     BackgroundColor(BUTTON_BACKGROUND),
+                    BorderColor::all(Color::srgb(0.7, 0.7, 0.7)),
                     InteractionPalette {
                         none: BUTTON_BACKGROUND,
                         hovered: BUTTON_HOVERED_BACKGROUND,
