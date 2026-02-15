@@ -2,16 +2,13 @@
 
 use crate::prelude::*;
 
-/// Marker indicating the menu buttons have already been shuffled as a prank.
 #[derive(Component)]
 struct MainMenu;
-
-#[derive(Component)]
-struct MenuPranked;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Menu::Main), spawn_main_menu);
     app.add_observer(rotate_buttons_on_hover);
+    app.add_observer(rotate_buttons_on_out);
 }
 
 fn spawn_main_menu(mut commands: Commands) {
@@ -61,12 +58,12 @@ fn exit_app(_: On<Pointer<Click>>, mut app_exit: MessageWriter<AppExit>) {
     app_exit.write(AppExit::Success);
 }
 
-/// On any button hover, rotate the main menu buttons once to the right. A prank.
+/// On any button hover, rotate the main menu buttons once to the right.
 fn rotate_buttons_on_hover(
     over: On<Pointer<Over>>,
     mut commands: Commands,
     buttons: Query<(), With<Button>>,
-    menu_root_query: Query<(Entity, &Children), (With<MainMenu>, Without<MenuPranked>)>,
+    menu_root_query: Query<(Entity, &Children), With<MainMenu>>,
 ) {
     if buttons.get(over.event_target()).is_err() {
         return;
@@ -78,8 +75,27 @@ fn rotate_buttons_on_hover(
             continue;
         }
         order.rotate_right(1);
-
         commands.entity(root_entity).replace_children(&order);
-        commands.entity(root_entity).insert(MenuPranked);
+    }
+}
+
+/// On any button out, rotate the main menu buttons once to the left.
+fn rotate_buttons_on_out(
+    out: On<Pointer<Out>>,
+    mut commands: Commands,
+    buttons: Query<(), With<Button>>,
+    menu_root_query: Query<(Entity, &Children), With<MainMenu>>,
+) {
+    if buttons.get(out.event_target()).is_err() {
+        return;
+    }
+
+    for (root_entity, children) in &menu_root_query {
+        let mut order: Vec<Entity> = children.iter().collect();
+        if order.len() < 2 {
+            continue;
+        }
+        order.rotate_left(1);
+        commands.entity(root_entity).replace_children(&order);
     }
 }
