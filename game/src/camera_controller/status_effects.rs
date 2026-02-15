@@ -109,7 +109,7 @@ fn intensify_effects(time: Res<Time>, mut effects: ResMut<CameraStatusEffects>) 
         intensification_speed,
     } in effects.effect_intensities.values_mut()
     {
-        //*intensity += delta * *intensification_speed;
+        *intensity += delta * *intensification_speed;
     }
 }
 
