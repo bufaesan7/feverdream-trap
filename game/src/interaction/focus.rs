@@ -170,7 +170,13 @@ fn setup_interact_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
         Visibility::Hidden,
         children![(
             ImageNode {
-                image: asset_server.load("images/splash.png"),
+                color: Color::Srgba(Srgba {
+                    red: 1.0,
+                    green: 1.0,
+                    blue: 1.0,
+                    alpha: 0.5
+                }),
+                image: asset_server.load("images/interact.png"),
                 ..default()
             },
             Node {
