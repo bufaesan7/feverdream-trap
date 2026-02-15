@@ -33,11 +33,7 @@ pub enum ChunkElementShapeAsset {
     Plane,
     Cube,
     Sphere,
-    Gltf {
-        mesh_path: String,
-        #[serde(default)]
-        collider: Option<ColliderConstructor>,
-    },
+    Gltf { mesh_path: String },
 }
 
 #[derive(Debug, Reflect, Clone)]
@@ -48,7 +44,6 @@ pub enum ChunkElementShape {
     Gltf {
         mesh_path: String,
         mesh: Handle<Gltf>,
-        collider: Option<DefaultWrap>,
     },
 }
 
@@ -122,13 +117,8 @@ impl From<&ChunkElement> for ChunkElementAsset {
                 ChunkElementShape::Plane => ChunkElementShapeAsset::Plane,
                 ChunkElementShape::Cube => ChunkElementShapeAsset::Cube,
                 ChunkElementShape::Sphere => ChunkElementShapeAsset::Sphere,
-                ChunkElementShape::Gltf {
-                    mesh_path,
-                    collider,
-                    ..
-                } => ChunkElementShapeAsset::Gltf {
+                ChunkElementShape::Gltf { mesh_path, .. } => ChunkElementShapeAsset::Gltf {
                     mesh_path: mesh_path.clone(),
-                    collider: collider.clone().map(|w| w.0),
                 },
             },
             color: value.color,
@@ -146,13 +136,9 @@ impl RonAsset for ChunkElementAsset {
             ChunkElementShapeAsset::Plane => ChunkElementShape::Plane,
             ChunkElementShapeAsset::Cube => ChunkElementShape::Cube,
             ChunkElementShapeAsset::Sphere => ChunkElementShape::Sphere,
-            ChunkElementShapeAsset::Gltf {
-                mesh_path,
-                collider,
-            } => ChunkElementShape::Gltf {
+            ChunkElementShapeAsset::Gltf { mesh_path } => ChunkElementShape::Gltf {
                 mesh: context.load(&mesh_path),
                 mesh_path,
-                collider: collider.map(DefaultWrap),
             },
         };
         ChunkElement {

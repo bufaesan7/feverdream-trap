@@ -229,15 +229,9 @@ pub fn on_spawn_chunk(
             ChildOf(chunk_entity),
         ));
 
-        if let ChunkElementShape::Gltf {
-            mesh_path,
-            collider,
-            ..
-        } = &element.shape
-        {
+        if let ChunkElementShape::Gltf { mesh_path, .. } = &element.shape {
             element_entity.insert(LevelComponentGltf {
                 path: mesh_path.clone(),
-                collider: collider.clone().map(|w| w.0),
             });
             continue;
         }

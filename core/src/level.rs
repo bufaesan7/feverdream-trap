@@ -19,7 +19,6 @@ pub struct LevelComponent;
 #[component(on_add)]
 pub struct LevelComponentGltf {
     pub path: String,
-    pub collider: Option<ColliderConstructor>,
 }
 
 #[derive(Component, Reflect, Debug, Clone)]
@@ -100,9 +99,6 @@ impl LevelComponentGltf {
             let mut cmds = world.commands();
             let mut gltf_cmds = cmds.entity(hook.entity);
             gltf_cmds.insert((SceneRoot(scene), DebugInteraction));
-            if let Some(collider) = component.collider {
-                gltf_cmds.insert(collider);
-            }
         }
     }
 }
