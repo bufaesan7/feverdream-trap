@@ -2,19 +2,19 @@ use bevy::ecs::{lifecycle::HookContext, world::DeferredWorld};
 use bevy_ahoy::camera::CharacterControllerCameraOf;
 use feverdream_trap_core::prelude::cursor::{cursor_grab, cursor_ungrab};
 
-use crate::{camera_controller::post_process::PostProcessPlugin, prelude::*};
+use crate::prelude::*;
 
-mod post_process;
 mod setup;
+mod status_effects;
 
-use post_process::PostProcessSettings;
 pub use setup::spawn_camera;
+pub use status_effects::CameraStatusEffects;
 
 pub struct CameraControllerPlugin;
 
 impl Plugin for CameraControllerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(PostProcessPlugin);
+        app.add_plugins(status_effects::plugin);
 
         app.insert_resource(CameraSettings {
             sensivity: Vec2::splat(0.001),
@@ -44,8 +44,8 @@ struct CameraSettings {
         },
         ..Default::default()
     },
-    PostProcessSettings { intensity: 0.02 },
 )]
+#[component(on_add = status_effects::add_camera_effects)]
 pub struct CameraMarker;
 
 #[derive(Component, Reflect)]

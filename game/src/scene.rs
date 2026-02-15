@@ -2,7 +2,9 @@ use bevy::scene::SceneInstanceReady;
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::tasks::IoTaskPool;
 
-use crate::camera_controller::{CameraMarker, CameraTargetCharacterController, spawn_camera};
+use crate::camera_controller::{
+    CameraMarker, CameraStatusEffects, CameraTargetCharacterController, spawn_camera,
+};
 use crate::character_controller::{Player, PlayerInput, spawn_player};
 use crate::interaction::Interactable;
 use crate::prelude::*;
@@ -50,6 +52,13 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
     // This is a closure because neither `DynamicSceneBuilder` nor `DynamicScene` implement `Clone`
     let scene = || {
         DynamicSceneBuilder::from_world(world)
+            //
+            // Allowed resources
+            //
+            .allow_resource::<CameraStatusEffects>()
+            //
+            // Allowed components
+            //
             .allow_component::<Name>()
             .allow_component::<Level>()
             .allow_component::<LevelComponent>()
@@ -85,9 +94,10 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             // Audio
             .allow_component::<MusicMarker>()
             //
-            // Extract entities
+            // Extraction
             //
             .extract_entities(query.iter())
+            .extract_resources()
             .build()
     };
 
@@ -133,6 +143,7 @@ fn spawn_scene(mut commands: Commands, game_scene: Res<GameSceneStorage>) {
     } else {
         // No saved scene, spawn from layout
         commands.queue(|world: &mut World| {
+            world.init_resource::<CameraStatusEffects>();
             let _ = world.run_system_once(spawn_level_from_layout);
             let _ = world.run_system_once(spawn_camera);
             let _ = world.run_system_once(spawn_player);
