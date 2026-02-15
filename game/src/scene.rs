@@ -82,6 +82,8 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             .allow_component::<DespawnInteraction>()
             .allow_component::<SwapChunksInteraction>()
             .allow_component::<PlaySoundEffectInteraction>()
+            .allow_component::<TakeFuseInteraction>()
+            .allow_component::<ElevatorInteraction>()
             // Audio
             .allow_component::<MusicMarker>()
             //
