@@ -94,13 +94,18 @@ pub(super) fn register_component_hooks(world: &mut World) {
         .register_component_hooks::<ElevatorInteraction>()
         .on_add(|mut world: DeferredWorld, ctx: HookContext| {
             world.commands().spawn(
-                Observer::new(|_on_interact: On<Interact>, fuse: Res<Fuse>| {
-                    if fuse.0 {
-                        info!("YES");
-                    } else {
-                        info!("NO");
-                    }
-                })
+                Observer::new(
+                    |_on_interact: On<Interact>,
+                     fuse: Res<Fuse>,
+                     mut next_screen: ResMut<NextState<Screen>>| {
+                        if fuse.0 {
+                            info!("YES");
+                            next_screen.set(Screen::GameOver);
+                        } else {
+                            info!("NO");
+                        }
+                    },
+                )
                 .with_entity(ctx.entity),
             );
         });
