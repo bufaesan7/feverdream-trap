@@ -13,7 +13,7 @@ use crate::{
     prelude::*,
 };
 
-const INTERACTION_DISTANCE: f32 = 10.0;
+const INTERACTION_DISTANCE: f32 = 4.0;
 
 pub(crate) fn plugin(app: &mut App) {
     app.add_plugins(focus::plugin)
