@@ -127,7 +127,7 @@ where
                     Name::new("Button Inner"),
                     Button,
                     BackgroundColor(BUTTON_BACKGROUND),
-                    BorderColor::all(Color::srgb(0.7, 0.7, 0.7)),
+                    BorderColor::all(BUTTON_BORDER),
                     InteractionPalette {
                         none: BUTTON_BACKGROUND,
                         hovered: BUTTON_HOVERED_BACKGROUND,
