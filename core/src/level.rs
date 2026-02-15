@@ -98,7 +98,7 @@ impl LevelComponentGltf {
         if let Some(scene) = scene {
             let mut cmds = world.commands();
             let mut gltf_cmds = cmds.entity(hook.entity);
-            gltf_cmds.insert((SceneRoot(scene), DebugInteraction));
+            gltf_cmds.insert(SceneRoot(scene));
         }
     }
 }
