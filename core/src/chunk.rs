@@ -96,7 +96,6 @@ impl ChunkLight {
             return;
         }
         let this: Self = world.get(hook.entity).cloned().unwrap();
-        dbg!("insert light");
         world.commands().entity(hook.entity).insert((
             this.transform,
             PointLight {

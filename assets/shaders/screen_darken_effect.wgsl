@@ -1,4 +1,3 @@
-// https://github.com/bevyengine/bevy/blob/a74126eacfcbf9b878f1b5bb40e1587f86a1931c/assets/shaders/post_processing.wgsl
 // This shader computes the chromatic aberration effect
 
 // Since post processing is a fullscreen effect, we use the fullscreen vertex shader provided by bevy.
@@ -19,32 +18,30 @@
 // As you can see, the triangle ends up bigger than the screen.
 //
 // You don't need to worry about this too much since bevy will compute the correct UVs for you.
-#import bevy_core_pipeline::fullscreen_vertex_shader::FullscreenVertexOutput
-#import bevy_render::globals::Globals;
+#import bevy_core_pipeline::fullscreen_vertex_shader::FullscreenVertexOutput;
 
 @group(0) @binding(0) var screen_texture: texture_2d<f32>;
 @group(0) @binding(1) var texture_sampler: sampler;
-struct PostProcessSettings {
+
+struct FullScreenEffect {
     intensity: f32,
+    time: f32,
 #ifdef SIXTEEN_BYTE_ALIGNMENT
     // WebGL2 structs must be 16 byte aligned.
-    _webgl2_padding: vec3<f32>
+    _webgl2_padding: vec2<f32>
 #endif
 }
-@group(0) @binding(2) var<uniform> globals: Globals;
-@group(0) @binding(3) var<uniform> settings: PostProcessSettings;
+
+@group(0) @binding(2) var<uniform> settings: FullScreenEffect;
 
 @fragment
 fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
-    // Chromatic aberration strength
-    let offset_strength = settings.intensity * sin(globals.time);
-
-    // Sample each color channel with an arbitrary shift
+    let v = sin(settings.time * settings.intensity) * 0.5 + 0.5;
+    let centered_uv = in.uv / 2. + vec2f(0.5, 0.5);
+    let a = max(settings.intensity * 0.5, 1.);
+    let dark_scale = v * length(centered_uv * 1. / a);
     return vec4<f32>(
-        textureSample(screen_texture, texture_sampler, in.uv + vec2<f32>(offset_strength, -offset_strength)).r,
-        textureSample(screen_texture, texture_sampler, in.uv + vec2<f32>(-offset_strength, 0.0)).g,
-        textureSample(screen_texture, texture_sampler, in.uv + vec2<f32>(0.0, offset_strength)).b,
+        (textureSample(screen_texture, texture_sampler, in.uv) * dark_scale).rgb,
         1.0
     );
 }
-
