@@ -6,7 +6,9 @@ use bevy::ecs::{lifecycle::HookContext, world::DeferredWorld};
 use crate::{
     interaction::{
         focus::FocusTarget,
-        interactions::{register_component_hooks, register_required_components},
+        interactions::{
+            fix_gltf_component_entity, register_component_hooks, register_required_components,
+        },
     },
     prelude::*,
 };
@@ -22,7 +24,11 @@ pub(crate) fn plugin(app: &mut App) {
         .add_systems(
             Update,
             interact.run_if(in_state(Screen::Gameplay).and(in_state(Menu::None))),
-        );
+        )
+        .add_observer(fix_gltf_component_entity::<DebugInteraction>)
+        .add_observer(fix_gltf_component_entity::<DespawnInteraction>)
+        .add_observer(fix_gltf_component_entity::<SwapChunksInteraction>)
+        .add_observer(fix_gltf_component_entity::<PlaySoundEffectInteraction>);
 }
 
 /// Indicates whether an entity can be interacted with

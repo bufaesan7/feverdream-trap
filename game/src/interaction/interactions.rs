@@ -76,3 +76,21 @@ pub(super) fn register_component_hooks(world: &mut World) {
             );
         });
 }
+
+pub fn fix_gltf_component_entity<T: Component + Clone>(
+    on_add: On<Add, ChildOf>,
+    mut commands: Commands,
+    scene_root: Query<(), With<SceneRoot>>,
+    component: Query<(&T, &ChildOf)>,
+) {
+    /* Only do something if it has component T */
+    if let Ok((component, child_of)) = component.get(on_add.entity) {
+        /* Only do something if parent has component SceneRoot */
+        if scene_root.contains(child_of.parent()) {
+            /* Remove component from here */
+            commands.entity(on_add.entity).remove_with_requires::<T>();
+            /* Add component here */
+            commands.entity(child_of.parent()).insert(component.clone());
+        }
+    }
+}
