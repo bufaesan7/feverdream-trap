@@ -69,7 +69,6 @@ where
             height: px(80),
             align_items: AlignItems::Center,
             justify_content: JustifyContent::Center,
-            border_radius: BorderRadius::MAX,
             padding: UiRect::horizontal(Val::Px(30.)),
             ..default()
         },
