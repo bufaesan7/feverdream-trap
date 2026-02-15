@@ -1,1 +1,1 @@
-(name:"fuse",transform:(translation:(0.0,-0.3,0.0),rotation:(0.12401993,-0.16818193,0.12401993,0.97002727),scale:(0.3,0.3,0.3)),shape:Gltf(mesh_path:"fuse.glb",collider:None),color:LinearRgba((red:1.0,green:1.0,blue:1.0,alpha:1.0)),has_collider:true)
+(name:"fuse",transform:(translation:(0.0,-0.3,0.0),rotation:(0.12401993,-0.16818193,0.12401993,0.97002727),scale:(0.2,0.2,0.2)),shape:Gltf(mesh_path:"cylinder fuse.glb",collider:None),color:LinearRgba((red:1.0,green:1.0,blue:1.0,alpha:1.0)),has_collider:true)
