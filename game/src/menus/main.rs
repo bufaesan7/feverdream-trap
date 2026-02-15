@@ -4,6 +4,9 @@ use crate::prelude::*;
 
 /// Marker indicating the menu buttons have already been shuffled as a prank.
 #[derive(Component)]
+struct MainMenu;
+
+#[derive(Component)]
 struct MenuPranked;
 
 pub(super) fn plugin(app: &mut App) {
@@ -16,6 +19,7 @@ fn spawn_main_menu(mut commands: Commands) {
         widget::ui_root("Main Menu"),
         GlobalZIndex(2),
         DespawnOnExit(Menu::Main),
+        MainMenu,
         #[cfg(not(target_family = "wasm"))]
         children![
             widget::button("Play", enter_loading_or_gameplay_screen),
@@ -62,7 +66,7 @@ fn rotate_buttons_on_hover(
     over: On<Pointer<Over>>,
     mut commands: Commands,
     buttons: Query<(), With<Button>>,
-    menu_root_query: Query<(Entity, &Children), (With<DespawnOnExit<Menu>>, Without<MenuPranked>)>,
+    menu_root_query: Query<(Entity, &Children), (With<MainMenu>, Without<MenuPranked>)>,
 ) {
     if buttons.get(over.event_target()).is_err() {
         return;
