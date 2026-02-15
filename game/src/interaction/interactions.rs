@@ -49,10 +49,19 @@ pub(super) fn register_component_hooks(world: &mut World) {
                     |on_interact: On<Interact>,
                      mut commands: Commands,
                      chunk_swap_interaction: Query<&SwapChunksInteraction>| {
-                        if let Ok(SwapChunksInteraction(chunk1, chunk2)) =
-                            chunk_swap_interaction.get(on_interact.entity)
+                        if let Ok(SwapChunksInteraction {
+                            chunk_a,
+                            chunk_b,
+                            persistent,
+                        }) = chunk_swap_interaction.get(on_interact.entity)
                         {
-                            commands.trigger(SwapChunks(*chunk1, *chunk2));
+                            commands.trigger(SwapChunks(ChunkId(*chunk_a), ChunkId(*chunk_b)));
+
+                            if !persistent {
+                                commands
+                                    .entity(on_interact.entity)
+                                    .remove::<SwapChunksInteraction>();
+                            }
                         }
                     },
                 )
