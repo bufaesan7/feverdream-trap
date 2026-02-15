@@ -5,14 +5,21 @@ use bevy::{
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
 
-use crate::{camera_controller::CameraMarker, prelude::*};
+use crate::{
+    camera_controller::{CameraMarker, screen_darken::apply_screen_darken_intensity},
+    prelude::*,
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(
         Update,
         (
             intensify_effects,
-            (apply_chromatic_aberration_intensity).after(intensify_effects),
+            (
+                apply_chromatic_aberration_intensity,
+                apply_screen_darken_intensity,
+            )
+                .after(intensify_effects),
         )
             .in_set(PausableSystems),
     );
@@ -21,6 +28,7 @@ pub(super) fn plugin(app: &mut App) {
 #[derive(Reflect, Debug, PartialEq, Eq, Hash)]
 pub enum CameraEffect {
     ChromaticAbberation,
+    ScreenDarken,
 }
 
 #[derive(Reflect, Debug)]
@@ -50,10 +58,10 @@ pub struct CameraStatusEffects {
 impl Default for CameraStatusEffects {
     fn default() -> Self {
         Self {
-            effect_intensities: HashMap::from_iter([(
-                CameraEffect::ChromaticAbberation,
-                Default::default(),
-            )]),
+            effect_intensities: HashMap::from_iter([
+                (CameraEffect::ChromaticAbberation, Default::default()),
+                (CameraEffect::ScreenDarken, Default::default()),
+            ]),
         }
     }
 }

@@ -4,6 +4,7 @@ use feverdream_trap_core::prelude::cursor::{cursor_grab, cursor_ungrab};
 
 use crate::prelude::*;
 
+mod screen_darken;
 mod setup;
 mod status_effects;
 
@@ -14,7 +15,7 @@ pub struct CameraControllerPlugin;
 
 impl Plugin for CameraControllerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(status_effects::plugin);
+        app.add_plugins((status_effects::plugin, screen_darken::plugin));
 
         app.insert_resource(CameraSettings {
             sensivity: Vec2::splat(0.001),
@@ -44,6 +45,7 @@ struct CameraSettings {
         },
         ..Default::default()
     },
+    screen_darken::ScreenDarkenEffect,
 )]
 #[component(on_add = status_effects::add_camera_effects)]
 pub struct CameraMarker;
