@@ -28,7 +28,9 @@ pub(crate) fn plugin(app: &mut App) {
         .add_observer(fix_gltf_component_entity::<DebugInteraction>)
         .add_observer(fix_gltf_component_entity::<DespawnInteraction>)
         .add_observer(fix_gltf_component_entity::<SwapChunksInteraction>)
-        .add_observer(fix_gltf_component_entity::<PlaySoundEffectInteraction>);
+        .add_observer(fix_gltf_component_entity::<PlaySoundEffectInteraction>)
+        .add_observer(fix_gltf_component_entity::<TakeFuseInteraction>)
+        .add_observer(fix_gltf_component_entity::<ElevatorInteraction>);
 }
 
 /// Indicates whether an entity can be interacted with

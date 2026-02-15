@@ -16,10 +16,10 @@ pub struct SwapChunksInteraction(pub ChunkId, pub ChunkId);
 #[reflect(Component)]
 pub struct PlaySoundEffectInteraction(pub String);
 
-#[derive(Debug, Default, Component, Reflect)]
+#[derive(Debug, Default, Clone, Component, Reflect)]
 #[reflect(Component)]
 pub struct TakeFuseInteraction;
 
-#[derive(Debug, Default, Component, Reflect)]
+#[derive(Debug, Default, Clone, Component, Reflect)]
 #[reflect(Component)]
 pub struct ElevatorInteraction;
