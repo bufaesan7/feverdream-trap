@@ -16,6 +16,7 @@ mod screens;
 mod utils;
 
 use avian3d::PhysicsPlugins;
+#[cfg(feature = "dev_native")]
 use bevy_skein::SkeinPlugin;
 
 use crate::{
@@ -47,6 +48,7 @@ impl Plugin for AppPlugin {
 
         // Ecosystem plugins
         app.add_plugins(PhysicsPlugins::default());
+        #[cfg(feature = "dev_native")]
         app.add_plugins(SkeinPlugin::default());
 
         feverdream_trap_core::utility_plugin(app, Some(Menu::None));
