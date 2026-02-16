@@ -1,0 +1,1 @@
+(name:"drug_clear_aberration",transform:(translation:(0.0,-1.0,0.0),rotation:(0.23971277,-0.06120872,0.23971277,0.9387913),scale:(0.2,0.2,0.2)),shape:Gltf(mesh_path:"capsule.glb"),color:LinearRgba((red:1.0,green:1.0,blue:1.0,alpha:1.0)),has_collider:true)

@@ -44,6 +44,7 @@ fn assets() -> impl Bundle {
         ["Button SFX", "CC0 by Jaszunio15"],
         ["Heavenly Loop", "CC0 by isaiah658"],
         ["Pills, Fuses and Elevator", "CC0 by Ghostumo"],
+        ["Lo Fi First Person Hand", "CC0 by Ragnar Random"],
         [
             "Bevy logo",
             "All rights reserved by the Bevy Foundation, permission granted for splash screen use when unmodified",

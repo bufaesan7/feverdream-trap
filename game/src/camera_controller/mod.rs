@@ -4,6 +4,8 @@ use feverdream_trap_core::prelude::cursor::{cursor_grab, cursor_ungrab};
 
 use crate::prelude::*;
 
+mod drugs;
+#[cfg(not(target_arch = "wasm32"))]
 mod screen_darken;
 mod setup;
 mod status_effects;
@@ -15,7 +17,11 @@ pub struct CameraControllerPlugin;
 
 impl Plugin for CameraControllerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((status_effects::plugin, screen_darken::plugin));
+        app.add_plugins((
+            status_effects::plugin,
+            #[cfg(not(target_arch = "wasm32"))]
+            screen_darken::plugin,
+        ));
 
         app.insert_resource(CameraSettings {
             sensivity: Vec2::splat(0.001),
@@ -45,9 +51,12 @@ struct CameraSettings {
         },
         ..Default::default()
     },
-    screen_darken::ScreenDarkenEffect,
 )]
-#[component(on_add = status_effects::add_camera_effects)]
+#[cfg_attr(
+    not(target_arch = "wasm32"),
+    require(screen_darken::ScreenDarkenEffect)
+)]
+#[component(on_add = CameraStatusEffects::add)]
 pub struct CameraMarker;
 
 #[derive(Component, Reflect)]

@@ -199,9 +199,9 @@ jobs:
           # Check if building for this platform is enabled.
           echo 'is_platform_enabled=${{
             (matrix.platform == 'web' && (inputs.build_for_web || (github.event_name == 'push' && (env.continuous_deployment_to_itch == 'true' || env.continuous_deployment_to_github_pages == 'true')))) ||
-            (matrix.platform == 'linux' && inputs.build_for_linux) ||
-            (matrix.platform == 'windows' && inputs.build_for_windows) ||
-            (matrix.platform == 'macos' && inputs.build_for_macos)
+            (matrix.platform == 'linux' && (inputs.build_for_linux || (github.event_name == 'push' && (env.continuous_deployment_to_itch == 'true' || env.continuous_deployment_to_github_pages == 'true')))) ||
+            (matrix.platform == 'windows' && (inputs.build_for_windows || (github.event_name == 'push' && (env.continuous_deployment_to_itch == 'true' || env.continuous_deployment_to_github_pages == 'true')))) ||
+            (matrix.platform == 'macos' && (inputs.build_for_macos || (github.event_name == 'push' && (env.continuous_deployment_to_itch == 'true' || env.continuous_deployment_to_github_pages == 'true'))))
           }}' >> "${GITHUB_ENV}"
 
       - name: Checkout repository
@@ -244,14 +244,14 @@ jobs:
         run: |
           cargo binstall --locked --no-confirm --force wasm-bindgen-cli
           cargo binstall --locked --no-confirm --force wasm-opt
-          bevy build -p feverdream_trap_game --locked --release --features='${{ matrix.features }}' --yes web --bundle
+          bevy build -p feverdream_trap_game --locked --release --no-default-features --features='${{ matrix.features }}' --yes web --bundle
           mv 'target/bevy_web/web-release/${{ env.cargo_build_binary_name }}' '${{ env.app }}'
 
       - name: Build and add binaries to app (non-Web)
         if: ${{ env.is_platform_enabled == 'true' && matrix.platform != 'web' }}
         run: |
           for target in ${{ matrix.targets }}; do
-            bevy build -p feverdream_trap_game --locked --release --target="${target}" --features='${{ matrix.features }}'
+            bevy build -p feverdream_trap_game --locked --release --target="${target}" --no-default-features --features='${{ matrix.features }}'
             mv target/"${target}"/release/'${{ env.cargo_build_binary_name }}${{ matrix.binary_ext }}' tmp/binary/"${target}"'${{ matrix.binary_ext }}'
           done
           if [ '${{ matrix.platform }}' = 'macos' ]; then

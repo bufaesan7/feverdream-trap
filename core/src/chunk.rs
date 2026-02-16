@@ -38,6 +38,7 @@ pub struct SpawnChunk {
 pub struct DespawnChunk(pub ChunkId);
 
 #[derive(Component, Debug, Default, Clone, Serialize, Deserialize, Reflect)]
+#[require(LevelComponent)]
 #[reflect(Component, Default)]
 pub struct SwapSensorChunk {
     /// Id of the chunk to be swapped with `chunk_b`
@@ -50,6 +51,7 @@ pub struct SwapSensorChunk {
 
 #[derive(Component, Debug, Default, Clone, Serialize, Deserialize, Reflect)]
 #[component(on_insert)]
+#[require(LevelComponent)]
 #[reflect(Component, Default)]
 pub struct ReplaceAssetSensorChunk {
     /// Id of the chunk whose descriptor will be replaced with `descriptor`
@@ -77,6 +79,18 @@ impl ReplaceAssetSensorChunk {
 #[derive(Component)]
 pub struct ReplaceAssetSensorChunkHandle {
     pub asset: Handle<ChunkDescriptor>,
+}
+
+#[derive(Component, Debug, Default, Clone, Serialize, Deserialize, Reflect)]
+#[reflect(Component, Default)]
+#[require(LevelComponent)]
+pub struct MoveChunkSensorChunk {
+    /// Id of the chunk to move
+    pub chunk: ChunkId,
+    /// Target x position (grid coordinates)
+    pub x: i32,
+    /// Target z position (grid coordinates)
+    pub z: i32,
 }
 
 #[derive(Component, Debug, Default, Clone, Serialize, Deserialize, Reflect)]
@@ -118,10 +132,12 @@ pub static CHUNK_WIREFRAMES_ENABLED: std::sync::atomic::AtomicBool =
 
 #[derive(Component, Debug, Clone, Reflect)]
 #[reflect(Component)]
+#[require(LevelComponent)]
 #[component(on_add)]
 pub struct ChunkMarkers(pub Vec<ChunkMarker>);
 
 #[derive(Component, Debug, Clone, Reflect)]
+#[require(LevelComponent)]
 #[reflect(Component)]
 pub struct SpawnMarker(pub Transform);
 
@@ -158,6 +174,9 @@ impl ChunkMarkers {
                     world.commands().entity(hook.entity).insert(sensor);
                 }
                 ChunkMarker::ReplaceAssetSensor(sensor) => {
+                    world.commands().entity(hook.entity).insert(sensor);
+                }
+                ChunkMarker::MoveChunkSensor(sensor) => {
                     world.commands().entity(hook.entity).insert(sensor);
                 }
                 ChunkMarker::Light(light) => {
@@ -229,15 +248,9 @@ pub fn on_spawn_chunk(
             ChildOf(chunk_entity),
         ));
 
-        if let ChunkElementShape::Gltf {
-            mesh_path,
-            collider,
-            ..
-        } = &element.shape
-        {
+        if let ChunkElementShape::Gltf { mesh_path, .. } = &element.shape {
             element_entity.insert(LevelComponentGltf {
                 path: mesh_path.clone(),
-                collider: collider.clone().map(|w| w.0),
             });
             continue;
         }
