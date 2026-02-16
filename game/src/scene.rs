@@ -80,9 +80,12 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
             // Chunks
             .allow_component::<Chunk>()
             .allow_component::<ChunkId>()
+            // Chunk Components
+            .allow_component::<SpawnMarker>()
             .allow_component::<ChunkLight>()
             .allow_component::<SwapSensorChunk>()
             .allow_component::<ReplaceAssetSensorChunk>()
+            .allow_component::<MoveChunkSensorChunk>()
             // Relationships
             .allow_component::<Children>()
             .allow_component::<ChildOf>()
