@@ -350,6 +350,10 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                             .layout_buffer
                             .clone();
                         let mut delete_index = None;
+                        let mut clone_entry: Option<(
+                            u32,
+                            ((String, String), Handle<ChunkDescriptor>, Vec<ChunkMarker>),
+                        )> = None;
                         for (chunk_id, ((x, y), descriptor, components)) in layout.iter_mut() {
                             ui.horizontal(|ui| {
                                 ui.vertical(|ui| {
@@ -373,6 +377,16 @@ impl egui_dock::TabViewer for TabViewer<'_> {
 
                                         if ui.button("Delete chunk").clicked() {
                                             delete_index = Some(*chunk_id);
+                                        }
+                                        if ui.button("Clone chunk").clicked() {
+                                            clone_entry = Some((
+                                                *chunk_id,
+                                                (
+                                                    (x.clone(), y.clone()),
+                                                    descriptor.clone(),
+                                                    components.clone(),
+                                                ),
+                                            ));
                                         }
                                     });
                                     ui.horizontal(|ui| {
@@ -418,6 +432,13 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                         }
                         if let Some(index) = delete_index {
                             layout.remove(&index);
+                        }
+                        if let Some((after_id, data)) = clone_entry {
+                            let mut new_id = after_id + 1;
+                            while layout.contains_key(&new_id) {
+                                new_id += 1;
+                            }
+                            layout.insert(new_id, data);
                         }
                         if ui.button("Add chunk to layout").clicked() {
                             let mut new_id = 0;
