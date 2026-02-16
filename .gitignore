@@ -4,6 +4,13 @@
 # IDE Configs
 .idea
 
+# Blender auto saves
+*.blend1
+
+# Krita auto saves
+*.png~
+*.kra~
+
 # Game save
 assets/game_state.scn.ron
 

@@ -36,10 +36,12 @@ struct FullScreenEffect {
 
 @fragment
 fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
-    let v = sin(settings.time * settings.intensity) * 0.5 + 0.5;
-    let centered_uv = in.uv / 2. + vec2f(0.5, 0.5);
-    let a = max(settings.intensity * 0.5, 1.);
-    let dark_scale = v * length(centered_uv * 1. / a);
+    let t = sin(settings.time * settings.intensity * 0.05) * 0.5 + 0.5;
+    let uv = (in.uv - vec2f(0.5, 0.5)) * 2.;
+    let lens_mask = sqrt(2.) - length(uv);
+    let intensity = max(settings.intensity * 0.5, 0.5);
+
+    let dark_scale = t * lens_mask * intensity;
     return vec4<f32>(
         (textureSample(screen_texture, texture_sampler, in.uv) * dark_scale).rgb,
         1.0
