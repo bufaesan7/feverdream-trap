@@ -4,6 +4,7 @@ use crate::{
     chunk::SwapChunks,
     interaction::{Fuse, Interact, Interactable},
     prelude::*,
+    scene::GameSceneStorage,
 };
 
 pub(super) fn register_required_components(world: &mut World) {
@@ -105,11 +106,26 @@ pub(super) fn register_component_hooks(world: &mut World) {
             world.commands().spawn(
                 Observer::new(
                     |_on_interact: On<Interact>,
-                     fuse: Res<Fuse>,
-                     mut next_screen: ResMut<NextState<Screen>>| {
+                     mut fuse: ResMut<Fuse>,
+                     mut current_level: ResMut<CurrentLevel>,
+                     mut next_screen: ResMut<NextState<Screen>>,
+                     mut scene_storage: ResMut<GameSceneStorage>| {
                         if fuse.0 {
-                            info!("YES");
-                            next_screen.set(Screen::GameOver);
+                            match current_level.0.next() {
+                                Some(next) => {
+                                    info!("Level complete! Loading next level: {next:?}");
+                                    current_level.0 = next;
+                                    fuse.0 = false;
+                                    // Clear saved scene so the next level spawns fresh
+                                    scene_storage.handle = None;
+                                    scene_storage.skip_save = true;
+                                    next_screen.set(Screen::Loading);
+                                }
+                                None => {
+                                    info!("All levels complete!");
+                                    next_screen.set(Screen::GameOver);
+                                }
+                            }
                         } else {
                             info!("NO");
                         }

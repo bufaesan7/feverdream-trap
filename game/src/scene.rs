@@ -12,7 +12,8 @@ use crate::utils::audio::MusicMarker;
 use bevy::ecs::system::RunSystemOnce;
 
 pub(crate) fn plugin(app: &mut App) {
-    app.load_resource::<GameSceneStorage>()
+    app.init_resource::<CurrentLevel>()
+        .load_resource::<GameSceneStorage>()
         .add_observer(on_level_spawned)
         .add_observer(on_level_component_spawned)
         .add_systems(OnEnter(Screen::Gameplay), spawn_scene)
@@ -32,6 +33,8 @@ pub fn scene_file_path() -> std::path::PathBuf {
 pub struct GameSceneStorage {
     #[dependency]
     pub handle: Option<Handle<DynamicScene>>,
+    /// When true, skip saving scene on exit (e.g., when transitioning between levels).
+    pub skip_save: bool,
 }
 
 impl FromWorld for GameSceneStorage {
@@ -40,15 +43,28 @@ impl FromWorld for GameSceneStorage {
             let asset_server = world.resource::<AssetServer>();
             Self {
                 handle: Some(asset_server.load(SCENE_FILE)),
+                skip_save: false,
             }
         } else {
-            Self { handle: None }
+            Self {
+                handle: None,
+                skip_save: false,
+            }
         }
     }
 }
 
 // see https://github.com/bevyengine/bevy/blob/e31f01174714b68738692c259837e59f37797096/examples/scene/scene.rs#L158
-fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<LevelComponent>>) {
+fn save_scene(
+    world: &World,
+    mut commands: Commands,
+    query: Query<Entity, With<LevelComponent>>,
+    game_scene: Res<GameSceneStorage>,
+) {
+    // Skip saving when transitioning between levels
+    if game_scene.skip_save {
+        return;
+    }
     // This is a closure because neither `DynamicSceneBuilder` nor `DynamicScene` implement `Clone`
     let scene = || {
         DynamicSceneBuilder::from_world(world)
@@ -104,6 +120,7 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
     let handle = world.resource::<AssetServer>().add(scene());
     commands.insert_resource(GameSceneStorage {
         handle: Some(handle),
+        skip_save: false,
     });
 
     // This can't work in WASM as there is no filesystem access.
@@ -126,7 +143,10 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
     }
 }
 
-fn spawn_scene(mut commands: Commands, game_scene: Res<GameSceneStorage>) {
+fn spawn_scene(mut commands: Commands, mut game_scene: ResMut<GameSceneStorage>) {
+    // Reset skip_save flag for this gameplay session
+    game_scene.skip_save = false;
+
     commands.init_resource::<CameraStatusEffects>();
 
     if let Some(handle) = &game_scene.handle {

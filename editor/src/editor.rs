@@ -13,7 +13,11 @@ use egui_dock::{DockArea, DockState, NodeIndex, Style};
 #[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
 
-use crate::{action_buffer::EguiActionBuffer, prelude::*, preview::EditorPreview};
+use crate::{
+    action_buffer::{EguiActionBuffer, SelectedLevel, reload_layout_buffer},
+    prelude::*,
+    preview::EditorPreview,
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(bevy_egui::EguiPlugin::default());
@@ -433,6 +437,38 @@ impl egui_dock::TabViewer for TabViewer<'_> {
             }
             EguiWindow::Options => {
                 ui.vertical(|ui| {
+                    // Level selector
+                    {
+                        let current = self.world.resource::<SelectedLevel>().0;
+                        let current_label = format!("{current:?}");
+                        let mut new_level = None;
+                        egui::ComboBox::from_label("Level")
+                            .selected_text(&current_label)
+                            .show_ui(ui, |ui| {
+                                for level in GameLevel::ALL {
+                                    let label = format!("{level:?}");
+                                    if ui.selectable_label(*level == current, &label).clicked() {
+                                        new_level = Some(*level);
+                                    }
+                                }
+                            });
+                        if let Some(level) = new_level {
+                            self.world.resource_mut::<SelectedLevel>().0 = level;
+                            // Get layout chunks for the new level
+                            let chunks = {
+                                let stash = self.world.resource::<ChunkAssetStash>();
+                                let layout_handle = stash.layout(&level).clone();
+                                let layouts = self.world.resource::<Assets<ChunkLayout>>();
+                                layouts.get(&layout_handle).unwrap().chunks.clone()
+                            };
+                            reload_layout_buffer(
+                                &chunks,
+                                self.world.resource_mut::<EguiActionBuffer>().as_mut(),
+                            );
+                            *self.world.resource_mut::<EditorPreview>() = EditorPreview::Layout;
+                        }
+                    }
+                    ui.separator();
                     #[cfg(feature = "dev_native")]
                     if ui.button("Toggle Wireframes").clicked() {
                         use std::sync::atomic::Ordering;
@@ -518,21 +554,24 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                             fs::write(chunk_path, serialized_asset).unwrap();
                         }
                         // ------------------------------
-                        // Chunk layout
+                        // Chunk layouts (all levels)
                         // ------------------------------
-                        let layout = self
-                            .world
-                            .resource::<Assets<ChunkLayout>>()
-                            .iter()
-                            .next()
-                            .unwrap()
-                            .1;
-                        let layout_asset = ChunkLayoutAsset::from((layout, self.world.resource()));
-                        let layout_path = PathBuf::from("assets").join(ChunkLayoutAsset::path());
-                        let serialized_asset = to_string(&layout_asset).unwrap();
+                        let stash = self.world.resource::<ChunkAssetStash>();
+                        let layout_assets = self.world.resource::<Assets<ChunkLayout>>();
+                        let descriptor_assets = self.world.resource::<Assets<ChunkDescriptor>>();
+                        for level in GameLevel::ALL {
+                            let layout_handle = stash.layout(level);
+                            let Some(layout) = layout_assets.get(layout_handle) else {
+                                warn!("Layout for {level:?} not loaded, skipping save");
+                                continue;
+                            };
+                            let layout_asset = ChunkLayoutAsset::from((layout, descriptor_assets));
+                            let layout_path = PathBuf::from("assets").join(level.path());
+                            let serialized_asset = to_string(&layout_asset).unwrap();
 
-                        info!("saving layout asset {}", layout_path.display());
-                        std::fs::write(layout_path, serialized_asset).unwrap();
+                            info!("saving layout asset {}", layout_path.display());
+                            std::fs::write(layout_path, serialized_asset).unwrap();
+                        }
 
                         info!("Saved assets");
                     }
