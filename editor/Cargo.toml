@@ -15,7 +15,6 @@ dev = [
   "bevy/bevy_ui_debug",
   # Improve error messages coming from Bevy
   "bevy/track_location",
-  "dep:bevy_skein",
 ]
 dev_native = [
   "feverdream_trap_core/dev_native",
@@ -35,7 +34,7 @@ bevy_egui.workspace = true
 bevy-inspector-egui.workspace = true
 egui.workspace = true
 egui_dock.workspace = true
-bevy_skein = { workspace = true, optional = true }
+bevy_skein.workspace = true
 
 
 [package.metadata.bevy_cli.release]
