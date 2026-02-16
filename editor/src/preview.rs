@@ -4,9 +4,10 @@ use bevy::input::{
 };
 use feverdream_trap_core::prelude::cursor::{cursor_grab, cursor_ungrab};
 
-use crate::prelude::*;
+use crate::{action_buffer::SelectedLevel, prelude::*};
 
 pub(super) fn plugin(app: &mut App) {
+    app.init_resource::<CurrentLevel>();
     app.init_resource::<EditorPreview>();
     app.add_systems(
         Update,
@@ -40,7 +41,11 @@ fn update_descriptor_preview(
     preview: Res<EditorPreview>,
     descriptor_assets: Res<Assets<ChunkDescriptor>>,
     element_assets: Res<Assets<ChunkElement>>,
+    selected_level: Res<SelectedLevel>,
+    mut current_level: ResMut<CurrentLevel>,
 ) {
+    // Sync CurrentLevel with the editor's SelectedLevel
+    current_level.0 = selected_level.0;
     // Despawn previous preview
     if let Ok(level_entity) = level.single() {
         // Despawn the previous level entity

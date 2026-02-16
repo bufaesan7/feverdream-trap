@@ -1,8 +1,12 @@
 use crate::chunk::{ChunkId, SpawnChunk};
-use crate::chunk_assets::ChunkLayout;
+use crate::chunk_assets::{ChunkLayout, GameLevel};
 use crate::prelude::*;
 use bevy::ecs::lifecycle::HookContext;
 use bevy::ecs::world::DeferredWorld;
+
+#[derive(Resource, Default, Debug, Reflect)]
+#[reflect(Resource)]
+pub struct CurrentLevel(pub GameLevel);
 
 #[derive(Debug, Default, Component, Reflect)]
 #[reflect(Component)]
@@ -149,8 +153,10 @@ pub fn spawn_level_from_layout(
     mut commands: Commands,
     chunk_stash: Res<ChunkAssetStash>,
     chunk_layouts: Res<Assets<ChunkLayout>>,
+    current_level: Res<CurrentLevel>,
 ) {
-    let layout = chunk_layouts.get(&chunk_stash.layout).unwrap();
+    let layout_handle = chunk_stash.layout(&current_level.0);
+    let layout = chunk_layouts.get(layout_handle).unwrap();
 
     let level = commands
         .spawn((

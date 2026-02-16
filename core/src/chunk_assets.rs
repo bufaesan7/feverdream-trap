@@ -14,6 +14,30 @@ use crate::{
 
 use bevy::asset::{ReflectAsset, VisitAssetDependencies};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize, Reflect)]
+pub enum GameLevel {
+    #[default]
+    Demo,
+    Level1,
+}
+
+impl GameLevel {
+    pub const ALL: &[GameLevel] = &[GameLevel::Demo, GameLevel::Level1];
+
+    pub fn path(&self) -> PathBuf {
+        let name = match self {
+            GameLevel::Demo => "demo",
+            GameLevel::Level1 => "level_1",
+        };
+        PathBuf::from("levels").join(format!("{name}.layout"))
+    }
+
+    pub fn next(&self) -> Option<GameLevel> {
+        let idx = Self::ALL.iter().position(|l| l == self).unwrap();
+        Self::ALL.get(idx + 1).copied()
+    }
+}
+
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<ChunkMarker>()
         .init_asset::<ChunkElement>()
@@ -369,12 +393,8 @@ impl From<(&ChunkLayout, &Assets<ChunkDescriptor>)> for ChunkLayoutAsset {
 }
 
 impl ChunkLayoutAsset {
-    const PATH: &str = "chunks";
-
-    pub fn path() -> PathBuf {
-        let mut path = PathBuf::from(Self::PATH);
-        path.push("chunk.".to_string() + Self::EXTENSION);
-        path
+    pub fn path_for_level(level: &GameLevel) -> PathBuf {
+        level.path()
     }
 }
 
@@ -410,7 +430,20 @@ pub struct ChunkAssetStash {
     #[dependency]
     pub descriptors: Vec<Handle<ChunkDescriptor>>,
     #[dependency]
-    pub layout: Handle<ChunkLayout>,
+    pub layout_handles: Vec<Handle<ChunkLayout>>,
+    /// Parallel to `layout_handles` — maps each handle to a `GameLevel`.
+    pub layout_levels: Vec<GameLevel>,
+}
+
+impl ChunkAssetStash {
+    pub fn layout(&self, level: &GameLevel) -> &Handle<ChunkLayout> {
+        let idx = self
+            .layout_levels
+            .iter()
+            .position(|l| l == level)
+            .unwrap_or_else(|| panic!("No layout loaded for level {level:?}"));
+        &self.layout_handles[idx]
+    }
 }
 
 impl FromWorld for ChunkAssetStash {
@@ -436,16 +469,24 @@ impl FromWorld for ChunkAssetStash {
             }
         });
 
+        let layout_levels: Vec<GameLevel> = GameLevel::ALL.to_vec();
+        let layout_handles: Vec<Handle<ChunkLayout>> = layout_levels
+            .iter()
+            .map(|level| asset_server.load(level.path()))
+            .collect();
+
         debug!(
-            "Loaded {} chunk elements and {} chunk descriptors",
+            "Loaded {} chunk elements, {} chunk descriptors, and {} layouts",
             elements.len(),
-            descriptors.len()
+            descriptors.len(),
+            layout_handles.len()
         );
 
         Self {
             elements,
             descriptors,
-            layout: asset_server.load(ChunkLayoutAsset::path()),
+            layout_handles,
+            layout_levels,
         }
     }
 }

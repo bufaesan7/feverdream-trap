@@ -25,7 +25,7 @@ pub(super) fn plugin(app: &mut App) {
 #[derive(Component, ExtractComponent, Clone, Copy, ShaderType, Default)]
 pub struct ScreenDarkenEffect {
     intensity: f32,
-    time: f32,
+    // time: f32,
 }
 
 impl FullscreenMaterial for ScreenDarkenEffect {
@@ -44,10 +44,10 @@ impl FullscreenMaterial for ScreenDarkenEffect {
 }
 
 pub fn apply_screen_darken_intensity(
-    time: Res<Time>,
+    // time: Res<Time>,
     effects: Res<CameraStatusEffects>,
     mut effect: Single<&mut ScreenDarkenEffect, With<CameraMarker>>,
 ) {
     effect.intensity = effects.effects[&CameraEffect::ScreenDarken].intensity;
-    effect.time = time.elapsed_secs();
+    // effect.time = time.elapsed_secs();
 }

@@ -35,13 +35,13 @@ avian3d = { version = "0.6.0-rc.1", default-features = false, features = [
 ] }
 bevy_ahoy = "0.1.0-rc.1"
 bevy_enhanced_input = { version = "0.23", default-features = false }
+bevy_skein.version = "0.5"
 
 # Dev dependencies
 bevy_egui.version = "0.39"
 bevy-inspector-egui.version = "0.36"
 egui = "0.33"
 egui_dock = "0.18"
-bevy_skein.version = "0.5"
 
 # Useful rust utilities
 thiserror = "2"
