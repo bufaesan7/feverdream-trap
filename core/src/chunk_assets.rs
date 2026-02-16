@@ -311,6 +311,9 @@ pub enum ChunkMarker {
     /// Mark this chunk as a sensor chunk, that will cause one chunk to be replaced with a
     /// not-yet-loaded chunk asset when this one is entered by the player
     ReplaceAssetSensor(ReplaceAssetSensorChunk),
+    /// Mark this chunk as a sensor chunk, that will move a given chunk to a given position
+    /// when this one is entered by the player
+    MoveChunkSensor(MoveChunkSensorChunk),
 }
 
 impl Default for ChunkMarker {
