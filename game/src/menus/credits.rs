@@ -34,7 +34,7 @@ fn created_by() -> impl Bundle {
     grid(vec![
         ["faervan", "Code"],
         ["angauber", "Code"],
-        ["Ghostumo", "Assets"],
+        ["Ghostumo", "Assets/Code"],
         ["KirmesBude", "Code"],
     ])
 }
@@ -43,7 +43,7 @@ fn assets() -> impl Bundle {
     grid(vec![
         ["Button SFX", "CC0 by Jaszunio15"],
         ["Heavenly Loop", "CC0 by isaiah658"],
-        ["Pills and Elevator", "??? by Ghostumo"],
+        ["Pills, Fuses and Elevator", "CC0 by Ghostumo"],
         ["Lo Fi First Person Hand", "CC0 by Ragnar Random"],
         [
             "Bevy logo",
