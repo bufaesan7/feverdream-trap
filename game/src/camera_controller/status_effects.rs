@@ -29,8 +29,10 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
-#[derive(Reflect, Debug, PartialEq, Eq, Hash)]
+#[derive(Reflect, Debug, PartialEq, Eq, Hash, Default)]
+#[reflect(Default)]
 pub enum CameraEffect {
+    #[default]
     ChromaticAbberation,
     ScreenDarken,
 }

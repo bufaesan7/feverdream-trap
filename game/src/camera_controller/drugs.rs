@@ -6,22 +6,80 @@ use crate::{
     prelude::*,
 };
 
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+#[require(DrugInteraction {
+    effects: vec![(
+        CameraEffect::ChromaticAbberation,
+        vec![DrugEffectSet::Intensity { value: 0. }],
+    )]
+})]
+/// [`DrugInteraction`] preset because skein does not support editing collections (yet)
+struct DrugClearChromaticAberrationIntensity;
+
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+#[require(DrugInteraction {
+    effects: vec![(
+        CameraEffect::ScreenDarken,
+        vec![DrugEffectSet::Intensity { value: 0. }],
+    )]
+})]
+/// [`DrugInteraction`] preset because skein does not support editing collections (yet)
+struct DrugClearScreenDarkenIntensity;
+
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+#[require(DrugInteraction {
+    effects: vec![
+        (
+            CameraEffect::ChromaticAbberation,
+            vec![DrugEffectSet::Intensity { value: 0. }],
+        ),
+        (
+            CameraEffect::ChromaticAbberation,
+            vec![DrugEffectSet::IntensificationFor { duration_secs: 5., value: 0. }],
+        )
+    ]
+})]
+/// [`DrugInteraction`] preset because skein does not support editing collections (yet)
+struct DrugDisableChromaticAberrationFiveSecs;
+
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+#[require(DrugInteraction {
+    effects: vec![
+        (
+            CameraEffect::ScreenDarken,
+            vec![DrugEffectSet::Intensity { value: 0. }],
+        ),
+        (
+            CameraEffect::ScreenDarken,
+            vec![DrugEffectSet::IntensificationFor { duration_secs: 5., value: 0. }],
+        )
+    ]
+})]
+/// [`DrugInteraction`] preset because skein does not support editing collections (yet)
+struct DrugDisableScreenDarkenFiveSecs;
+
 #[derive(Component, Reflect, Debug, Default, Deref)]
 #[reflect(Default, Component)]
-#[require(Interactable, LevelComponent)]
+#[require(Interactable, LevelComponent, RigidBody::Dynamic)]
 #[component(on_add)]
 pub struct DrugInteraction {
-    effects: HashMap<CameraEffect, Vec<DrugEffectSet>>,
+    effects: Vec<(CameraEffect, Vec<DrugEffectSet>)>,
 }
 
 impl DrugInteraction {
     fn on_add<'a>(mut world: DeferredWorld<'a>, hook: HookContext) {
         world.commands().entity(hook.entity).observe(
             |event: On<Interact>,
+             mut commands: Commands,
              query: Query<&DrugInteraction>,
              mut status_effects: ResMut<CameraStatusEffects>| {
                 if let Ok(drug_effects) = query.get(event.entity) {
                     status_effects.apply_drug_effects(drug_effects);
+                    commands.entity(event.entity).despawn();
                 }
             },
         );
@@ -29,6 +87,7 @@ impl DrugInteraction {
 }
 
 #[derive(Reflect, Debug)]
+#[reflect(Default)]
 pub enum DrugEffectSet {
     /// Set the effect intensity to `value`
     Intensity { value: f32 },
