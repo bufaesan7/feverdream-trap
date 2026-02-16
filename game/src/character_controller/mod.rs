@@ -75,18 +75,30 @@ impl PlayerInput {
 
 pub fn spawn_player(
     mut commands: Commands,
-    spawn_point: Query<&SpawnMarker>,
+    spawn_point: Query<(&Transform, &SpawnMarker), With<Chunk>>,
     camera: Single<Entity, With<CameraMarker>>,
 ) {
     // Retrieve the spawn marker transform
     let spawn_transform = match spawn_point.single() {
-        Ok(SpawnMarker(point)) => *point,
+        Ok((chunk_transform, SpawnMarker(point))) => {
+            let chunk_position = chunk_transform.translation;
+
+            info!("chunk pos: {}", chunk_position.xyz());
+            info!("spawn pos: {}", point.translation.xyz());
+
+            Transform::from_xyz(
+                chunk_position.x + point.translation.x,
+                1.0 + point.translation.y,
+                chunk_position.z + point.translation.z,
+            )
+        }
         Err(_) => {
             warn!("spawn point not found");
-
             Transform::from_xyz(0.0, 1.0, 0.0)
         }
     };
+
+    info!("Spawning player at {}", spawn_transform.translation.xyz());
 
     // Spawn the player entity
     let player = commands

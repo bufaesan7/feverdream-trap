@@ -8,11 +8,13 @@ impl Plugin for ChunkPlugin {
             .add_observer(on_player_exited_chunk)
             .add_observer(on_replace_chunk_asset)
             .add_observer(on_swap_chunks)
+            .add_observer(on_move_chunk)
             .add_systems(
                 PreUpdate,
                 (
                     swap_chunks_on_contact_with_sensor,
                     replace_chunk_asset_on_contact_with_sensor,
+                    move_chunk_on_contact_with_sensor,
                 ),
             );
     }
@@ -22,6 +24,8 @@ impl Plugin for ChunkPlugin {
 pub struct SwapChunks(pub ChunkId, pub ChunkId);
 #[derive(Debug, Event)]
 pub struct ReplaceChunkAsset(pub ChunkId, pub Handle<ChunkDescriptor>);
+#[derive(Debug, Event)]
+pub struct MoveChunk(pub ChunkId, pub i32, pub i32);
 
 #[derive(Resource, Default, Reflect)]
 #[reflect(Resource)]
@@ -32,6 +36,7 @@ struct ActivePlayerChunk {
     chunk_entity: Entity,
     swap_sensor_activated: bool,
     asset_sensor_activated: bool,
+    move_sensor_activated: bool,
 }
 impl ActivePlayerChunk {
     fn new(id: Entity) -> Self {
@@ -39,6 +44,7 @@ impl ActivePlayerChunk {
             chunk_entity: id,
             swap_sensor_activated: false,
             asset_sensor_activated: false,
+            move_sensor_activated: false,
         }
     }
 }
@@ -186,6 +192,45 @@ fn replace_chunk_asset_on_contact_with_sensor(
                     .remove::<ReplaceAssetSensorChunk>()
                     .remove::<ReplaceAssetSensorChunkHandle>();
             }
+        }
+    }
+}
+
+fn move_chunk_on_contact_with_sensor(
+    mut commands: Commands,
+    mut player_chunk: ResMut<ActivePlayerChunks>,
+    sensors_query: Query<(&MoveChunkSensorChunk, &ChunkId)>,
+) {
+    for active in player_chunk.0.iter_mut() {
+        match active.move_sensor_activated {
+            true => continue,
+            false => active.move_sensor_activated = true,
+        }
+        let Ok((sensor, ChunkId(chunk_id))) = sensors_query.get(active.chunk_entity) else {
+            continue;
+        };
+
+        info!("Player triggered chunk move by entering sensor chunk {chunk_id}");
+
+        commands.trigger(MoveChunk(sensor.chunk, sensor.x, sensor.z));
+        commands
+            .entity(active.chunk_entity)
+            .remove::<MoveChunkSensorChunk>();
+    }
+}
+
+fn on_move_chunk(
+    event: On<MoveChunk>,
+    mut chunk_transform_query: Query<(&ChunkId, &mut Transform)>,
+) {
+    let MoveChunk(ChunkId(chunk_id), x, z) = *event;
+
+    for (ChunkId(id), mut transform) in &mut chunk_transform_query {
+        if *id == chunk_id {
+            transform.translation.x = x as f32 * CHUNK_SIZE;
+            transform.translation.z = z as f32 * CHUNK_SIZE;
+            info!("Moved chunk {chunk_id} to grid position ({x}, {z})");
+            return;
         }
     }
 }

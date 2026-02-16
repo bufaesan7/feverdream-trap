@@ -80,6 +80,17 @@ pub struct ReplaceAssetSensorChunkHandle {
 }
 
 #[derive(Component, Debug, Default, Clone, Serialize, Deserialize, Reflect)]
+#[reflect(Component, Default)]
+pub struct MoveChunkSensorChunk {
+    /// Id of the chunk to move
+    pub chunk: ChunkId,
+    /// Target x position (grid coordinates)
+    pub x: i32,
+    /// Target z position (grid coordinates)
+    pub z: i32,
+}
+
+#[derive(Component, Debug, Default, Clone, Serialize, Deserialize, Reflect)]
 #[reflect(Default, Component)]
 #[component(on_add)]
 #[require(LevelComponent)]
@@ -158,6 +169,9 @@ impl ChunkMarkers {
                     world.commands().entity(hook.entity).insert(sensor);
                 }
                 ChunkMarker::ReplaceAssetSensor(sensor) => {
+                    world.commands().entity(hook.entity).insert(sensor);
+                }
+                ChunkMarker::MoveChunkSensor(sensor) => {
                     world.commands().entity(hook.entity).insert(sensor);
                 }
                 ChunkMarker::Light(light) => {

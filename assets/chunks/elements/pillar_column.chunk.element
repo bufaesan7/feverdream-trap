@@ -1,0 +1,1 @@
+(name:"pillar_column",transform:(translation:(0.0,0.0,0.0),rotation:(0.0,0.0,0.0,1.0),scale:(0.5,3.4,0.5)),shape:Cube,color:Srgba((red:0.85,green:0.82,blue:0.78,alpha:1.0)),has_collider:true)
