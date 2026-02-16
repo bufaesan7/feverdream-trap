@@ -127,6 +127,8 @@ fn save_scene(world: &World, mut commands: Commands, query: Query<Entity, With<L
 }
 
 fn spawn_scene(mut commands: Commands, game_scene: Res<GameSceneStorage>) {
+    commands.init_resource::<CameraStatusEffects>();
+
     if let Some(handle) = &game_scene.handle {
         // Load saved scene
         commands
@@ -143,7 +145,6 @@ fn spawn_scene(mut commands: Commands, game_scene: Res<GameSceneStorage>) {
     } else {
         // No saved scene, spawn from layout
         commands.queue(|world: &mut World| {
-            world.init_resource::<CameraStatusEffects>();
             let _ = world.run_system_once(spawn_level_from_layout);
             let _ = world.run_system_once(spawn_camera);
             let _ = world.run_system_once(spawn_player);
