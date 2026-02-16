@@ -38,6 +38,7 @@ pub struct SpawnChunk {
 pub struct DespawnChunk(pub ChunkId);
 
 #[derive(Component, Debug, Default, Clone, Serialize, Deserialize, Reflect)]
+#[require(LevelComponent)]
 #[reflect(Component, Default)]
 pub struct SwapSensorChunk {
     /// Id of the chunk to be swapped with `chunk_b`
@@ -50,6 +51,7 @@ pub struct SwapSensorChunk {
 
 #[derive(Component, Debug, Default, Clone, Serialize, Deserialize, Reflect)]
 #[component(on_insert)]
+#[require(LevelComponent)]
 #[reflect(Component, Default)]
 pub struct ReplaceAssetSensorChunk {
     /// Id of the chunk whose descriptor will be replaced with `descriptor`
@@ -81,6 +83,7 @@ pub struct ReplaceAssetSensorChunkHandle {
 
 #[derive(Component, Debug, Default, Clone, Serialize, Deserialize, Reflect)]
 #[reflect(Component, Default)]
+#[require(LevelComponent)]
 pub struct MoveChunkSensorChunk {
     /// Id of the chunk to move
     pub chunk: ChunkId,
@@ -129,10 +132,12 @@ pub static CHUNK_WIREFRAMES_ENABLED: std::sync::atomic::AtomicBool =
 
 #[derive(Component, Debug, Clone, Reflect)]
 #[reflect(Component)]
+#[require(LevelComponent)]
 #[component(on_add)]
 pub struct ChunkMarkers(pub Vec<ChunkMarker>);
 
 #[derive(Component, Debug, Clone, Reflect)]
+#[require(LevelComponent)]
 #[reflect(Component)]
 pub struct SpawnMarker(pub Transform);
 

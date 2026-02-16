@@ -181,7 +181,7 @@ jobs:
           echo "package=${app_package_name}-"'${{ matrix.platform }}${{ matrix.package_ext }}' >> "${GITHUB_ENV}"
 
           # Rustflags:
-          RUSTFLAGS=''
+          RUSTFLAGS=""
           if [ '${{ matrix.platform }}' != 'windows' ]; then
             RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }"
           fi
@@ -199,9 +199,9 @@ jobs:
           # Check if building for this platform is enabled.
           echo 'is_platform_enabled=${{
             (matrix.platform == 'web' && (inputs.build_for_web || (github.event_name == 'push' && (env.continuous_deployment_to_itch == 'true' || env.continuous_deployment_to_github_pages == 'true')))) ||
-            (matrix.platform == 'linux' && inputs.build_for_linux) ||
-            (matrix.platform == 'windows' && inputs.build_for_windows) ||
-            (matrix.platform == 'macos' && inputs.build_for_macos)
+            (matrix.platform == 'linux' && (inputs.build_for_linux || (github.event_name == 'push' && (env.continuous_deployment_to_itch == 'true' || env.continuous_deployment_to_github_pages == 'true')))) ||
+            (matrix.platform == 'windows' && (inputs.build_for_windows || (github.event_name == 'push' && (env.continuous_deployment_to_itch == 'true' || env.continuous_deployment_to_github_pages == 'true')))) ||
+            (matrix.platform == 'macos' && (inputs.build_for_macos || (github.event_name == 'push' && (env.continuous_deployment_to_itch == 'true' || env.continuous_deployment_to_github_pages == 'true'))))
           }}' >> "${GITHUB_ENV}"
 
       - name: Checkout repository
