@@ -244,7 +244,7 @@ jobs:
         run: |
           cargo binstall --locked --no-confirm --force wasm-bindgen-cli
           cargo binstall --locked --no-confirm --force wasm-opt
-          bevy build -p feverdream_trap_game --locked --release --no-default-features --features='${{ matrix.features }}' --yes web --bundle
+          bevy build -p feverdream_trap_game --locked --release --no-default-features --features='${{ matrix.features }}' -F bevy/webgl2 --yes web --bundle
           mv 'target/bevy_web/web-release/${{ env.cargo_build_binary_name }}' '${{ env.app }}'
 
       - name: Build and add binaries to app (non-Web)

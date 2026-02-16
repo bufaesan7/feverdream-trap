@@ -25,10 +25,10 @@
 
 struct FullScreenEffect {
     intensity: f32,
-    time: f32,
+    //time: f32,
 #ifdef SIXTEEN_BYTE_ALIGNMENT
     // WebGL2 structs must be 16 byte aligned.
-    _webgl2_padding: vec2<f32>
+    _webgl2_padding: vec3<f32>
 #endif
 }
 
@@ -36,7 +36,8 @@ struct FullScreenEffect {
 
 @fragment
 fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
-    let t = sin(settings.time * settings.intensity * 0.05) * 0.5 + 0.5;
+    //let t = sin(settings.time * settings.intensity * 0.05) * 0.5 + 0.5;
+    let t = 0.5;
     let uv = (in.uv - vec2f(0.5, 0.5)) * 2.;
     let lens_mask = sqrt(2.) - length(uv);
     let intensity = max(settings.intensity * 0.5, 0.5);
