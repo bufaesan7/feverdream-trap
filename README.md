@@ -1,4 +1,6 @@
 # Feverdream Trap
+> [!NOTE]
+> This branch contains the state of the game as submitted to the [bevy jam 7](https://itch.io/jam/bevy-jam-7)
 
 https://kirmesbude.itch.io/feverdream-trap
 
