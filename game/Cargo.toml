@@ -37,6 +37,9 @@ bevy_ahoy.workspace = true
 
 bevy_skein.workspace = true
 
+# Need if for web to compile locally
+getrandom = { workspace = true, optional = true }
+
 [package.metadata.bevy_cli.release]
 # Disable dev features for release builds.
 default-features = false

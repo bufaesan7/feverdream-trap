@@ -3,7 +3,7 @@ use bevy::scene::SceneInstanceReady;
 use bevy::tasks::IoTaskPool;
 
 use crate::camera_controller::{
-    CameraMarker, CameraStatusEffects, CameraTargetCharacterController, spawn_camera,
+    CameraMarker, CameraStatusEffects, CameraTargetCharacterController,
 };
 use crate::character_controller::{Player, PlayerInput, spawn_player};
 use crate::interaction::Interactable;
@@ -27,9 +27,6 @@ pub fn scene_file_path() -> std::path::PathBuf {
 }
 
 #[derive(Asset, TypePath, Resource, Clone)]
-/// Either `handle` or `scene` are guaranteed to exist
-/// `scene` is necessary, because the [`Asset`] won't load if we assign a [`Handle`] to `handle`
-/// that isn't loaded by the [`AssetServer`].
 pub struct GameSceneStorage {
     #[dependency]
     pub handle: Option<Handle<DynamicScene>>,
@@ -150,8 +147,6 @@ fn spawn_scene(mut commands: Commands, mut game_scene: ResMut<GameSceneStorage>)
     // Reset skip_save flag for this gameplay session
     game_scene.skip_save = false;
 
-    commands.init_resource::<CameraStatusEffects>();
-
     if let Some(handle) = &game_scene.handle {
         // Load saved scene
         commands
@@ -168,8 +163,9 @@ fn spawn_scene(mut commands: Commands, mut game_scene: ResMut<GameSceneStorage>)
     } else {
         // No saved scene, spawn from layout
         commands.queue(|world: &mut World| {
+            world.init_resource::<CameraStatusEffects>();
+
             let _ = world.run_system_once(spawn_level_from_layout);
-            let _ = world.run_system_once(spawn_camera);
             let _ = world.run_system_once(spawn_player);
             let _ = world.run_system_once(spawn_music);
             let _ = world.run_system_once(spawn_text);

@@ -19,12 +19,12 @@ struct DrugClearChromaticAberrationIntensity;
 
 #[derive(Component, Reflect)]
 #[reflect(Component)]
-#[cfg_attr(not(target_arch = "wasm32"), require(DrugInteraction {
+#[require(DrugInteraction {
     effects: vec![(
         CameraEffect::ScreenDarken,
         vec![DrugEffectSet::Intensity { value: 0. }],
     )]
-}))]
+})]
 /// [`DrugInteraction`] preset because skein does not support editing collections (yet)
 struct DrugClearScreenDarkenIntensity;
 
@@ -47,7 +47,7 @@ struct DrugDisableChromaticAberrationFiveSecs;
 
 #[derive(Component, Reflect)]
 #[reflect(Component)]
-#[cfg_attr(not(target_arch = "wasm32"), require(DrugInteraction {
+#[require(DrugInteraction {
     effects: vec![
         (
             CameraEffect::ScreenDarken,
@@ -58,7 +58,7 @@ struct DrugDisableChromaticAberrationFiveSecs;
             vec![DrugEffectSet::IntensificationFor { duration_secs: 5., value: 0. }],
         )
     ]
-}))]
+})]
 /// [`DrugInteraction`] preset because skein does not support editing collections (yet)
 struct DrugDisableScreenDarkenFiveSecs;
 

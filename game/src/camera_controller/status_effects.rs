@@ -5,7 +5,6 @@ use bevy::{
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
 
-#[cfg(not(target_arch = "wasm32"))]
 use crate::camera_controller::screen_darken::apply_screen_darken_intensity;
 use crate::{
     camera_controller::{
@@ -22,7 +21,6 @@ pub(super) fn plugin(app: &mut App) {
             intensify_effects,
             (
                 apply_chromatic_aberration_intensity,
-                #[cfg(not(target_arch = "wasm32"))]
                 apply_screen_darken_intensity,
             )
                 .after(intensify_effects),
@@ -36,7 +34,6 @@ pub(super) fn plugin(app: &mut App) {
 pub enum CameraEffect {
     #[default]
     ChromaticAbberation,
-    #[cfg(not(target_arch = "wasm32"))]
     ScreenDarken,
 }
 
@@ -71,7 +68,6 @@ impl Default for CameraStatusEffects {
         Self {
             effects: HashMap::from_iter([
                 (CameraEffect::ChromaticAbberation, Default::default()),
-                #[cfg(not(target_arch = "wasm32"))]
                 (CameraEffect::ScreenDarken, Default::default()),
             ]),
         }
@@ -119,7 +115,7 @@ impl CameraStatusEffects {
         ];
         let color_lut = Image::new(
             Extent3d {
-                width: 3,
+                width: img_data.len() as u32 / 4,
                 ..Default::default()
             },
             TextureDimension::D2,
