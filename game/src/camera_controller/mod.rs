@@ -1,5 +1,3 @@
-use bevy::ecs::{lifecycle::HookContext, world::DeferredWorld};
-use bevy_ahoy::camera::CharacterControllerCameraOf;
 use feverdream_trap_core::prelude::cursor::{cursor_grab, cursor_ungrab};
 
 use crate::prelude::*;
@@ -54,31 +52,3 @@ struct CameraSettings {
 )]
 #[component(on_add = CameraStatusEffects::add)]
 pub struct CameraMarker;
-
-#[derive(Component, Reflect)]
-#[reflect(Component)]
-#[component(on_add)]
-#[relationship(relationship_target = CharacterControllerCameraTarget)]
-/// Needed because [`CharacterControllerCameraOf`] does not implement [`Reflect`]
-/// This component on the camera points to the player
-pub struct CameraTargetCharacterController(pub Entity);
-
-#[derive(Component, Reflect)]
-#[reflect(Component)]
-#[relationship_target(relationship = CameraTargetCharacterController)]
-/// Component on the player marking it as the target of the camera
-pub struct CharacterControllerCameraTarget(Vec<Entity>);
-
-impl CameraTargetCharacterController {
-    fn on_add<'a>(mut world: DeferredWorld<'a>, hook: HookContext) {
-        let target = world
-            .get::<CameraTargetCharacterController>(hook.entity)
-            .unwrap()
-            .0;
-
-        world
-            .commands()
-            .entity(hook.entity)
-            .insert(CharacterControllerCameraOf::new(target));
-    }
-}

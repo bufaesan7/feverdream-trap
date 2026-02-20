@@ -2,9 +2,7 @@ use bevy::scene::SceneInstanceReady;
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::tasks::IoTaskPool;
 
-use crate::camera_controller::{
-    CameraMarker, CameraStatusEffects, CameraTargetCharacterController,
-};
+use crate::camera_controller::{CameraMarker, CameraStatusEffects};
 use crate::character_controller::{Player, PlayerInput, spawn_player};
 use crate::interaction::Interactable;
 use crate::prelude::*;
@@ -81,7 +79,6 @@ fn save_scene(
             .allow_component::<Transform>()
             .allow_component::<Visibility>()
             .allow_component::<CameraMarker>()
-            .allow_component::<CameraTargetCharacterController>()
             .allow_component::<Player>()
             .allow_component::<PlayerInput>()
             // Physics

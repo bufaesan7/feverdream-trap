@@ -3,10 +3,7 @@ use bevy_ahoy::prelude::*;
 use bevy_enhanced_input::prelude::*;
 use feverdream_trap_core::physics::GameLayer;
 
-use crate::{
-    camera_controller::{CameraMarker, CameraTargetCharacterController},
-    prelude::*,
-};
+use crate::{camera_controller::CameraMarker, prelude::*};
 
 pub struct CharacterControllerPlugin;
 
@@ -38,7 +35,24 @@ impl Plugin for CharacterControllerPlugin {
     // Having this be a normal collider will conflict with ahoy and result in buggy movement
     Sensor
 )]
+#[component(on_add)]
 pub struct Player;
+
+impl Player {
+    fn on_add(mut world: DeferredWorld, ctx: HookContext) {
+        let Some(mut query_state) = world.try_query_filtered() else {
+            return;
+        };
+        let query = world.query::<Entity, With<CameraMarker>>(&mut query_state);
+        let Ok(camera) = query.single() else {
+            return;
+        };
+        world
+            .commands()
+            .entity(camera)
+            .insert(CharacterControllerCameraOf::new(ctx.entity));
+    }
+}
 
 /// This marker component is registered with bevy_ahoy/bevy_enhanced_input
 /// to drive the input->movement.
@@ -76,7 +90,6 @@ impl PlayerInput {
 pub fn spawn_player(
     mut commands: Commands,
     spawn_point: Query<(&Transform, &SpawnMarker), With<Chunk>>,
-    camera: Single<Entity, With<CameraMarker>>,
 ) {
     // Retrieve the spawn marker transform
     let spawn_transform = match spawn_point.single() {
@@ -101,14 +114,7 @@ pub fn spawn_player(
     info!("Spawning player at {}", spawn_transform.translation.xyz());
 
     // Spawn the player entity
-    let player = commands
-        .spawn((Name::new("Player"), spawn_transform, Player, PlayerInput))
-        .id();
-
-    // Spawn the camera
-    commands
-        .entity(*camera)
-        .insert(CameraTargetCharacterController(player));
+    commands.spawn((Name::new("Player"), spawn_transform, Player, PlayerInput));
 }
 
 // PlayerInput needs to be removed if Screen::Gameplay + (Event)Menu::Pause
