@@ -10,7 +10,7 @@ on:
         type: string
       build_for_windows:
         description: "Build for Windows (WARNING: slow!)"
-        default: false
+        default: true
         type: boolean
       build_for_macos:
         description: "Build for macOS"
@@ -30,7 +30,7 @@ on:
         type: boolean
       deploy_to_itch:
         description: "Deploy to itch.io (if configured)"
-        default: true
+        default: false
         type: boolean
       deploy_to_github_pages:
         description: "Deploy web build to GitHub Pages"
@@ -92,7 +92,7 @@ env:
   # Enable these to deploy on every push to `main`.
   # Make sure to set up any enabled targets. Builds will ignore warnings.
   # Warning: If you use private repositories, this will eat through your available worker minutes quickly.
-  continuous_deployment_to_itch: true
+  continuous_deployment_to_itch: false
   continuous_deployment_to_github_pages: false
 
 jobs:
@@ -212,6 +212,7 @@ jobs:
 
       - name: Install Rust toolchain
         if: ${{ env.is_platform_enabled == 'true' }}
+        # Nightly causes panics on web
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.targets }}
